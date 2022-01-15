@@ -16,16 +16,16 @@
 
 void init_buttons(void);
 
-#define BUT1_GPIO 0
-#define BUT2_GPIO 2
-#define BUT3_GPIO 14
-#define BUT4_GPIO 12
-#define BUT5_GPIO 13
-#define BUT6_GPIO 16
-#define BUT7_GPIO 1
-#define BUT8_GPIO 4
-#define BUT9_GPIO 14
-#define BUT10_GPIO 12
+#define BUT1_GPIO 19
+#define BUT2_GPIO 18
+#define BUT3_GPIO 5
+#define BUT4_GPIO 17
+#define BUT5_GPIO 16
+#define BUT6_GPIO 35
+#define BUT7_GPIO 14
+#define BUT8_GPIO 27
+#define BUT9_GPIO 33
+#define BUT10_GPIO 32
 
 
 typedef struct

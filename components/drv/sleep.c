@@ -5,7 +5,7 @@
 #include "ssd1306.h"
 #include "ssdFigure.h"
 
-#include "semphr.h"
+#include "freertos/semphr.h"
 #include "wifidrv.h"
 #include "cmd_client.h"
 #include "battery.h"

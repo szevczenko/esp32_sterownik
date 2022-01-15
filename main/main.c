@@ -33,7 +33,9 @@
 
 uint16_t test_value;
 static gpio_config_t io_conf;
-static uint32_t blink_pin = GPIO_NUM_2;
+static uint32_t blink_pin = GPIO_NUM_25;
+
+portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
 
 static int i2cInit(void)
 {
@@ -44,8 +46,8 @@ static int i2cInit(void)
     conf.sda_pullup_en = 1;
     conf.scl_io_num = I2C_EXAMPLE_MASTER_SCL_IO;
     conf.scl_pullup_en = 1;
-    conf.clk_stretch_tick = 1000; // 300 ticks, Clock stretch is about 210us, you can make changes according to the actual situation.
-    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, conf.mode));
+    conf.master.clk_speed = 100000; // 300 ticks, Clock stretch is about 210us, you can make changes according to the actual situation.
+    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, conf.mode, 0, 0 ,0));
     ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
     return ESP_OK;
 }
@@ -111,9 +113,9 @@ void debug_last_out_task(char * task_name) {
 static void checkDevType(void) {
     i2cInit();
     pcf8574_init();
-    int read_i2c_value;
-    read_i2c_value = pcf8574_getinput(0);
-    if (read_i2c_value >= 0) {
+    int read_i2c_value = -1;
+    read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
+    if (read_i2c_value == ESP_OK) {
         config.dev_type = T_DEV_TYPE_CLIENT;
     }
     else {
@@ -150,9 +152,9 @@ void app_main()
         fastProcessStartTask();
         ssd1306_Init();
         init_menu();
-        init_sleep();
+        // init_sleep();
         // Inicjalizacja diod
-        blink_pin = GPIO_NUM_2;
+        blink_pin = MOTOR_LED;
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
         io_conf.pin_bit_mask = (1 << MOTOR_LED) | (1 << SERVO_VIBRO_LED) | (1 << blink_pin);
@@ -162,8 +164,7 @@ void app_main()
         buzzer_init();
     }
     else {
-        uart_init(57600);
-        esp_log_set_putchar(ets_putc);
+        //esp_log_set_putchar(ets_putc);
         #if CONFIG_DEVICE_SOLARKA
         vibro_init();
         #endif
@@ -183,7 +184,7 @@ void app_main()
         io_conf.pull_up_en = 0;
         gpio_config(&io_conf);
     }
-    _xt_isr_attach(ETS_WDT_INUM, esp_task_wdt_isr, NULL);
+    //_xt_isr_attach(ETS_WDT_INUM, esp_task_wdt_isr, NULL);
     ets_printf("Init last out task: %s\n\r", restart_task_out_name);
     ets_printf("Init last task: %s\n\r", restart_task_name);
     ets_printf("Last func name out out: %s \n\r", restart_function_out_out_out_name);
@@ -194,20 +195,20 @@ void app_main()
     while(1)
     {
         vTaskDelay(MS2ST(975));
-        if (config.dev_type == T_DEV_TYPE_SERVER)
+        //if (config.dev_type == T_DEV_TYPE_SERVER)
         {
            gpio_set_level(blink_pin, 0);
         }
 
-        // vTaskDelay(MS2ST(25));
+        vTaskDelay(MS2ST(25));
 
-        if (config.dev_type == T_DEV_TYPE_SERVER)
+        //if (config.dev_type == T_DEV_TYPE_SERVER)
         {
            gpio_set_level(blink_pin, 1);
         }
         //if (config.dev_type != T_DEV_TYPE_SERVER)
         {
-            //debug_msg("CLIENT INIT\n\r");
+            // debug_msg("CLIENT INIT\n\r");
         }
     }
 }

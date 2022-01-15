@@ -7,7 +7,7 @@
 #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "but.h"
-#include "semphr.h"
+#include "freertos/semphr.h"
 #include "menu_param.h"
 #include "wifidrv.h"
 #include "menu_default.h"

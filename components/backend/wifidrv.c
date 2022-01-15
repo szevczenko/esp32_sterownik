@@ -36,8 +36,8 @@
 #include "sleep_e.h"
 
 
-#define DEFAULT_SCAN_LIST_SIZE 16
-#define CONFIG_TCPIP_EVENT_THD_WA_SIZE 2048
+#define DEFAULT_SCAN_LIST_SIZE 32
+#define CONFIG_TCPIP_EVENT_THD_WA_SIZE 4096
 #define MAX_VAL(a, b) a > b ? a : b
 #define LOG(...) debug_msg(__VA_ARGS__)
 
@@ -95,7 +95,7 @@ wifi_config_t wifi_config_ap = {
   },
 };
 
-esp_pm_config_esp8266_t pm_config;
+//esp_pm_config_esp8266_t pm_config;
 
 static void wifi_read_info_cb(void *arg, wifi_vendor_ie_type_t type, const uint8_t sa[6], const vendor_ie_data_t *vnd_ie, int rssi);
 
@@ -105,6 +105,23 @@ static void on_wifi_disconnect(void *arg, esp_event_base_t event_base, int32_t e
     ctx.connected = false;
     ctx.reason_disconnect = event->reason;
     tcpip_adapter_down(TCPIP_ADAPTER_IF_STA);
+}
+
+static void scan_done_handler(void)
+{
+    printf("SCAN DONE!!!!!!\n\r");
+}
+
+static void wifi_scan_done_handler(void* arg, esp_event_base_t event_base,
+                                int32_t event_id, void* event_data)
+{
+    switch (event_id) {
+    case WIFI_EVENT_SCAN_DONE:
+        scan_done_handler();
+        break;
+    default:
+        break;
+    }
 }
 
 static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -122,6 +139,17 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
       }
     break;
   }    
+}
+
+static void debug_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+  printf("--------------EVENT_WIFI %s %d----------------\n\r",event_base, event_id); 
+  if (event_id == WIFI_EVENT_STA_DISCONNECTED)
+  {
+    wifi_event_sta_disconnected_t * data = event_data;
+    printf("Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reasen %d/n/r", data->ssid, data->bssid[0],data->bssid[1] ,data->bssid[2] ,data->bssid[3] ,data->bssid[4] ,data->bssid[5], \
+                                                                    data->ssid_len, data->reason);
+  }
 }
 
 int wifiDataSave(wifiConData_t *data)
@@ -193,13 +221,22 @@ static void wifi_init(void)
     wifi_config_ap.ap.ssid_len = strlen((char *)wifi_config_ap.ap.ssid);
   }
 
+  ctx.wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+  ctx.wifi_config.sta.pmf_cfg.capable = true;
+
   /* Inicjalizacja WiFi */
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
+  if (config.dev_type == T_DEV_TYPE_SERVER)
+  {
+    esp_netif_create_default_wifi_ap();
+  }
+  else
+  {
+    esp_netif_create_default_wifi_sta();
+  }
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &on_wifi_disconnect, NULL));
-  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &got_ip_event_handler, NULL));
 
   if (config.dev_type == T_DEV_TYPE_SERVER)
   {
@@ -215,10 +252,17 @@ static void wifi_init(void)
     }
     else
     {
-      esp_wifi_set_config(ESP_IF_WIFI_STA, &ctx.wifi_config);
+      esp_wifi_set_config(WIFI_IF_STA, &ctx.wifi_config);
     }
     wifiStartDevice();
   }
+
+  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &on_wifi_disconnect, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_SCAN_DONE, &wifi_scan_done_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &got_ip_event_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_MASK_ALL, &debug_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, WIFI_EVENT_MASK_ALL, &debug_handler, NULL));
+
   ctx.state = WIFI_APP_IDLE;
   LOG("Wifi init ok\n\r");
 }
@@ -243,7 +287,14 @@ static void wifi_idle(void)
 static void wifi_connect(void)
 {
   int ret = 0;
-  wifiStartDevice();
+
+  if (!ctx.is_started)
+  {
+    printf("WiFiDrv: WiFi start Device\n\r");
+    wifiStartDevice();
+    osDelay(1000);
+  }
+  
   esp_wifi_set_config(ESP_IF_WIFI_STA, &ctx.wifi_config);
   ret = esp_wifi_connect();
   if (ret == ESP_OK)
@@ -276,7 +327,7 @@ static void wifi_wait_connect(void)
   }
   else
   {
-    if (ctx.connect_attemps > 10)
+    if (ctx.connect_attemps > 20)
     {
       LOG("Timeout connect\n\r");
       
@@ -346,6 +397,7 @@ static void wifi_app_ready(void)
 
 int wifiDrvStartScan(void)
 {
+  wifi_scan_config_t scan_config = { 0 };
   if (ctx.state == WIFI_APP_IDLE || ctx.state == WIFI_APP_READY)
   {
     if (!ctx.is_started)
@@ -353,9 +405,95 @@ int wifiDrvStartScan(void)
       wifiStartDevice();
       osDelay(100);
     }
-    return esp_wifi_scan_start(NULL, true);
+    return esp_wifi_scan_start(&scan_config, true);
   }
   return -1;
+}
+
+static const char *TAG = "scan";
+
+static void print_auth_mode(int authmode)
+{
+    switch (authmode) {
+    case WIFI_AUTH_OPEN:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_OPEN");
+        break;
+    case WIFI_AUTH_WEP:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WEP");
+        break;
+    case WIFI_AUTH_WPA_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_PSK");
+        break;
+    case WIFI_AUTH_WPA2_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_PSK");
+        break;
+    case WIFI_AUTH_WPA_WPA2_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA_WPA2_PSK");
+        break;
+    case WIFI_AUTH_WPA2_ENTERPRISE:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_ENTERPRISE");
+        break;
+    case WIFI_AUTH_WPA3_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA3_PSK");
+        break;
+    case WIFI_AUTH_WPA2_WPA3_PSK:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_WPA2_WPA3_PSK");
+        break;
+    default:
+        ESP_LOGI(TAG, "Authmode \tWIFI_AUTH_UNKNOWN");
+        break;
+    }
+}
+
+static void print_cipher_type(int pairwise_cipher, int group_cipher)
+{
+    switch (pairwise_cipher) {
+    case WIFI_CIPHER_TYPE_NONE:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_NONE");
+        break;
+    case WIFI_CIPHER_TYPE_WEP40:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_WEP40");
+        break;
+    case WIFI_CIPHER_TYPE_WEP104:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_WEP104");
+        break;
+    case WIFI_CIPHER_TYPE_TKIP:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_TKIP");
+        break;
+    case WIFI_CIPHER_TYPE_CCMP:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_CCMP");
+        break;
+    case WIFI_CIPHER_TYPE_TKIP_CCMP:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_TKIP_CCMP");
+        break;
+    default:
+        ESP_LOGI(TAG, "Pairwise Cipher \tWIFI_CIPHER_TYPE_UNKNOWN");
+        break;
+    }
+
+    switch (group_cipher) {
+    case WIFI_CIPHER_TYPE_NONE:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_NONE");
+        break;
+    case WIFI_CIPHER_TYPE_WEP40:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_WEP40");
+        break;
+    case WIFI_CIPHER_TYPE_WEP104:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_WEP104");
+        break;
+    case WIFI_CIPHER_TYPE_TKIP:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_TKIP");
+        break;
+    case WIFI_CIPHER_TYPE_CCMP:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_CCMP");
+        break;
+    case WIFI_CIPHER_TYPE_TKIP_CCMP:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_TKIP_CCMP");
+        break;
+    default:
+        ESP_LOGI(TAG, "Group Cipher \tWIFI_CIPHER_TYPE_UNKNOWN");
+        break;
+    }
 }
 
 void wifiDrvGetScanResult(uint16_t *ap_count)
@@ -363,6 +501,14 @@ void wifiDrvGetScanResult(uint16_t *ap_count)
   uint16_t number = DEFAULT_SCAN_LIST_SIZE;
   ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ctx.scan_list));
   ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(ap_count));
+  // for (uint32_t i = 0; i < *ap_count; i++)
+  // {
+  //   printf("AP: %s CH %d CH2 %d RSSI %d\n\r",ctx.scan_list[i].ssid, ctx.scan_list[i].primary, ctx.scan_list[i].second, ctx.scan_list[i].rssi);
+  //   print_auth_mode(ctx.scan_list[i].authmode);
+  //   if (ctx.scan_list[i].authmode != WIFI_AUTH_WEP) {
+  //       print_cipher_type(ctx.scan_list[i].pairwise_cipher, ctx.scan_list[i].group_cipher);
+  //   }
+  // }
 }
 
 int wifiDrvGetNameFromScannedList(uint8_t number, char * name)
@@ -380,8 +526,10 @@ int wifiDrvSetFromAPList(uint8_t num)
 
 int wifiDrvSetAPName(char* name, size_t len)
 {
+  memset(ctx.wifi_config.sta.ssid, 0, sizeof(ctx.wifi_config.sta.ssid));
   if (len > sizeof(ctx.wifi_config.sta.ssid)) return 0;
   memcpy(ctx.wifi_config.sta.ssid, name, len);
+  printf("Set AP Name %s\n\r", ctx.wifi_config.sta.ssid);
   return 1;
 }
 
@@ -536,12 +684,12 @@ int wifiDrvGetRssi(void)
 
 void wifiDrvPowerSave(bool state)
 {
-  pm_config.light_sleep_enable = state;
+  //pm_config.light_sleep_enable = state;
   ctx.is_power_save = state;
-  if (esp_pm_configure(&pm_config) != ESP_OK)
-  {
-    LOG("WiFi Error: error set power save\n\r");
-  }
+  // if (esp_pm_configure(&pm_config) != ESP_OK)
+  // {
+  //   LOG("WiFi Error: error set power save\n\r");
+  // }
 }
 
 void wifiDrvInit(void)

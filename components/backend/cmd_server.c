@@ -69,6 +69,8 @@ typedef struct
 
 static cmd_server_t ctx;
 
+extern portMUX_TYPE portMux;
+
 static void _change_state(enum state_t new_state)
 {
     LOG("CMD Sr %s", cmd_server_state_name[new_state]);
@@ -423,9 +425,9 @@ int cmdServerSetValueWithoutRespI(menuValue_t val, uint32_t value) {
     sendBuff[3] = val;
     memcpy(&sendBuff[4], (uint8_t *)&value, 4);
 
-    taskEXIT_CRITICAL();
+    taskEXIT_CRITICAL(&portMux);
     cmdServerSendData(NULL, sendBuff, 8);
-    taskENTER_CRITICAL();
+    taskENTER_CRITICAL(&portMux);
 
     return TRUE;
 }

@@ -32,6 +32,8 @@
 #include "wifidrv.h"
 
 #if (CONFIG_USE_TCPIP)
+extern portMUX_TYPE portMux;
+
 // The global tnHandle ... since we are only processing ONE telnet
 // client at a time, this can be a global static.
 telnet_t *tnHandle[TELNET_MAX_CLIENT];
@@ -58,9 +60,9 @@ static const telnet_telopt_t my_telopts[] = {
 
 static char read_char(struct telnetUserData* userData, char *symb)
 {
-	portENTER_CRITICAL();
+	portENTER_CRITICAL(&portMux);
 	uint8_t rev_val = ring_buffer_get(&userData->ringBuff, (void*)symb);//
-	portEXIT_CRITICAL();
+	portEXIT_CRITICAL(&portMux);
 	if (rev_val == 0)
 	{
 		return TRUE;
@@ -101,7 +103,7 @@ static void telnetHandler(
 		break;
 
 	case TELNET_EV_DATA:
-		portENTER_CRITICAL();
+		portENTER_CRITICAL(&portMux);
 		for(size_t i = 0; i < event->data.size; i++)
 		{
 			if(ring_buffer_put(&telnetUserData->ringBuff, (void*) &event->data.buffer[i]) == -1)
@@ -109,7 +111,7 @@ static void telnetHandler(
 				break;
 			}
 		}
-		portEXIT_CRITICAL();
+		portEXIT_CRITICAL(&portMux);
 	default:
 		break;
 	} // End of switch event type
@@ -117,12 +119,12 @@ static void telnetHandler(
 
 static void delete_client(uint8_t number)
 {
-	portENTER_CRITICAL();
+	portENTER_CRITICAL(&portMux);
 	if (tnHandle[number] == NULL) return;
 	telnetServer.client_count--;
   	telnet_free(tnHandle[number]);
  	tnHandle[number] = NULL;
-	portEXIT_CRITICAL();
+	portEXIT_CRITICAL(&portMux);
 	close(pTelnetUserData[number].sockfd);
 }
 
@@ -288,10 +290,10 @@ static void telnet_listenForClients(void *arg)
 				{
 					if (tnHandle[i] == NULL)
 					{
-						portENTER_CRITICAL();
+						portENTER_CRITICAL(&portMux);
 						telnetInitUserData(&pTelnetUserData[i], partnerSocket);
 						tnHandle[i] = telnet_init(my_telopts, telnetHandler, 0, &pTelnetUserData[i]);
-						portEXIT_CRITICAL();
+						portEXIT_CRITICAL(&portMux);
 						telnet_negotiate(tnHandle[i], TELNET_WILL, TELNET_TELOPT_ECHO);
 						telnetServer.client_count++;
 						break;

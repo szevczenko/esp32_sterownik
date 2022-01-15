@@ -8,7 +8,7 @@
 #include "wifidrv.h"
 #include "cmd_client.h"
 
-#define DEVICE_LIST_SIZE 16
+#define DEVICE_LIST_SIZE 32
 
 typedef enum
 {
@@ -186,6 +186,7 @@ static bool menu_exit_cb(void * arg)
 
 static bool connectToDevice(char *dev)
 {
+	printf("Try connect %s \n\r", dev);
 	if (memcmp(WIFI_AP_NAME, dev, strlen(WIFI_AP_NAME) - 1) == 0)
 	{
 		/* Disconnect if connected */
@@ -196,7 +197,7 @@ static bool connectToDevice(char *dev)
 				return false;
 			}
 		}
-		wifiDrvSetAPName(dev, strlen(dev));
+		wifiDrvSetAPName(dev, strlen(dev) + 1);
 		wifiDrvSetPassword(WIFI_AP_PASSWORD, strlen(WIFI_AP_PASSWORD));
 
 		/* Wait to wifi drv ready connect */
@@ -259,7 +260,7 @@ static void menu_wifi_find_devices(void)
 		wifiDrvGetScanResult(&ctx.ap_count);
 		for (uint16_t i = 0; i < ctx.ap_count; i++)
 		{
-			if (ctx.ap_count >= DEVICE_LIST_SIZE)
+			if (ctx.ap_count > DEVICE_LIST_SIZE)
 			{
 				break;
 			}

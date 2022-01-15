@@ -26,8 +26,8 @@
 #define SSD1306_I2C_ADDR        (0x3C << 1)
 #endif
 
-#define I2C_EXAMPLE_MASTER_SCL_IO           5                /*!< gpio number for I2C master clock */
-#define I2C_EXAMPLE_MASTER_SDA_IO           4               /*!< gpio number for I2C master data  */
+#define I2C_EXAMPLE_MASTER_SCL_IO           22                /*!< gpio number for I2C master clock */
+#define I2C_EXAMPLE_MASTER_SDA_IO           21               /*!< gpio number for I2C master data  */
 
 /* ^^^ I2C config ^^^ */
 

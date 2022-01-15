@@ -3,6 +3,7 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "driver/i2c.h"
+#include "esp_log.h"
 
 #include "freertos/timers.h"
 
@@ -174,9 +175,7 @@ static void read_uart_data(void * arg)
 	char input;
 	while (1)
 	{
-		if (uart_read_bytes(UART_NUM_0, (uint8_t *)&input, 1, 100) > 0) {
-			at_read_byte((uint8_t) input);
-		}
+		osDelay(1000);
 	}
 }
 
@@ -211,18 +210,12 @@ static void atm_com(void * arg) {
 		// debug_msg("mot: %d %d, servo: %d %d system: %d\n\r", data_write[AT_W_MOTOR_VALUE], data_write[AT_W_MOTOR_IS_ON], data_write[AT_W_SERVO_IS_ON], data_write[AT_W_SERVO_VALUE], data_write[AT_W_SYSTEM_ON]);
 
 		vTaskDelay(1000 / portTICK_RATE_MS);
-		char * data_i2c_write = "help";
-		char data_read[8];
-		int ret = i2c_send_data((uint8_t *)data_i2c_write, 4);
-		debug_msg("i2c_send_data value = %d\n\r", ret);
-		ret = i2c_read_data((uint8_t *)data_read, 4);
-		ESP_LOGI("COM", "i2c_read_data value = %d, read %d\n\r", ret, data_read[0]);
 
 	}
 }
 
 void at_communication_init(void) {
-	xTaskCreate(atm_com, "atm_com", 1024, NULL, 10, NULL);
-	xTaskCreate(read_uart_data, "read_uart_data", 1024, NULL, 10, NULL);
+	xTaskCreate(atm_com, "atm_com", 4096, NULL, 10, NULL);
+	xTaskCreate(read_uart_data, "read_uart_data", 4096, NULL, 10, NULL);
 	xTimers = xTimerCreate("at_com_tim", 100 / portTICK_RATE_MS, pdFALSE, ( void * ) 0, vTimerCallback);
 }

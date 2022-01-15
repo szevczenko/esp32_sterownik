@@ -14,7 +14,9 @@
 #include "driver/i2c.h"
 #include "config.h"
 
+#include "freertos/semphr.h"
 
+#include "esp_task_wdt.h"
 
 #undef debug_msg
 #define debug_msg(...) //debug_msg( __VA_ARGS__)
@@ -59,23 +61,25 @@
 
 #define ACK_CHECK_EN                        0x1              /*!< I2C master will check ack from slave*/
 
+
+static SemaphoreHandle_t screenMux;
+
 void ssd1306_Reset(void) {
 
 }
-
-
 
 // Send a byte to the command register
 int ssd1306_WriteCommand(uint8_t byte) {
 	//HAL_I2C_Mem_Write(&SSD1306_I2C_PORT, SSD1306_I2C_ADDR, 0x00, 1, &byte, 1, HAL_MAX_DELAY);
     int ret = 0;
+    esp_task_wdt_reset();
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, SSD1306_I2C_ADDR | I2C_MASTER_WRITE, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, 0x00, ACK_CHECK_EN);
-    i2c_master_write(cmd, &byte, 1, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, byte, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SSD1306_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(SSD1306_I2C_PORT, cmd, 50 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     return ret;
 
@@ -85,14 +89,15 @@ int ssd1306_WriteCommand(uint8_t byte) {
 int ssd1306_WriteData(uint8_t* buffer, size_t buff_size) {
 	//HAL_I2C_Mem_Write(&SSD1306_I2C_PORT, SSD1306_I2C_ADDR, 0x40, 1, buffer, buff_size, HAL_MAX_DELAY);
     int ret = 0;
+    esp_task_wdt_reset();
+
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, SSD1306_I2C_ADDR | I2C_MASTER_WRITE, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, 0x40, ACK_CHECK_EN);
     i2c_master_write(cmd, buffer, buff_size, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SSD1306_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
+    ret = i2c_master_cmd_begin(SSD1306_I2C_PORT, cmd, 100 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     return ret;
 }
@@ -109,6 +114,9 @@ static SSD1306_t SSD1306;
 
 // Initialize the oled screen
 void ssd1306_Init(void) {
+
+    screenMux = xSemaphoreCreateBinary();
+
 	// Reset OLED
 	ssd1306_Reset();
 
@@ -197,6 +205,7 @@ void ssd1306_Init(void) {
     ssd1306_WriteCommand(0x14); //
     ssd1306_WriteCommand(0xAF); //--turn on SSD1306 panel
 
+    xSemaphoreGive(screenMux);
     // Clear screen
     ssd1306_Fill(Black);
     
@@ -214,10 +223,11 @@ void ssd1306_Init(void) {
 void ssd1306_Fill(SSD1306_COLOR color) {
     /* Set memory */
     uint32_t i;
-
+    xSemaphoreTake(screenMux, ( TickType_t ) MS2ST(300));
     for(i = 0; i < sizeof(SSD1306_Buffer); i++) {
         SSD1306_Buffer[i] = (color == Black) ? 0x00 : 0xFF;
     }
+    xSemaphoreGive(screenMux);
 }
 
 // Write the screenbuffer with changed to the screen
@@ -228,20 +238,23 @@ bool ssd1306_UpdateScreen(void) {
     //  * 32px   ==  4 pages
     //  * 64px   ==  8 pages
     //  * 128px  ==  16 pages
+    xSemaphoreTake(screenMux, ( TickType_t ) MS2ST(300));
     if (memcmp(SSD1306_Buffer_Compare, SSD1306_Buffer, sizeof(SSD1306_Buffer)) == 0)
     {
+        xSemaphoreGive(screenMux);
         return false;
     }
 
     memcpy(SSD1306_Buffer_Compare, SSD1306_Buffer, sizeof(SSD1306_Buffer));
 
-    for(uint8_t i = 0; i < SSD1306_HEIGHT/8; i++) {
+    for(uint8_t i = 0; i < SSD1306_HEIGHT/8; i++) 
+    {
         ssd1306_WriteCommand(0xB0 + i); // Set the current RAM page address.
         ssd1306_WriteCommand(0x00);
         ssd1306_WriteCommand(0x10);
         ssd1306_WriteData(&SSD1306_Buffer[SSD1306_WIDTH*i],SSD1306_WIDTH);
     }
-
+    xSemaphoreGive(screenMux);
     return true;
 }
 
@@ -261,11 +274,13 @@ void ssd1306_DrawPixel(uint8_t x, uint8_t y, SSD1306_COLOR color) {
     }
     
     // Draw in the right color
+    xSemaphoreTake(screenMux, ( TickType_t ) MS2ST(300));
     if(color == White) {
         SSD1306_Buffer[x + (y / 8) * SSD1306_WIDTH] |= 1 << (y % 8);
     } else { 
         SSD1306_Buffer[x + (y / 8) * SSD1306_WIDTH] &= ~(1 << (y % 8));
     }
+    xSemaphoreGive(screenMux);
 }
 
 // Draw 1 char to the screen buffer

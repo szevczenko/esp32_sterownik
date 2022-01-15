@@ -21,6 +21,8 @@
 
 #define PAYLOAD_SIZE 128
 
+extern portMUX_TYPE portMux;
+
 enum cmd_client_app_state
 {
     CMD_CLIENT_IDLE,
@@ -400,9 +402,9 @@ int cmdClientSetValueWithoutRespI(menuValue_t val, uint32_t value)
 	sendBuff[3] = val;
 	memcpy(&sendBuff[4], (uint8_t *)&value, 4);
 
-	taskEXIT_CRITICAL();
+	taskEXIT_CRITICAL(&portMux);
 	ret_val = cmdClientSend(sendBuff, 8);
-	taskENTER_CRITICAL();
+	taskENTER_CRITICAL(&portMux);
 
 	return ret_val;
 }
@@ -484,9 +486,9 @@ int cmdClientSendCmdI(parseCmd_t cmd)
 	sendBuff[1] = CMD_COMMAND;
 	sendBuff[2] = cmd;
 
-	taskEXIT_CRITICAL();
+	taskEXIT_CRITICAL(&portMux);
 	ret_val = cmdClientSend(sendBuff, 3);
-	taskENTER_CRITICAL();
+	taskENTER_CRITICAL(&portMux);
 
 	return ret_val;
 }

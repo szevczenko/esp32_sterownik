@@ -5,7 +5,7 @@
 #include "ssdFigure.h"
 #include "but.h"
 
-#include "semphr.h"
+#include "freertos/semphr.h"
 #include "wifidrv.h"
 #include "cmd_client.h"
 #include "fast_add.h"

@@ -1,0 +1,92 @@
+{
+    "folders": [
+        {
+            "path": "."
+        },
+        {
+            "path": "..\\esp32-tools"
+        }
+    ],
+    
+    
+
+    "settings": {
+        "idf.openOcdConfigs": [
+            "board/esp32-wrover.cfg"
+        ],
+        "idf.customExtraVars": "",
+        "terminal.integrated.env.windows": {
+            "IDF_PATH": "C:\\projekty\\tools\\idf",
+            "PATH": "${env:PATH};C:\\projekty\\tools\\idf;C:\\projekty\\tools\\idf/tools/python;C:\\projekty\\tools\\idf/tools/python/Scripts;C:\\projekty\\tools\\idf/tools/python/Scripts",
+            "OPENOCD_SCRIPTS": "${env:IDF_TOOLS_PATH}/tools/openocd-esp32/v0.10.0-esp32-20200309/openocd-esp32/share/openocd/scripts",
+        },
+        "terminal.integrated.profiles.windows":{
+            "msys32": {
+                "path": "C:\\WINDOWS\\System32\\cmd.exe",
+                "args": ["/K", "C:\\projekty\\tools\\idf\\export.bat"],
+            },
+        },
+
+        "terminal.integrated.defaultProfile.windows": "msys32",
+        "editor.insertSpaces": false,
+        "editor.tabCompletion": "on",
+        "git.ignoreLimitWarning": true,
+        "files.associations": {
+            "cmd_server.h": "c",
+            "config.h": "c",
+            "*.inc": "c",
+            "ssd1306.h": "c",
+            "array": "c",
+            "string_view": "c",
+            "initializer_list": "c",
+            "utility": "c",
+            "sdkconfig.h": "c",
+            "wifidrv.h": "c",
+            "esp_spi_flash.h": "c",
+            "task.h": "c",
+            "stdio.h": "c",
+            "nvs_flash.h": "c",
+            "ethernet.h": "c",
+            "menu_drv.h": "c",
+            "menu_default.h": "c",
+            "condition_variable": "c",
+            "future": "c",
+            "regex": "c",
+            "unordered_map": "c",
+            "unordered_set": "c",
+            "list": "c",
+            "string": "c",
+            "optional": "c",
+            "functional": "c",
+            "limits": "c",
+            "cstddef": "c",
+            "memory": "c",
+            "new": "c",
+            "type_traits": "c",
+            "cmd_client.h": "c",
+            "typeindex": "c",
+            "typeinfo": "c",
+            "*.idl": "c",
+            "esp_wifi_types.h": "c",
+            "menu_settings.h": "c",
+            "menu_param.h": "c"
+        },
+        "files.exclude": {
+            "**/.git": true,         // this is a default value
+            "avr_code": true,    // this is a default value
+
+            "avr_siewnik": true, // this excludes all folders 
+                                    // named "node_modules" from 
+                                    // the explore tree
+            "atmega8": true,
+        },
+        "search.exclude": {
+            "**/.git": true,         // this is a default value
+            "avr_code": true,    // this is a default value
+
+            "avr_siewnik": true, 
+            "freertos": true, 
+            "atmega8": true,
+        }
+    }
+}    

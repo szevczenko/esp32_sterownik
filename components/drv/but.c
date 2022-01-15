@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "esp_task_wdt.h"
 
 #include "driver/gpio.h"
 #include "config.h"
@@ -46,7 +47,8 @@ void init_but_struct(void)
 	button1.timer_callback = 0;//test_fnc;
 	button1.gpio = BUT1_GPIO;
 	button1.bit = 4;
-	
+	button1.is_gpio = 1;
+
 	button2.state = 0;
 	button2.value = 1;
 	button2.fall_callback = 0;
@@ -54,7 +56,8 @@ void init_but_struct(void)
 	button2.timer_callback = 0;
 	button2.gpio = BUT2_GPIO;
 	button2.bit = 5;
-	
+	button2.is_gpio = 1;
+
 	button3.state = 0;
 	button3.value = 1;
 	button3.fall_callback = 0;
@@ -62,7 +65,8 @@ void init_but_struct(void)
 	button3.timer_callback = 0;
 	button3.gpio = BUT3_GPIO;
 	button3.bit = 6;
-	
+	button3.is_gpio = 1;
+
 	button4.state = 0;
 	button4.value = 1;
 	button4.fall_callback = 0;
@@ -70,7 +74,8 @@ void init_but_struct(void)
 	button4.timer_callback = 0;
 	button4.gpio = BUT4_GPIO;
 	button4.bit = 1;
-	
+	button4.is_gpio = 1;
+
 	button5.state = 0;
 	button5.value = 1;
 	button5.fall_callback = 0;
@@ -78,7 +83,8 @@ void init_but_struct(void)
 	button5.timer_callback = 0;
 	button5.gpio = BUT5_GPIO;
 	button5.bit = 7;
-	
+	button5.is_gpio = 1;
+
 	button6.state = 0;
 	button6.value = 1;
 	button6.fall_callback = 0;
@@ -86,7 +92,8 @@ void init_but_struct(void)
 	button6.timer_callback = 0;
 	button6.gpio = BUT6_GPIO;
 	button6.bit = 0;
-	
+	button6.is_gpio = 1;
+
 	button7.state = 0;
 	button7.value = 1;
 	button7.fall_callback = 0;
@@ -94,7 +101,8 @@ void init_but_struct(void)
 	button7.timer_callback = 0;
 	button7.gpio = BUT7_GPIO;
 	button7.bit = 3;
-	
+	button7.is_gpio = 1;
+
 	button8.state = 0;
 	button8.value = 1;
 	button8.fall_callback = 0;
@@ -102,7 +110,8 @@ void init_but_struct(void)
 	button8.timer_callback = 0;
 	button8.gpio = BUT8_GPIO;
 	button8.bit = 2;
-	
+	button8.is_gpio = 1;
+
 	button9.state = 0;
 	button9.value = 1;
 	button9.fall_callback = 0;
@@ -128,10 +137,10 @@ static void process_button(void * arg)
 	
 	while(1)
 	{
-		WDT_FEED();
+		esp_task_wdt_reset();
 		start_time = xTaskGetTickCount();
 		//process
-		read_i2c_value = pcf8574_getinput(0);
+		//read_i2c_value = pcf8574_getinput(0);
 		//taskENTER_CRITICAL();
 		for (uint8_t i=0; i<BUTTON_CNT; i++)
 		{
@@ -173,18 +182,20 @@ static void process_button(void * arg)
 	}// end while
 }
 
-static void set_bit_mask(uint32_t *mask)
+static void set_bit_mask(uint64_t *mask)
 {
 	for(uint8_t i = 0; i < BUTTON_CNT; i++)
 	{
 		if (but_tab[i]->is_gpio)
+		{
 			*mask |= (1ULL<<but_tab[i]->gpio);
+		}	
 	}
 }
 
 void init_buttons(void)
 {
-	pcf8574_init();
+	//pcf8574_init();
 	gpio_config_t io_conf;
 	//disable interrupt
     io_conf.intr_type = GPIO_INTR_DISABLE;

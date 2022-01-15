@@ -7,7 +7,7 @@
 #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "but.h"
-#include "semphr.h"
+#include "freertos/semphr.h"
 #include "menu_param.h"
 #include "wifidrv.h"
 #include "cmd_client.h"
@@ -226,5 +226,5 @@ static void menu_task(void * arg)
 
 void menuBackendInit(void)
 {
-	xTaskCreate(menu_task, "menu_back", 1024, NULL, 5, NULL);
+	xTaskCreate(menu_task, "menu_back", 4096, NULL, 5, NULL);
 }

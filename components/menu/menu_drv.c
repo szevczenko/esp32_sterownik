@@ -1,13 +1,15 @@
 #include "stdint.h"
 #include "stdarg.h"
 
+#include "esp_task_wdt.h"
+
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
 #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "but.h"
-#include "semphr.h"
+#include "freertos/semphr.h"
 #include "menu_param.h"
 #include "menu_bootup.h"
 #include "menu_backend.h"
@@ -396,7 +398,7 @@ static void menu_state_enter(menu_token_t * menu)
 
 static void menu_state_process(menu_token_t * menu)
 {
-	debug_function_name(__func__);
+	// debug_function_name(__func__);
 
 	xSemaphoreTake(ctx.update_screen_req, ( TickType_t ) MS2ST(300));
 	ssd1306_Fill(Black);
@@ -496,23 +498,22 @@ static void menu_task(void * arg)
 {
 	menu_token_t *menu = NULL;
 	int prev_state = -1;
-
+	ctx.state = MENU_STATE_INIT;
 	while(1)
 	{
-		WDT_FEED();
+		esp_task_wdt_reset();
 		menu = last_tab_element();
 		if (prev_state != ctx.state)
 		{
 			if (menu != NULL)
 			{
-				//debug_msg("state: %s, menu %s\n\r", state_name[ctx.state], menu->name);
+				debug_msg("state: %s, menu %s\n\r", state_name[ctx.state], menu->name);
 			}
 			else
 			{
-				//debug_msg("state %s, menu is NULL\n\r", state_name[ctx.state]);
+				debug_msg("state %s, menu is NULL\n\r", state_name[ctx.state]);
 			}
 			prev_state = ctx.state;
-			//osDelay(10);
 		}
 		
 		switch(ctx.state)
@@ -572,7 +573,10 @@ void menuSetMain(menu_token_t * menu)
 		ctx.entered_menu_tab[i] = NULL;
 	}
 	ctx.entered_menu_tab[0] = menu;
-	ctx.state = MENU_STATE_IDLE;
+	if (ctx.state != MENU_STATE_INIT)
+	{
+		ctx.state = MENU_STATE_IDLE;
+	}
 }
 
 void menuExit(menu_token_t * menu)
@@ -627,14 +631,6 @@ void menuDrvExitEmergencyDisable(void)
 
 void init_menu(void)
 {
-	ctx.update_screen_req = xSemaphoreCreateBinary();
-	#if CONFIG_MENU_TEST_TASK
-	xTaskCreate(menu_test, "menu_test", 4096, NULL, 12, NULL);
-	#else
-	xTaskCreate(menu_task, "menu_task", 4096, NULL, 12, NULL);
-	#endif
-	menuBackendInit();
-	update_screen();
 	if (menuGetValue(MENU_BOOTUP_SYSTEM))
 	{
 		menuInitBootupMenu();
@@ -643,5 +639,14 @@ void init_menu(void)
 	{
 		mainMenuInit();
 	}
+	ctx.update_screen_req = xSemaphoreCreateBinary();
+	#if CONFIG_MENU_TEST_TASK
+	xTaskCreate(menu_test, "menu_test", 8192+2048, NULL, 12, NULL);
+	#else
+	xTaskCreate(menu_task, "menu_task", 8192+2048, NULL, 12, NULL);
+	#endif
+	menuBackendInit();
+	update_screen();
+	
 	
 }

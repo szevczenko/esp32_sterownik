@@ -4,6 +4,12 @@
 #include "motor.h"
 #include "servo.h"
 
+#include "driver/mcpwm.h"
+#include "soc/mcpwm_periph.h"
+
+#define MOTOR_PWM_PIN 27
+#define SERVO_PWM_PIN 26
+
 typedef enum
 {
 	STATE_INIT,
@@ -70,8 +76,57 @@ static void count_working_data(void)
 	}
 }
 
+static void set_working_data(void)
+{
+	//#if CONFIG_DEVICE_SIEWNIK
+	printf("motor %d %d\n\r", ctx.motor_on, ctx.motor_pwm);
+	if (ctx.motor_on)
+	{
+		float duty = (float)ctx.motor_pwm * 100 / 255.0;
+		printf("duty motor %f\n\r", duty);
+		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
+		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
+	}
+	else
+	{
+		mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
+	}
+
+	printf("servo %d %d\n\r", ctx.motor_on, ctx.motor_pwm);
+	if (ctx.servo_on)
+	{
+		float duty = (float)ctx.servo_pwm * 100 / 19999.0;
+		printf("duty servo %f\n\r", duty);
+		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
+		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
+	}
+	else
+	{
+		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A);
+	}
+
+	//#endif
+}
+
 static void state_init(void)
 {
+	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, MOTOR_PWM_PIN);
+	mcpwm_config_t pwm_config;
+    pwm_config.frequency = 1000;    //frequency = 1000Hz
+    pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 60.0%
+    pwm_config.cmpr_b = 0;       	//duty cycle of PWMxb = 50.0%
+    pwm_config.counter_mode = MCPWM_UP_COUNTER;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+
+	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, SERVO_PWM_PIN);
+	pwm_config.frequency = 1;
+    pwm_config.cmpr_a = 0;
+    pwm_config.cmpr_b = 0;
+    pwm_config.counter_mode = MCPWM_UP_COUNTER;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+
 	change_state(STATE_IDLE);
 }
 
@@ -196,6 +251,7 @@ static void _task(void * arg)
 		}
 
 		count_working_data();
+		set_working_data();
 	}
 }
 
@@ -226,5 +282,5 @@ bool srvrControllGetEmergencyDisable(void)
 
 void srvrControllStart(void)
 {
-	xTaskCreate(_task, "srvrController", 1024, NULL, 10, NULL);
+	xTaskCreate(_task, "srvrController", 4096, NULL, 10, NULL);
 }

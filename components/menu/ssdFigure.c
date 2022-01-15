@@ -149,7 +149,6 @@ void drawMotor(uint8_t x, uint8_t y)
 void drawServo(uint8_t x, uint8_t y, uint8_t open)
 {
 	uint8_t x_open = x + DIAMETR * open / 100;
-	debug_msg("x_open %d\n", x_open);
 	uint8_t start_flag;
 	for (int i = 0; i < 22; i++)
 	{

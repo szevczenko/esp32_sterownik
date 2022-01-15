@@ -52,8 +52,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// LED
 #include "driver/gpio.h"
-#define MOTOR_LED GPIO_NUM_2
-#define SERVO_VIBRO_LED GPIO_NUM_15
+#define MOTOR_LED GPIO_NUM_25
+#define SERVO_VIBRO_LED GPIO_NUM_26
 #define MOTOR_LED_SET(x) gpio_set_level(MOTOR_LED, x);
 #define SERVO_VIBRO_LED_SET(x) gpio_set_level(SERVO_VIBRO_LED, x);
 
@@ -131,7 +131,7 @@ extern void uartPrintfTimeout(const char *format, ...);
 	}
 #define debug_data(data, size) telnetSendToAll((char *)data, size)
 #else
-#define debug_msg(...) ets_printf(__VA_ARGS__);
+#define debug_msg(...) printf(__VA_ARGS__);
 #define debug_data(data, size) 
 #endif
 
