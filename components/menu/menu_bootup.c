@@ -52,6 +52,7 @@ static char * state_name[] =
 };
 
 extern void mainMenuInit(void);
+extern void enterMenuStart(void);
 
 menu_token_t bootup_menu = 
 {
@@ -166,19 +167,15 @@ static void bootup_get_server_data(void)
 		}
 	}
 	
-	if (start_status == 0) 
+	if (start_status > 0) 
 	{
-		debug_msg("Bootup: System not started\n\r");
-		change_state(STATE_EXIT);
-		return;
+		if (cmdClientGetAllValue(2500) == 0) {
+			debug_msg("Timeout get ALL VALUES\n\r");
+			change_state(STATE_EXIT);
+		}
 	}
 
-	if (cmdClientGetAllValue(2500) == 0) {
-		debug_msg("Timeout get ALL VALUES\n\r");
-		change_state(STATE_EXIT);
-	}
-
-	menuPrintfInfo("Read data from:\n%s", ctx.ap_name);
+	menuPrintfInfo("Read data from: %s\n", ctx.ap_name);
 	change_state(STATE_CHECKING_DATA);
 }
 
@@ -192,6 +189,10 @@ static void bootup_checking_data(void)
 static void bootup_exit(void)
 {
 	mainMenuInit();
+	if (ctx.system_connected)
+	{
+		enterMenuStart();
+	}
 }
 
 static bool menu_process(void * arg)

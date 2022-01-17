@@ -224,7 +224,7 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
 	}
 	else
 	{
-		x_charge = (uint8_t)((float)(accum_voltage - 3.2) * 7.0);
+		x_charge = (uint8_t)((float)(accum_voltage - 3.2) * 8.0);
 
 		if (x_charge > 7) {
 			x_charge = 7;
@@ -233,7 +233,7 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
 
 	battery_state_t state = BATTERY_NORMAL;
 
-	if (accum_voltage < 3.4)
+	if (accum_voltage < 3.48)
 	{
 		state = BATTERY_LOW_VOLTAGE;
 	}

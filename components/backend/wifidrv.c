@@ -292,7 +292,6 @@ static void wifi_connect(void)
   {
     printf("WiFiDrv: WiFi start Device\n\r");
     wifiStartDevice();
-    osDelay(1000);
   }
   
   esp_wifi_set_config(ESP_IF_WIFI_STA, &ctx.wifi_config);

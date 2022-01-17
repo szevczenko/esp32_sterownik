@@ -454,6 +454,7 @@ int cmdClientGetValue(menuValue_t val, uint32_t * value, uint32_t timeout)
 			debug_msg("Timeout cmdClientGetValue\n");
 		}
 	}
+	debug_msg("cmdClientGetValue error get semaphore\n");
 	return FALSE;
 }
 

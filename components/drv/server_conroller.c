@@ -79,17 +79,27 @@ static void count_working_data(void)
 static void set_working_data(void)
 {
 	//#if CONFIG_DEVICE_SIEWNIK
+
+	if (ctx.system_on)
+	{
+		gpio_set_level(15, 1);
+	}
+	else
+	{
+		gpio_set_level(15, 0);
+	}
+
 	printf("motor %d %d\n\r", ctx.motor_on, ctx.motor_pwm);
 	if (ctx.motor_on)
 	{
 		float duty = (float)ctx.motor_pwm * 100 / 255.0;
 		printf("duty motor %f\n\r", duty);
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
-		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
+		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
 	}
 	else
 	{
-		mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
+		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
 	}
 
 	printf("servo %d %d\n\r", ctx.motor_on, ctx.motor_pwm);
@@ -127,6 +137,14 @@ static void state_init(void)
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);   //Configure PWM0A & PWM0B with above settings
 
+	gpio_config_t io_conf;
+	io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1 << 15);
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+
 	change_state(STATE_IDLE);
 }
 
@@ -156,6 +174,7 @@ static void state_idle(void)
 
 static void state_working(void)
 {
+	ctx.system_on = (uint8_t)menuGetValue(MENU_START_SYSTEM);
 	ctx.servo_value = (uint8_t)menuGetValue(MENU_SERVO);
 	ctx.motor_value = (uint8_t)menuGetValue(MENU_MOTOR);
 	ctx.motor_on = (uint16_t)menuGetValue(MENU_MOTOR_IS_ON);

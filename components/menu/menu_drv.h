@@ -11,4 +11,6 @@ void menuPrintfInfo(const char *format, ...);
 void menuDrvEnterEmergencyDisable(void);
 void menuDrvExitEmergencyDisable(void);
 
+void enterMenuStart(void);
+
 #endif

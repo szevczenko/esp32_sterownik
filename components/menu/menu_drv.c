@@ -631,6 +631,7 @@ void menuDrvExitEmergencyDisable(void)
 
 void init_menu(void)
 {
+	ctx.update_screen_req = xSemaphoreCreateBinary();
 	if (menuGetValue(MENU_BOOTUP_SYSTEM))
 	{
 		menuInitBootupMenu();
@@ -639,11 +640,10 @@ void init_menu(void)
 	{
 		mainMenuInit();
 	}
-	ctx.update_screen_req = xSemaphoreCreateBinary();
 	#if CONFIG_MENU_TEST_TASK
-	xTaskCreate(menu_test, "menu_test", 8192+2048, NULL, 12, NULL);
+	xTaskCreate(menu_test, "menu_test", 8192, NULL, 12, NULL);
 	#else
-	xTaskCreate(menu_task, "menu_task", 8192+2048, NULL, 12, NULL);
+	xTaskCreate(menu_task, "menu_task", 8192, NULL, 12, NULL);
 	#endif
 	menuBackendInit();
 	update_screen();

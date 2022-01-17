@@ -472,6 +472,7 @@ static void menu_wifi_connected(menu_token_t *menu)
 	{
 		osDelay(1000);
 		menuExit(menu);
+		enterMenuStart();
 	}
 }
 

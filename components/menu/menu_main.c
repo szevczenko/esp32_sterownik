@@ -51,3 +51,8 @@ void mainMenuInit(void)
 	menuInitParametersMenu(&parameters_menu);
 	menuSetMain(&main_menu);
 }
+
+void enterMenuStart(void)
+{
+	menuEnter(&start_menu);
+}
