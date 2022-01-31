@@ -9,7 +9,7 @@
 #define ACCUMULATOR_LOW_VOLTAGE 395
 #define ACCUMULATOR_VERY_LOW_VOLTAGE 350
 
-#define FILTER_TABLE_SIZE 15
+#define FILTER_TABLE_SIZE 8
 #define FILTER_TABLE_S_SIZE 10
 
 #define MOTOR_ADC_CH 2
@@ -24,11 +24,20 @@ typedef enum
     MEAS_ACCUM
 }_type_measure;
 
+typedef enum
+{
+	MEAS_CH_IN,
+	MEAS_CH_MOTOR,
+	MEAS_CH_SERVO,
+	MEAS_CH_12V,
+	MEAS_CH_TEMP,
+	MEAS_CH_LAST
+} enum_meas_ch;
+
 void init_measure(void);
 void measure_start(void);
-uint16_t measure_get_filtered_value(_type_measure type);
-uint16_t measure_get_value(_type_measure type);
-float measure_get_current(_type_measure type, float resistor);
+uint32_t measure_get_filtered_value(enum_meas_ch type);
+float measure_get_current(enum_meas_ch type, float resistor);
 float accum_get_voltage(void);
 float measure_get_temperature(void);
 

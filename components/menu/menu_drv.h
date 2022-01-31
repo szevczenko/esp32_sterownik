@@ -12,5 +12,6 @@ void menuDrvEnterEmergencyDisable(void);
 void menuDrvExitEmergencyDisable(void);
 
 void enterMenuStart(void);
+void enterMenuParameters(void);
 
 #endif

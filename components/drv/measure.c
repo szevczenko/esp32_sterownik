@@ -6,50 +6,66 @@
 #include "menu_param.h"
 #include "parse_cmd.h"
 
+#include "driver/adc.h"
+#include "esp_adc_cal.h"
+
 //#undef debug_msg
 //#define debug_msg(...)
 
+static adc_bits_width_t width = ADC_WIDTH_BIT_12;
+static adc_atten_t atten = ADC_ATTEN_DB_11;
+
+#define ADC_IN_CH		ADC_CHANNEL_6
+#define ADC_MOTOR_CH	ADC_CHANNEL_7
+#define ADC_SERVO_CH	ADC_CHANNEL_4
+#define ADC_12V_CH		ADC_CHANNEL_5
+#define ADC_CE_CH		ADC_CHANNEL_5
+
 #ifndef ADC_REFRES
-#define ADC_REFRES 1024
+#define ADC_REFRES 4096
 #endif
+
+#define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
+#define NO_OF_SAMPLES   64          //Multisampling
 
 //600
 #define SERVO_CALIBRATION_VALUE calibration_value 
 
-////////////////////////////////////////////////
-/// ACCUM
-static uint8_t iteration_adc_accum_table = 0;
-static uint16_t accum_adc;
-static uint16_t filtered_accum_adc_val;
-static uint16_t accumulator_tab[ACCUMULATOR_SIZE_TAB];
+typedef struct 
+{
+	char * ch_name;
+	adc_channel_t channel;
+	adc_unit_t unit;
+	uint32_t adc;
+	uint32_t filtered_adc;
+	uint32_t filter_table[FILTER_TABLE_SIZE];
+	float meas_voltage;
+}meas_data_t;
 
-////////////////////////////////////////////////
-/// MOTOR
-static uint8_t iteration_adc_motor_table = 0;
-static uint16_t motor_filter_value;
-static uint16_t motor_f_table[FILTER_TABLE_SIZE];
-static uint16_t motor_adc;
+static meas_data_t meas_data[MEAS_CH_LAST] = 
+{
+	[MEAS_CH_IN] 	= {.unit = 1, .channel = ADC_IN_CH, .ch_name = "MEAS_CH_IN"},
+	[MEAS_CH_MOTOR] = {.unit = 1, .channel = ADC_MOTOR_CH, .ch_name = "MEAS_CH_MOTOR"},
+	[MEAS_CH_SERVO] = {.unit = 1, .channel = ADC_SERVO_CH, .ch_name = "MEAS_CH_SERVO"},
+	[MEAS_CH_12V] 	= {.unit = 1, .channel = ADC_12V_CH, .ch_name = "MEAS_CH_12V"},
+	[MEAS_CH_TEMP] 	= {.unit = 2, .channel = ADC_CE_CH, .ch_name = "MEAS_CH_TEMP"},
+};
 
-////////////////////////////////////////////////
-/// SERVO OR TEMPERATURE !!! s_o_t - servo or temperature
-static uint16_t s_o_t_filter_value;
-static uint16_t s_o_t_f_table[FILTER_TABLE_S_SIZE];
-static uint8_t s_o_t_iteration_adc_table = 0;
-static uint16_t s_o_t_adc;
+static uint32_t table_size;
+static uint32_t table_iter;
+
 static TimerHandle_t xTimers;
 
-static float voltage = 0;
-
 #if CONFIG_DEVICE_SIEWNIK
-static uint16_t calibration_value;
+static uint32_t calibration_value;
 static void measure_get_servo_calibration(TimerHandle_t xTimer)
 {
-	calibration_value = measure_get_filtered_value(MEAS_SERVO);
+	calibration_value = measure_get_filtered_value(MEAS_CH_SERVO);
 	debug_msg("MEASURE SERVO Calibration value = %d\n", calibration_value);
 }
 #endif
 
-static uint16_t filtered_value(uint16_t *tab, uint8_t size)
+static uint32_t filtered_value(uint32_t *tab, uint8_t size)
 {
 	uint16_t ret_val = *tab;
 	for (uint8_t i = 1; i<size; i++)
@@ -61,162 +77,114 @@ static uint16_t filtered_value(uint16_t *tab, uint8_t size)
 
 void init_measure(void)
 {
-	for(uint8_t i = 0; i<ACCUMULATOR_SIZE_TAB; i++)
+
+}
+
+static void _read_adc_values(void)
+{
+	for(uint8_t ch = 0; ch < MEAS_CH_LAST; ch++)
 	{
-		accumulator_tab[i] = ACCUMULATOR_LOW_VOLTAGE + (ACCUMULATOR_HIGH_VOLTAGE - ACCUMULATOR_LOW_VOLTAGE)/2;
+		meas_data[ch].adc = 0;
+		int ret_v = 0;
+		//Multisampling
+		for (int i = 0; i < NO_OF_SAMPLES; i++) 
+		{
+			if (meas_data[ch].unit == ADC_UNIT_1)
+			{
+				meas_data[ch].adc += adc1_get_raw((adc1_channel_t)meas_data[ch].channel);
+			}
+			else
+			{
+				int raw = 0;
+                ret_v = adc2_get_raw((adc2_channel_t)meas_data[ch].channel, width, &raw);
+                meas_data[ch].adc += raw;
+			}
+		}
+		if (meas_data[ch].unit == ADC_UNIT_2)
+		{
+			printf("Pomiar 2 %d\n\r", ret_v);
+		}
+		
+		meas_data[ch].adc /= NO_OF_SAMPLES;
+		meas_data[ch].filter_table[table_iter%FILTER_TABLE_SIZE] = meas_data[ch].adc;
+		meas_data[ch].filtered_adc = filtered_value(&meas_data[ch].adc, table_size);
 	}
-    for(uint8_t i = 0; i<FILTER_TABLE_SIZE; i++)
+	table_iter++;
+	if (table_size < FILTER_TABLE_SIZE - 1)
 	{
-		motor_f_table[i] = 0;
-	}
-    for(uint8_t i = 0; i<FILTER_TABLE_S_SIZE; i++)
-	{
-		s_o_t_f_table[i] = 0;
+		table_size++;
 	}
 }
-//static timer_t measure_timer;
-static uint32_t debug_msg_counter;
+
 static void measure_process(void * arg)
 {
 	(void)arg;
 	while(1) {
-		vTaskDelay(250 / portTICK_RATE_MS);
-		accum_adc = atmega_get_data(AT_R_MEAS_ACCUM); 
-		#if CONFIG_DEVICE_SOLARKA
-		#endif
-		#if CONFIG_DEVICE_SIEWNIK
-		accum_adc += motor_filter_value*0.27; //motor_filter_value*0.0075*1025/5/5.7
-		#endif
-		accumulator_tab[iteration_adc_accum_table] = accum_adc;
+		vTaskDelay(100 / portTICK_RATE_MS);
+
+		_read_adc_values();
+
+		// #if CONFIG_DEVICE_SOLARKA
+		// #endif
+		// #if CONFIG_DEVICE_SIEWNIK
+		// accum_adc += motor_filter_value*0.27; //motor_filter_value*0.0075*1025/5/5.7
+		// #endif
 		
-		iteration_adc_accum_table++;
-		motor_adc = atmega_get_data(AT_R_MEAS_MOTOR);
-		if (motor_adc > 31) motor_adc = motor_adc - 31;
-		else motor_adc = 0;
-		motor_f_table[iteration_adc_motor_table] = motor_adc;
-		///////////////////////////////////////////////////////////
-		////////// TODO isset_timer
-		s_o_t_adc = atmega_get_data(AT_R_MEAS_SERVO);
-		
-		#if CONFIG_DEVICE_SIEWNIK
-		if (SERVO_CALIBRATION_VALUE != 0)
-		{
-			if (s_o_t_adc > SERVO_CALIBRATION_VALUE) s_o_t_adc = 0;
-			else s_o_t_adc = SERVO_CALIBRATION_VALUE - s_o_t_adc;
-		}
-		#endif
-			s_o_t_f_table[s_o_t_iteration_adc_table] = s_o_t_adc;
-		iteration_adc_motor_table++;
-		s_o_t_iteration_adc_table++;
-		filtered_accum_adc_val = filtered_value(accumulator_tab, ACCUMULATOR_SIZE_TAB);
-		motor_filter_value = filtered_value(motor_f_table, FILTER_TABLE_SIZE);
-		s_o_t_filter_value = filtered_value(s_o_t_f_table, FILTER_TABLE_S_SIZE);
-		#if CONFIG_DEVICE_SIEWNIK
-		if ((debug_msg_counter%160 == 0) || (debug_msg_counter%10 == 0 && SERVO_CALIBRATION_VALUE == 0)) {
-			//debug_msg("ADC_not filtered: accum %d, servo %d, motor %d, calibration %d\n",accum_adc, s_o_t_adc, motor_adc, SERVO_CALIBRATION_VALUE);
-		}
-		debug_msg_counter++;
-		#endif
-		if (iteration_adc_accum_table == ACCUMULATOR_SIZE_TAB) iteration_adc_accum_table = 0;
-		if (s_o_t_iteration_adc_table == FILTER_TABLE_S_SIZE) s_o_t_iteration_adc_table = 0;
-		if (iteration_adc_motor_table == FILTER_TABLE_SIZE) iteration_adc_motor_table = 0;
-		
-		menuSetValue(MENU_VOLTAGE_ACCUM, (uint32_t)(accum_get_voltage() * 100.0));
-		menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_MOTOR, 0.1) * 100.0));
+		menuSetValue(MENU_VOLTAGE_ACCUM, (uint32_t)(accum_get_voltage() * 10000.0));
+		menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_CH_MOTOR, 0.1) * 1000.0));
 		menuSetValue(MENU_TEMPERATURE, (uint32_t)(measure_get_temperature() * 100.0));
 		/* DEBUG */
-		// debug_msg("accum_adc %d motor_adc %d s_o_t_adc %d\n\r", accum_adc, motor_adc, s_o_t_adc);
-		//menuPrintParameter(MENU_VOLTAGE_ACCUM);
-		//menuPrintParameter(MENU_CURRENT_MOTOR);
-		//menuPrintParameter(MENU_TEMPERATURE);
+		// menuPrintParameter(MENU_VOLTAGE_ACCUM);
+		// menuPrintParameter(MENU_CURRENT_MOTOR);
+		// menuPrintParameter(MENU_TEMPERATURE);
 	}
 }
 
-void measure_start(void) {
-	xTaskCreate(measure_process, "measure_process", 1024, NULL, 10, NULL);
+void measure_start(void) 
+{
+	adc1_config_width(width);
+    adc1_config_channel_atten(ADC_CHANNEL_4, atten);
+	adc1_config_channel_atten(ADC_CHANNEL_5, atten);
+	adc1_config_channel_atten(ADC_CHANNEL_6, atten);
+	adc1_config_channel_atten(ADC_CHANNEL_7, atten);
+	adc2_config_channel_atten((adc2_channel_t)ADC_CHANNEL_5, atten);
+
+	xTaskCreate(measure_process, "measure_process", 4096, NULL, 10, NULL);
 	#if CONFIG_DEVICE_SIEWNIK
 	xTimers = xTimerCreate("at_com_tim", 2000 / portTICK_RATE_MS, pdFALSE, ( void * ) 0, measure_get_servo_calibration);
 	xTimerStart( xTimers, 0 );
 	#endif
 }
 
-uint16_t measure_get_filtered_value(_type_measure type)
+uint32_t measure_get_filtered_value(enum_meas_ch type)
 {
-    switch(type)
-    {
-        case MEAS_ACCUM:
-        return filtered_accum_adc_val;
-        break;
-
-        case MEAS_MOTOR:
-        return motor_filter_value;
-        break;
-
-        case MEAS_SERVO:
-		case MEAS_TEMPERATURE:
-        return s_o_t_filter_value;
-        break;
-    }
-	return 0;
-}
-
-uint16_t measure_get_value(_type_measure type)
-{
-    switch(type)
-    {
-        case MEAS_ACCUM:
-        return accum_adc;
-        break;
-
-        case MEAS_MOTOR:
-        return motor_adc;
-        break;
-
-        case MEAS_SERVO:
-		case MEAS_TEMPERATURE:
-        return s_o_t_adc;
-        break;
-    }
+	if (type < MEAS_CH_LAST)
+	{
+		return meas_data[type].filtered_adc;
+	}
 	return 0;
 }
 
 float measure_get_temperature(void)
 {
-	return s_o_t_filter_value;
+	return measure_get_filtered_value(MEAS_CH_TEMP);
 }
 
-float measure_get_current(_type_measure type, float resistor)
+float measure_get_current(enum_meas_ch type, float resistor)
 {
-	uint32_t adc;
-	switch(type)
-	{
-		case MEAS_ACCUM:
-		adc = filtered_accum_adc_val;
-		break;
-
-		case MEAS_MOTOR:
-		adc = motor_filter_value;
-		break;
-
-		case MEAS_SERVO:
-		case MEAS_TEMPERATURE:
-		adc = s_o_t_filter_value;
-		break;
-		
-		default:
-		adc = 0;
-		break;
-	}
-	float volt = (float) adc / (float) ADC_REFRES * 5.0 /* Volt */;
-	return volt / resistor;
+	uint32_t adc = measure_get_filtered_value(type) < 1900 ? 0 : measure_get_filtered_value(type) - 1900;
+	float volt = (float) adc / 23 /* Volt */;
+	printf("ADC: %d %f", adc, volt);
+	return volt;
 }
 
 float accum_get_voltage(void)
 {
+	float voltage = 0;
 	#if CONFIG_DEVICE_SOLARKA
-    voltage = measure_get_filtered_value(MEAS_ACCUM)*5*5.7/1024 + 0.7;
+    voltage = measure_get_filtered_value(MEAS_CH_12V)*5*5.7/1024 + 0.7;
 	#else
-	voltage = measure_get_filtered_value(MEAS_ACCUM)*5*5.7/1024;
+	voltage = (float)measure_get_filtered_value(MEAS_CH_12V) / 4096.0 / 2.6;
 	#endif
     return voltage;
 }

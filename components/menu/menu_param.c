@@ -13,6 +13,7 @@
 static menuPStruct_t menuParameters[] = 
 {
 	[MENU_MOTOR] = {.max_value = 100, .default_value = 0},
+	[MENU_MOTOR2] = {.max_value = 100, .default_value = 0},
 	[MENU_SERVO] = {.max_value = 100, .default_value = 0},
 	[MENU_VIBRO_PERIOD] = {.max_value = 100, .default_value = 0},
 	[MENU_VIBRO_WORKING_TIME] = {.max_value = 100, .default_value = 0},
@@ -33,93 +34,53 @@ static menuPStruct_t menuParameters[] =
 	[MENU_ERROR_MOTOR] = {.max_value = 1, .default_value = 1},
 	[MENU_ERROR_SERVO_CALIBRATION] = {.max_value = 99, .default_value = 20},
 	[MENU_ERROR_MOTOR_CALIBRATION] = {.max_value = 99, .default_value = 50},
-	[MENU_MOTOR_MIN_CALIBRATION] = {.max_value = 255, .default_value = 150},
-	[MENU_MOTOR_MAX_CALIBRATION] = {.max_value = 255, .default_value = 255},
+	[MENU_MOTOR_MIN_CALIBRATION] = {.max_value = 100, .default_value = 20},
+	[MENU_MOTOR_MAX_CALIBRATION] = {.max_value = 100, .default_value = 100},
 	[MENU_BUZZER] = {.max_value = 1, .default_value = 1},
 	[MENU_CLOSE_SERVO_REGULATION] = {.max_value = 99, .default_value = 50},
 	[MENU_OPEN_SERVO_REGULATION] = {.max_value = 99, .default_value = 50},
 	[MENU_TRY_OPEN_CALIBRATION] = {.max_value = 10, .default_value = 8},
 };
 
+static char *parameters_name[] = 
+{
+	[MENU_MOTOR] 				= "MENU_MOTOR",
+	[MENU_MOTOR2]				= "MENU_MOTOR2",
+	[MENU_SERVO] 				= "MENU_SERVO",
+	[MENU_VIBRO_PERIOD] 		= "MENU_VIBRO_PERIOD",
+	[MENU_VIBRO_WORKING_TIME] 	= "MENU_VIBRO_WORKING_TIME",
+	[MENU_MOTOR_IS_ON] 			= "MENU_MOTOR_IS_ON",
+	[MENU_SERVO_IS_ON] 			= "MENU_SERVO_IS_ON",
+	[MENU_MOTOR_ERROR_IS_ON] 	= "MENU_MOTOR_ERROR_IS_ON",
+	[MENU_SERVO_ERROR_IS_ON] 	= "MENU_SERVO_ERROR_IS_ON",
+	[MENU_CURRENT_SERVO] 		= "MENU_CURRENT_SERVO",
+	[MENU_CURRENT_MOTOR] 		= "MENU_CURRENT_MOTOR",
+	[MENU_VOLTAGE_ACCUM] 		= "MENU_VOLTAGE_ACCUM",
+	[MENU_TEMPERATURE] 			= "MENU_TEMPERATURE",
+	[MENU_ERRORS] 				= "MENU_ERRORS",
+	[MENU_START_SYSTEM] 		= "MENU_START_SYSTEM",
+	[MENU_BOOTUP_SYSTEM] 		= "MENU_BOOTUP_SYSTEM",
+	[MENU_EMERGENCY_DISABLE] 	= "MENU_EMERGENCY_DISABLE",
+
+	/* calibration value */
+	[MENU_ERROR_SERVO] 				= "MENU_ERROR_SERVO",
+	[MENU_ERROR_MOTOR] 				= "MENU_ERROR_MOTOR",
+	[MENU_ERROR_SERVO_CALIBRATION] 	= "MENU_ERROR_SERVO_CALIBRATION",
+	[MENU_ERROR_MOTOR_CALIBRATION] 	= "MENU_ERROR_MOTOR_CALIBRATION",
+	[MENU_MOTOR_MIN_CALIBRATION] 	= "MENU_MOTOR_MIN_CALIBRATION",
+	[MENU_MOTOR_MAX_CALIBRATION] 	= "MENU_MOTOR_MAX_CALIBRATION",
+	[MENU_BUZZER] 					= "MENU_BUZZER",
+	[MENU_CLOSE_SERVO_REGULATION] 	= "MENU_CLOSE_SERVO_REGULATION",
+	[MENU_OPEN_SERVO_REGULATION] 	= "MENU_OPEN_SERVO_REGULATION",
+	[MENU_TRY_OPEN_CALIBRATION] 	= "MENU_TRY_OPEN_CALIBRATION",
+};
 
 RTC_NOINIT_ATTR uint32_t menuSaveParameters_data[MENU_LAST_VALUE];
-
-menu_token_t error_servo_tok = 
-{
-	.name = "Error servo",
-	.arg_type = T_ARG_TYPE_BOOL,
-	.value = &menuSaveParameters_data[MENU_ERROR_SERVO]
-};
-
-menu_token_t error_motor_tok = 
-{
-	.name = "Error motor",
-	.arg_type = T_ARG_TYPE_BOOL,
-	.value = &menuSaveParameters_data[MENU_ERROR_MOTOR]
-};
-
-menu_token_t servo_calibration_tok = 
-{
-	.name = "Servo calibration",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_ERROR_SERVO_CALIBRATION]
-};
-
-menu_token_t motor_calibration_tok = 
-{
-	.name = "Motor error plot",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_ERROR_MOTOR_CALIBRATION]
-};
-
-menu_token_t motor_min_calibration_tok = 
-{
-	.name = "Motor minimal",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_MOTOR_MIN_CALIBRATION]
-};
-
-menu_token_t motor_max_calibration_tok = 
-{
-	.name = "Motor maximum",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_MOTOR_MAX_CALIBRATION]
-};
-
-menu_token_t buzzer_tok = 
-{
-	.name = "Buzzer",
-	.arg_type = T_ARG_TYPE_BOOL,
-	.value = &menuSaveParameters_data[MENU_BUZZER]
-};
-
-menu_token_t close_servo_reg_tok = 
-{
-	.name = "Close servo reg",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_CLOSE_SERVO_REGULATION]
-};
-
-menu_token_t open_servo_reg_tok = 
-{
-	.name = "Open servo reg",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_OPEN_SERVO_REGULATION]
-};
-
-menu_token_t try_open_reg_tok = 
-{
-	.name = "Try open reg",
-	.arg_type = T_ARG_TYPE_VALUE,
-	.value = &menuSaveParameters_data[MENU_TRY_OPEN_CALIBRATION]
-};
-
-menu_token_t *setting_tokens[] = {&error_motor_tok, &servo_calibration_tok, &motor_calibration_tok, &motor_min_calibration_tok, &motor_max_calibration_tok, &buzzer_tok, &close_servo_reg_tok, &open_servo_reg_tok, &try_open_reg_tok, NULL};
 
 void menuPrintParameters(void)
 {
 	for (uint8_t i = 0; i < PARAMETERS_TAB_SIZE; i++) {
-		debug_msg("%d : %d\n", i,  menuSaveParameters_data[i]);
+		debug_msg("%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
 	}
 }
 
@@ -128,7 +89,7 @@ void menuPrintParameter(menuValue_t val)
 	if (val >= MENU_LAST_VALUE)
 		return;
 	
-	debug_msg("Param: %d : %d\n\r", val,  menuSaveParameters_data[val]);
+	debug_msg("Param: %s : %d\n\r", parameters_name[val],  menuSaveParameters_data[val]);
 }
 
 esp_err_t menuSaveParameters(void) {

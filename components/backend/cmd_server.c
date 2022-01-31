@@ -65,6 +65,8 @@ typedef struct
     xSemaphoreHandle waitResponceSem;
     xSemaphoreHandle mutexSemaphore;
     TaskHandle_t thread_task_handle;
+
+    bool is_connected;
 }cmd_server_t;
 
 static cmd_server_t ctx;
@@ -189,6 +191,7 @@ static void _listen_client(void)
 
     ctx.client_socket = ret;
     keepAliveStart(&ctx.keepAlive);
+    ctx.is_connected = true;
     LOG( "We have a new client connection! %d\n", ctx.client_socket);
 
     _change_state(CMD_SERVER_STATE_READY);
@@ -281,7 +284,7 @@ static void _close_soc_state(void)
         close(ctx.socket); 
         ctx.socket = -1;
     }
-    keepAliveStop(&ctx.keepAlive);
+    //keepAliveStop(&ctx.keepAlive);
     _change_state(CMD_SERVER_CHECK_ERRORS);
 }
 
@@ -535,13 +538,22 @@ int cmdServerGetAllValue(uint32_t timeout) {
 }
 
 static int keepAliveSend(uint8_t * data, uint32_t dataLen) {
-    return cmdServerSendDataWaitResp(data, dataLen, NULL, NULL, 500);
+    if (ctx.state == CMD_SERVER_STATE_READY || ctx.state == CMD_SERVER_PARSE_RESPONSE)
+    {
+        if (cmdServerSendDataWaitResp(data, dataLen, NULL, NULL, 500))
+        {
+            return TRUE;
+        }
+        ctx.disconnect_req = true;
+    }
+    return FALSE;
 }
 
 static void cmdServerErrorKACb(void) 
 {
     debug_msg("cmdServerErrorKACb keepAlive");
     ctx.disconnect_req = true;
+    ctx.is_connected = false;
 }
 
 void cmdServerStartTask(void)
@@ -563,4 +575,9 @@ void cmdServerStart(void)
 void cmdServerStop(void)
 {
     ctx.start = false;
+}
+
+bool cmdServerIsWorking(void)
+{
+    return ctx.is_connected;
 }

@@ -35,6 +35,7 @@ typedef struct
 	char ap_name[33];
 	uint32_t timeout_con;
 	bool system_connected;
+	char buff[128];
 } menu_start_context_t;
 
 static menu_start_context_t ctx;
@@ -115,6 +116,16 @@ static void bootup_connect(void)
 	change_state(STATE_WAIT_CONNECT);
 }
 
+static void _show_wait_connection(void)
+{
+	sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ", 
+														xTaskGetTickCount() % 400 > 200 ? "." : " ",
+														xTaskGetTickCount() % 400 > 300 ? "." : " ");
+	ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+	ssd1306_WriteString(ctx.buff, Font_7x10, White);
+	ssd1306_UpdateScreen();
+}
+
 static void bootup_wait_connect(void)
 {
 	/* Wait to connect wifi */
@@ -128,7 +139,10 @@ static void bootup_wait_connect(void)
 			change_state(STATE_EXIT);
 			return;
 		}
+
+		_show_wait_connection();
 		osDelay(50);
+
 	} while (wifiDrvTryingConnect());
 
 	ctx.timeout_con = MS2ST(10000) + xTaskGetTickCount();
@@ -141,6 +155,8 @@ static void bootup_wait_connect(void)
 			change_state(STATE_EXIT);
 			return;
 		}
+
+		_show_wait_connection();
 		osDelay(50);
 	} while (!cmdClientIsConnected());
 
@@ -153,7 +169,7 @@ static void bootup_get_server_data(void)
 	uint32_t time_to_connect = 0;
 	uint32_t start_status;
 
-	while(cmdClientGetValue(MENU_START_SYSTEM, &start_status, 2000) == 0) 
+	while(cmdClientGetValue(MENU_START_SYSTEM, &start_status, 150) == 0) 
 	{
 		if (time_to_connect < 5) 
 		{
@@ -169,7 +185,7 @@ static void bootup_get_server_data(void)
 	
 	if (start_status > 0) 
 	{
-		if (cmdClientGetAllValue(2500) == 0) {
+		if (cmdClientGetAllValue(150) == 0) {
 			debug_msg("Timeout get ALL VALUES\n\r");
 			change_state(STATE_EXIT);
 		}

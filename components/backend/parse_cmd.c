@@ -249,7 +249,7 @@ void parse_server(uint8_t * buff, uint32_t len)
 		switch(buff[2]) {
 			case PC_CMD_RESET_ERROR:
 				#if CONFIG_DEVICE_SIEWNIK
-				errorReset();
+				//errorReset();
 				debug_msg("error reset\n\r");
 				#endif
 			break;

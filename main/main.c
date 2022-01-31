@@ -36,6 +36,7 @@ static gpio_config_t io_conf;
 static uint32_t blink_pin = GPIO_NUM_25;
 
 portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
+extern void ultrasonar_start(void);
 
 static int i2cInit(void)
 {
@@ -52,35 +53,6 @@ static int i2cInit(void)
     return ESP_OK;
 }
 
-static void uart_init(uint32_t baud_rate) {
-    uart_config_t uart_config = {
-        .baud_rate = baud_rate,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    };
-    // We won't use a buffer for sending data.
-    if (uart_driver_install(UART_NUM_0, 256, 256, 0, NULL, 0) != ESP_OK) {
-        printf("UART: uart_driver_install error\n\r");
-        return;
-    }
-    if (uart_param_config(UART_NUM_0, &uart_config) != ESP_OK) {
-        printf("UART: uart_param_config error\n\r");
-        return;
-    }
-}
-
-void uartPrintfTimeout(const char *format, ...)
-{
-	static char buff[CONFIG_CONSOLE_VSNPRINTF_BUFF_SIZE];
-	va_list ap;
-	va_start(ap, format);
-	int len = vsnprintf(buff, CONFIG_CONSOLE_VSNPRINTF_BUFF_SIZE, format, ap);
-    va_end (ap);
-    uart_write_bytes(UART_NUM_0, buff, len);
-}
-
 RTC_NOINIT_ATTR char * last_task_name;
 RTC_NOINIT_ATTR char * last_out_task_name;
 RTC_NOINIT_ATTR char * last_function_name;
@@ -92,7 +64,7 @@ void debug_function_name(const char * name) {
     last_function_out_out_out_name = last_function_out_out_name;
     last_function_out_out_name = last_function_out_name;
     last_function_out_name = last_function_name;
-    last_function_name = name;
+    last_function_name = (char *)name;
 }
 
 static char * restart_task_name;
@@ -121,10 +93,6 @@ static void checkDevType(void) {
     else {
         config.dev_type = T_DEV_TYPE_SERVER;
     }
-}
-
-static void esp_task_wdt_isr(void * arg) {
-    ets_printf("Wdt reset, last task: %s %p\n\r", last_task_name, last_task_name);
 }
 
 int __esp_os_init(void) {
@@ -171,9 +139,8 @@ void app_main()
         #if CONFIG_DEVICE_SIEWNIK
         measure_start();
         #endif
-        at_communication_init();
-        motor_init();
         srvrControllStart();
+        ultrasonar_start();
         //WYLACZONE
         //errorSiewnikStart();
         //LED on
@@ -184,7 +151,6 @@ void app_main()
         io_conf.pull_up_en = 0;
         gpio_config(&io_conf);
     }
-    //_xt_isr_attach(ETS_WDT_INUM, esp_task_wdt_isr, NULL);
     ets_printf("Init last out task: %s\n\r", restart_task_out_name);
     ets_printf("Init last task: %s\n\r", restart_task_name);
     ets_printf("Last func name out out: %s \n\r", restart_function_out_out_out_name);
@@ -195,20 +161,16 @@ void app_main()
     while(1)
     {
         vTaskDelay(MS2ST(975));
-        //if (config.dev_type == T_DEV_TYPE_SERVER)
-        {
-           gpio_set_level(blink_pin, 0);
-        }
+        // if (config.dev_type == T_DEV_TYPE_SERVER)
+        // {
+        //    gpio_set_level(blink_pin, 0);
+        // }
 
-        vTaskDelay(MS2ST(25));
+        // vTaskDelay(MS2ST(25));
 
-        //if (config.dev_type == T_DEV_TYPE_SERVER)
-        {
-           gpio_set_level(blink_pin, 1);
-        }
-        //if (config.dev_type != T_DEV_TYPE_SERVER)
-        {
-            // debug_msg("CLIENT INIT\n\r");
-        }
+        // if (config.dev_type == T_DEV_TYPE_SERVER)
+        // {
+        //    gpio_set_level(blink_pin, 1);
+        // }
     }
 }

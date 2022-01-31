@@ -326,10 +326,10 @@ static void wifi_wait_connect(void)
   }
   else
   {
-    if (ctx.connect_attemps > 20)
+    if (ctx.connect_attemps > 30)
     {
       LOG("Timeout connect\n\r");
-      
+      ctx.connect_req = false;
       ctx.connect_attemps = 0;
       ctx.state = WIFI_APP_IDLE;
       ctx.is_started = false;

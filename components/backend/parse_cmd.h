@@ -30,6 +30,7 @@ typedef enum
 typedef enum
 {
 	MENU_MOTOR,
+	MENU_MOTOR2,
 	MENU_SERVO,
 	MENU_VIBRO_PERIOD,
 	MENU_VIBRO_WORKING_TIME,

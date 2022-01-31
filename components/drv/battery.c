@@ -50,7 +50,7 @@ static void adc_task()
         adc_reading /= NO_OF_SAMPLES;
         //Convert adc_reading to voltage in mV
         uint32_t voltage_meas = esp_adc_cal_raw_to_voltage(adc_reading, &adc_chars);
-        printf("Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
+        //printf("Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
 
         voltage = MAX_VOL * voltage_meas / MAX_ADC_FOR_MAX_VOL;
 
@@ -68,7 +68,7 @@ static void adc_task()
         }
         voltage_average = voltage_sum / voltage_table_size;
 
-		printf("Average: %d measured %d\n\r", voltage_average, voltage );
+		//printf("Average: %d measured %d\n\r", voltage_average, voltage );
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }

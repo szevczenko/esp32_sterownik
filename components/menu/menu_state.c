@@ -46,7 +46,7 @@ static void get_conection(uint32_t *value);
 static parameters_t parameters_list[] = 
 {
 	[PARAM_CURRENT] 	= { .name = "Current", .unit = "mA", .unit_type = UNIT_DOUBLE, .get_value = get_current},
-	[PARAM_VOLTAGE] 	= { .name = "Voltage", .unit = "V", .unit_type = UNIT_DOUBLE, .get_value = get_voltage},
+	[PARAM_VOLTAGE] 	= { .name = "Voltage", .unit = "mV", .unit_type = UNIT_DOUBLE, .get_value = get_voltage},
 	[PARAM_SIGNAL] 		= { .name = "Signal", .unit = "", .unit_type = UNIT_INT, .get_value = get_signal},
 	[PARAM_TEMEPRATURE] = { .name = "Temp", .unit = "\"C", .unit_type = UNIT_INT, .get_value = get_temp},
 	[PARAM_CONECTION] 	= { .name = "Connect", .unit = "", .unit_type = UNIT_BOOL, .get_value = get_conection}
@@ -146,8 +146,15 @@ static bool menu_button_init_cb(void * arg)
 	}
 	menu->button.down.fall_callback = menu_button_down_callback;
 	menu->button.up.fall_callback = menu_button_up_callback;
-	menu->button.enter.fall_callback = menu_button_enter_callback;
+
+	menu->button.enter.fall_callback = menu_button_exit_callback;
 	menu->button.exit.fall_callback = menu_button_exit_callback;
+	menu->button.up_minus.fall_callback = menu_button_exit_callback;
+	menu->button.up_plus.fall_callback = menu_button_exit_callback;
+	menu->button.down_minus.fall_callback = menu_button_exit_callback;
+	menu->button.down_plus.fall_callback = menu_button_exit_callback;
+	menu->button.motor_on.fall_callback = menu_button_exit_callback;
+
 	return true;
 }
 

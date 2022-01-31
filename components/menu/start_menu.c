@@ -20,6 +20,7 @@
 typedef enum
 {
 	STATE_INIT,
+	STATE_CHECK_WIFI,
 	STATE_IDLE,
 	STATE_START,
 	STATE_READY,
@@ -30,6 +31,8 @@ typedef enum
 	STATE_SERVO_VIBRO_CHANGE,
 	STATE_STOP,
 	STATE_ERROR_CHECK,
+	STATE_RECONNECT,
+	STATE_WAIT_CONNECT,
 	STATE_TOP
 } state_start_menu_t;
 
@@ -58,10 +61,13 @@ typedef struct
 	volatile state_start_menu_t state;
 	state_start_menu_t last_state;
 	bool error_flag;
+	bool exit_wait_flag;
 	int error_code;
 	char * error_msg;
 	char * info_msg;
 	char buff[128];
+	char ap_name[64];
+	uint32_t timeout_con;
 	
 	error_type_t error_dev;
 	edit_value_t edit_value;
@@ -100,6 +106,7 @@ static char *state_name[] =
 {
 	[STATE_INIT] = "STATE_INIT",
 	[STATE_IDLE] = "STATE_IDLE",
+	[STATE_CHECK_WIFI] = "STATE_CHECK_WIFI",
 	[STATE_START] = "STATE_START",
 	[STATE_READY] = "STATE_READY",
 	[STATE_POWER_SAVE] = "STATE_POWER_SAVE",
@@ -109,7 +116,11 @@ static char *state_name[] =
 	[STATE_SERVO_VIBRO_CHANGE] = "STATE_SERVO_VIBRO_CHANGE",
 	[STATE_STOP] = "STATE_STOP",
 	[STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
+	[STATE_RECONNECT] = "STATE_RECONNECT",
+	[STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT"
 };
+
+static bool menu_is_connected(void);
 
 static void change_state(state_start_menu_t new_state)
 {
@@ -126,15 +137,6 @@ static void change_state(state_start_menu_t new_state)
 	{
 		debug_msg("ERROR: change state %d\n\r", new_state);
 	}
-}
-
-static void menu_show_info(char * info)
-{
-	debug_function_name(__func__);
-	ctx.info_msg = info;
-	ctx.last_state = ctx.state;
-	menuPrintfInfo(info);
-	change_state(STATE_INFO);
 }
 
 static void menu_error(error_type_t error)
@@ -222,6 +224,7 @@ static void menu_button_up_callback(void * arg)
 	{
 		return;
 	}
+	enterMenuParameters();
 	ctx.edit_value = EDIT_WORKING_TIME;
 }
 
@@ -259,7 +262,10 @@ static void menu_button_exit_callback(void * arg)
 		NULL_ERROR_MSG();
 		return;
 	}
+	cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 0);
 	menuExit(menu);
+	ctx.exit_wait_flag = true;
+	
 }
 
 static void menu_button_servo_callback(void * arg)
@@ -735,7 +741,14 @@ static bool menu_enter_cb(void * arg)
 	}
 	_exit_power_save();
 	_reset_power_save_timer();
+
+	if (!menu_is_connected())
+	{
+		change_state(STATE_INIT);
+	}
+	
 	cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
+
 	ctx.error_flag = 0;
 	return true;
 }
@@ -749,10 +762,16 @@ static bool menu_exit_cb(void * arg)
 		NULL_ERROR_MSG();
 		return false;
 	}
-	cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 0);
 	MOTOR_LED_SET(0);
 	SERVO_VIBRO_LED_SET(0);
 	return true;
+}
+
+static void menu_set_error_msg(char *msg)
+{
+	ctx.error_msg = msg;
+	ctx.error_flag = 1;
+	change_state(STATE_ERROR_CHECK);
 }
 
 static bool menu_is_connected(void)
@@ -760,17 +779,13 @@ static bool menu_is_connected(void)
 	debug_function_name(__func__);
 	if (!wifiDrvIsConnected())
 	{
-		ctx.error_flag = true;
-		ctx.error_msg = "WiFi not connected";
-		change_state(STATE_ERROR_CHECK);
+		printf("START_MENU: WiFi not connected\n\r");
 		return false;
 	}
 
 	if (!cmdClientIsConnected())
 	{
-		ctx.error_flag = true;
-		ctx.error_msg = "Client not connected";
-		change_state(STATE_ERROR_CHECK);
+		printf("START_MENU: Client not connected\n\r");
 		return false;
 	}
 
@@ -780,11 +795,47 @@ static bool menu_is_connected(void)
 static void menu_start_init(void)
 {
 	ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-	ssd1306_WriteString("Wait to read...", Font_7x10, White);
+	ssd1306_WriteString("Check connection", Font_7x10, White);
 	ssd1306_UpdateScreen();
-	if (cmdClientGetAllValue(2500) != TRUE)
+	change_state(STATE_CHECK_WIFI);
+}
+
+static void menu_check_connection(void)
+{
+	if (!menu_is_connected())
+	{
+		change_state(STATE_RECONNECT);
+		return;
+	}
+
+	bool ret = false;
+
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		printf("START_MENU: cmdClientGetAllValue try %d\n\r", i);
+		osDelay(100);
+		ret = cmdClientGetAllValue(100);
+		if (ret)
+		{
+			ctx.motor_value = menuGetValue(MENU_MOTOR);
+			ctx.servo_value = menuGetValue(MENU_SERVO);
+			ctx.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+			ctx.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+			break;
+		}
+		else
+		{
+			sprintf(ctx.buff, "Check connection %s%s%s", ".", i > 0 ? "." : " ", i > 1 ? "." : " ");
+			ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+			ssd1306_WriteString(ctx.buff, Font_7x10, White);
+			ssd1306_UpdateScreen();
+		}
+	}
+
+	if (ret != TRUE)
 	{
 		debug_msg("%s: error get parameters\n\r", __func__);
+		change_state(STATE_IDLE);
 	}
 	change_state(STATE_IDLE);
 }
@@ -793,6 +844,7 @@ static void menu_start_idle(void)
 {
 	if (menu_is_connected())
 	{
+		cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
 		change_state(STATE_START);
 	}
 	else
@@ -816,7 +868,7 @@ static void menu_start_ready(void)
 	debug_function_name(__func__);
 	if (!menu_is_connected())
 	{
-		ctx.error_msg = "Lost connection with server";
+		menu_set_error_msg("Lost connection with server");
 		return;
 	}
 
@@ -834,7 +886,7 @@ static void menu_start_ready(void)
 	char str[8];
 	
 	motor_bar.fill = ctx.motor_value;
-	sprintf(str, "%d", motor_bar.fill);
+	sprintf(str, "%d%%", motor_bar.fill);
 	ssd1306_Fill(Black);
 	ssdFigureDrawLoadBar(&motor_bar);
 	ssd1306_SetCursor(80, 25);
@@ -915,7 +967,7 @@ static void menu_start_power_save(void)
 {
 	if (!menu_is_connected())
 	{
-		ctx.error_msg = "Lost connection with server";
+		menu_set_error_msg("Lost connection with server");
 		return;
 	}
 
@@ -938,14 +990,14 @@ static void menu_start_motor_change(void)
 {
 	if (!menu_is_connected())
 	{
-		ctx.error_msg = "Lost connection with server";
+		menu_set_error_msg("Lost connection with server");
 		return;
 	}
 
 	ssd1306_SetCursor(2, 0);
 	ssd1306_WriteString("MOTOR", Font_11x18, White);
 	ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
-	sprintf(ctx.buff, "%d", ctx.motor_value);
+	sprintf(ctx.buff, "%d%%", ctx.motor_value);
 	ssd1306_WriteString(ctx.buff, Font_16x26, White);
 
 	if (ctx.change_menu_timeout < xTaskGetTickCount())
@@ -959,7 +1011,7 @@ static void menu_start_vibro_change(void)
 	debug_function_name(__func__);
 	if (!menu_is_connected())
 	{
-		ctx.error_msg = "Lost connection with server";
+		menu_set_error_msg("Lost connection with server");
 		return;
 	}
 
@@ -985,11 +1037,65 @@ static void menu_start_error_check(void)
 	if (ctx.error_flag)
 	{
 		menuPrintfInfo(ctx.error_msg);
+		ctx.error_flag = false;
 	}
 	else
 	{
 		change_state(STATE_INIT);
+		osDelay(700);
 	}
+}
+
+static void menu_reconnect(void)
+{
+	wifiDrvGetAPName(ctx.ap_name);
+	if (strlen(ctx.ap_name) > 5)
+	{
+		wifiDrvConnect();
+		change_state(STATE_WAIT_CONNECT);
+	}
+}
+
+static void _show_wait_connection(void)
+{
+	sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ", 
+														xTaskGetTickCount() % 400 > 200 ? "." : " ",
+														xTaskGetTickCount() % 400 > 300 ? "." : " ");
+	ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+	ssd1306_WriteString(ctx.buff, Font_7x10, White);
+	ssd1306_UpdateScreen();
+}
+
+static void menu_wait_connect(void)
+{
+	/* Wait to connect wifi */
+	ctx.timeout_con = MS2ST(10000) + xTaskGetTickCount();
+	ctx.exit_wait_flag = false;
+	do
+	{
+		if (ctx.timeout_con < xTaskGetTickCount() || ctx.exit_wait_flag)
+		{
+			menu_set_error_msg("Timeout connect");
+			return;
+		}
+		_show_wait_connection();
+		osDelay(50);
+	} while (wifiDrvTryingConnect());
+
+	ctx.timeout_con = MS2ST(10000) + xTaskGetTickCount();
+	do
+	{
+		if (ctx.timeout_con < xTaskGetTickCount() || ctx.exit_wait_flag)
+		{
+			menu_set_error_msg("Timeout server");
+			return;
+		}
+		_show_wait_connection();
+		osDelay(50);
+	} while (!cmdClientIsConnected());
+
+	menuPrintfInfo("Connected:\n%s\nTry read data   ", ctx.ap_name);
+	change_state(STATE_CHECK_WIFI);
 }
 
 static bool menu_process(void * arg)
@@ -1005,6 +1111,10 @@ static bool menu_process(void * arg)
 	{
 		case STATE_INIT:
 			menu_start_init();
+			break;
+
+		case STATE_CHECK_WIFI:
+			menu_check_connection(); 
 			break;
 
 		case STATE_IDLE:
@@ -1045,6 +1155,14 @@ static bool menu_process(void * arg)
 		
 		case STATE_ERROR_CHECK:
 			menu_start_error_check();
+			break;
+
+		case STATE_RECONNECT:
+			menu_reconnect();
+			break;
+
+		case STATE_WAIT_CONNECT:
+			menu_wait_connect();
 			break;
 
 		default:

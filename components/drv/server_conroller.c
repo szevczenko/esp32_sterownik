@@ -3,12 +3,14 @@
 #include "parse_cmd.h"
 #include "motor.h"
 #include "servo.h"
+#include "cmd_server.h"
 
 #include "driver/mcpwm.h"
 #include "soc/mcpwm_periph.h"
 
 #define MOTOR_PWM_PIN 27
 #define SERVO_PWM_PIN 26
+#define MOTOR_PWM_PIN2 25
 
 typedef enum
 {
@@ -24,13 +26,19 @@ typedef enum
 typedef struct 
 {
 	state_t state;
+	mDriver motorD1;
+	mDriver motorD2;
 	uint8_t servo_value;
+	uint8_t servo_new_value;
+	uint8_t servo_set_value;
+	uint32_t servo_set_timer;
 	uint8_t motor_value;
 
 	uint8_t motor_on;
 	uint8_t servo_on;
 	uint16_t servo_pwm;
-	uint8_t motor_pwm;
+	float motor_pwm;
+	float motor_pwm2;
 	bool system_on;
 	bool emergency_disable;
 
@@ -66,13 +74,28 @@ static void change_state(state_t state)
 
 static void count_working_data(void)
 {
-	ctx.motor_pwm = dcmotor_process(ctx.motor_value);
-	ctx.servo_pwm = servo_process(ctx.servo_on ? ctx.servo_value : 0);
+	ctx.motor_pwm = dcmotor_process(&ctx.motorD1, ctx.motor_value);
+	ctx.motor_pwm2 = dcmotor_process(&ctx.motorD2, ctx.motor_value);
+
+	if (ctx.servo_new_value != ctx.servo_value)
+	{
+		ctx.servo_new_value = ctx.servo_value;
+		ctx.servo_set_timer = xTaskGetTickCount() + MS2ST(750);
+	}
+
+	if (ctx.servo_set_timer < xTaskGetTickCount())
+	{
+		ctx.servo_set_value = ctx.servo_new_value;
+	}
+
+	ctx.servo_pwm = servo_process(ctx.servo_on ? ctx.servo_set_value : 0);
 	if (ctx.motor_on) {
-		motor_start();
+		motor_start(&ctx.motorD1);
+		motor_start(&ctx.motorD2);
 	}
 	else {
-		motor_stop();
+		motor_stop(&ctx.motorD1);
+		motor_stop(&ctx.motorD2);
 	}
 }
 
@@ -89,48 +112,51 @@ static void set_working_data(void)
 		gpio_set_level(15, 0);
 	}
 
-	printf("motor %d %d\n\r", ctx.motor_on, ctx.motor_pwm);
+	//printf("motor %d %f %d\n\r", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
 	if (ctx.motor_on)
 	{
-		float duty = (float)ctx.motor_pwm * 100 / 255.0;
-		printf("duty motor %f\n\r", duty);
+		float duty = (float)ctx.motor_pwm;
+		//printf("duty motor %f\n\r", duty);
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
 		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
+
+		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_GEN_A, duty);
+		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
 	}
 	else
 	{
 		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
+
+		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A);
 	}
 
-	printf("servo %d %d\n\r", ctx.motor_on, ctx.motor_pwm);
-	if (ctx.servo_on)
-	{
-		float duty = (float)ctx.servo_pwm * 100 / 19999.0;
-		printf("duty servo %f\n\r", duty);
-		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
-		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
-	}
-	else
-	{
-		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A);
-	}
-
-	//#endif
+	float duty = (float)ctx.servo_pwm * 100 / 19999.0;
+	//printf("duty servo %f %d %d\n\r", duty, ctx.servo_value, ctx.servo_pwm);
+	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
+	mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 }
 
 static void state_init(void)
 {
 	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, MOTOR_PWM_PIN);
 	mcpwm_config_t pwm_config;
-    pwm_config.frequency = 1000;    //frequency = 1000Hz
+    pwm_config.frequency = 18000;    //frequency = 1000Hz
     pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 60.0%
     pwm_config.cmpr_b = 0;       	//duty cycle of PWMxb = 50.0%
     pwm_config.counter_mode = MCPWM_UP_COUNTER;
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);   //Configure PWM0A & PWM0B with above settings
 
+	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, MOTOR_PWM_PIN2);
+    pwm_config.frequency = 18000;    //frequency = 1000Hz
+    pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 60.0%
+    pwm_config.cmpr_b = 0;       	//duty cycle of PWMxb = 50.0%
+    pwm_config.counter_mode = MCPWM_UP_COUNTER;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_2, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+
 	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, SERVO_PWM_PIN);
-	pwm_config.frequency = 1;
+	pwm_config.frequency = 50;
     pwm_config.cmpr_a = 0;
     pwm_config.cmpr_b = 0;
     pwm_config.counter_mode = MCPWM_UP_COUNTER;
@@ -164,7 +190,7 @@ static void state_idle(void)
 		return;
 	}
 
-	if (ctx.working_state_req)
+	if (ctx.working_state_req && cmdServerIsWorking())
 	{
 		change_state(STATE_WORKING);
 		return;
@@ -200,7 +226,7 @@ static void state_working(void)
 		return;
 	}
 
-	if (!ctx.working_state_req)
+	if (!ctx.working_state_req || !cmdServerIsWorking())
 	{
 		change_state(STATE_IDLE);
 		return;
@@ -301,5 +327,9 @@ bool srvrControllGetEmergencyDisable(void)
 
 void srvrControllStart(void)
 {
+	motor_init(&ctx.motorD1);
+	motor_init(&ctx.motorD2);
+	servo_init(0);
+
 	xTaskCreate(_task, "srvrController", 4096, NULL, 10, NULL);
 }

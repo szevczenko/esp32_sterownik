@@ -116,24 +116,9 @@ int configRead(config_t *config);
 void telnetPrintfToAll(const char *format, ...);
 void telnetSendToAll(const char * data, size_t size);
 
-#if 0
-#include "driver/uart.h"
-extern void uartPrintfTimeout(const char *format, ...);
-#define debug_msg(...) { 							\
-		if (config.dev_type == T_DEV_TYPE_SERVER) 	\
-		{											\
-			telnetPrintfToAll("\n\rESP: ");			\
-			telnetPrintfToAll(__VA_ARGS__);			\
-		} 											\
-		else { 										\
-			printf(__VA_ARGS__);			\
-		} 											\
-	}
-#define debug_data(data, size) telnetSendToAll((char *)data, size)
-#else
+
 #define debug_msg(...) printf(__VA_ARGS__);
 #define debug_data(data, size) 
-#endif
 
 #define debug_printf(format, ...) print(format, ##__VA_ARGS__)
 #define CONFIG_BUFF_SIZE 512

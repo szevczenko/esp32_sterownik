@@ -163,7 +163,7 @@ static void _connect_ready_state(void)
 	FD_ZERO(&set);
 	FD_SET(ctx.socket, &set);
 	struct timeval timeout_time;
-	uint32_t timeout_ms = 1100;
+	uint32_t timeout_ms = 500;
 	timeout_time.tv_sec=timeout_ms/1000;
 	timeout_time.tv_usec =(timeout_ms%1000)*1000;
 

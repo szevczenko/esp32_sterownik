@@ -56,3 +56,8 @@ void enterMenuStart(void)
 {
 	menuEnter(&start_menu);
 }
+
+void enterMenuParameters(void)
+{
+	menuEnter(&parameters_menu);
+}

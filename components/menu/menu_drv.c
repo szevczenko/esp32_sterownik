@@ -431,9 +431,7 @@ static void menu_state_emergency_disable(void)
 {
 	ssd1306_Fill(Black);
 	ssd1306_SetCursor(2, MENU_HEIGHT);
-	ssd1306_WriteString("System", Font_11x18, White);
-	ssd1306_SetCursor(2, MENU_HEIGHT*2 + 1);
-	ssd1306_WriteString("disabled", Font_11x18, White);
+	ssd1306_WriteString("Stop", Font_16x26, White);
 	ssd1306_UpdateScreen();
 	osDelay(100);
 }

@@ -61,5 +61,6 @@ int cmdServerSendDataWaitResp(uint8_t * buff, uint32_t len, uint8_t * buff_rx, u
 int cmdServerSetValueWithoutResp(menuValue_t val, uint32_t value);
 int cmdServerSetValueWithoutRespI(menuValue_t val, uint32_t value);
 int cmdServerGetValue(menuValue_t val, uint32_t * value, uint32_t timeout);
+bool cmdServerIsWorking(void);
 
 #endif
