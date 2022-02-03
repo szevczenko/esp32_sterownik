@@ -545,6 +545,7 @@ static int keepAliveSend(uint8_t * data, uint32_t dataLen) {
             return TRUE;
         }
         ctx.disconnect_req = true;
+        LOG("KeepAliveDisco req");
     }
     return FALSE;
 }

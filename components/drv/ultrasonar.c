@@ -64,6 +64,11 @@ static void sonar_task(void *arg)
     }
 }
 
+uint32_t ultrasonar_get_distance(void)
+{
+	return distance;
+}
+
 void ultrasonar_start(void)
 {
 	uart_init();

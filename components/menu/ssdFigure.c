@@ -250,7 +250,7 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
 		break;
 
 		case BATTERY_CHARGING:
-			_drawBattery(x, y, animation_cnt % (x_charge + 1));
+			_drawBattery(x, y, x_charge + animation_cnt % (8 - x_charge));
 		break;
 
 		case BATTERY_LOW_VOLTAGE:

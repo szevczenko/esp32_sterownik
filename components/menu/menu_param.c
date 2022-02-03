@@ -25,10 +25,12 @@ static menuPStruct_t menuParameters[] =
 	[MENU_CURRENT_MOTOR] = {.max_value = 0xFFFF, .default_value = 500},
 	[MENU_VOLTAGE_ACCUM] = {.max_value = 0xFFFF, .default_value = 12000},
 	[MENU_TEMPERATURE] = {.max_value = 0xFFFF, .default_value = 20000},
+	[MENU_SILOS_LEVEL] = {.max_value = 100, .default_value = 100},
 	[MENU_ERRORS] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_START_SYSTEM] = {.max_value = 1, .default_value = 0},
 	[MENU_BOOTUP_SYSTEM] = {.max_value = 1, .default_value = 0},
 	[MENU_EMERGENCY_DISABLE] = {.max_value = 1, .default_value = 0},
+	[MENU_LOW_LEVEL_SILOS] = {.max_value = 1, .default_value = 0},
 
 	[MENU_ERROR_SERVO] = {.max_value = 1, .default_value = 1},
 	[MENU_ERROR_MOTOR] = {.max_value = 1, .default_value = 1},
@@ -57,10 +59,12 @@ static char *parameters_name[] =
 	[MENU_CURRENT_MOTOR] 		= "MENU_CURRENT_MOTOR",
 	[MENU_VOLTAGE_ACCUM] 		= "MENU_VOLTAGE_ACCUM",
 	[MENU_TEMPERATURE] 			= "MENU_TEMPERATURE",
+	[MENU_SILOS_LEVEL]			= "MENU_SILOS_LEVEL",
 	[MENU_ERRORS] 				= "MENU_ERRORS",
 	[MENU_START_SYSTEM] 		= "MENU_START_SYSTEM",
 	[MENU_BOOTUP_SYSTEM] 		= "MENU_BOOTUP_SYSTEM",
 	[MENU_EMERGENCY_DISABLE] 	= "MENU_EMERGENCY_DISABLE",
+	[MENU_LOW_LEVEL_SILOS]		= "MENU_LOW_LEVEL_SILOS",
 
 	/* calibration value */
 	[MENU_ERROR_SERVO] 				= "MENU_ERROR_SERVO",

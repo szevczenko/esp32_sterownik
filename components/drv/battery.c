@@ -8,8 +8,9 @@
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
 
-#define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
-#define NO_OF_SAMPLES   64          //Multisampling
+#define DEFAULT_VREF        1100        //Use adc2_vref_to_gpio() to obtain a better estimate
+#define NO_OF_SAMPLES       64          //Multisampling
+#define CHARGER_STATUS_PIN  2
 
 static esp_adc_cal_characteristics_t adc_chars;
 static const adc_channel_t channel = ADC_CHANNEL_6;     //GPIO34 if ADC1, GPIO14 if ADC2
@@ -77,6 +78,11 @@ float battery_get_voltage(void) {
     return (float)voltage_average / 1000;
 }
 
+bool battery_get_charging_status(void)
+{
+    return gpio_get_level(CHARGER_STATUS_PIN) == 0;
+}
+
 void battery_init(void)
 {
     // 1. init adc
@@ -91,6 +97,14 @@ void battery_init(void)
     }
 
     esp_adc_cal_characterize(unit, atten, width, DEFAULT_VREF, &adc_chars);
+
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.pull_down_en = 0;
+	io_conf.pin_bit_mask = (1 << CHARGER_STATUS_PIN);
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
 
     // 2. Create a adc task to read adc value
     xTaskCreate(adc_task, "adc_task", 4096, NULL, 5, NULL);

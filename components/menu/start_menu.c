@@ -10,6 +10,7 @@
 #include "cmd_client.h"
 #include "fast_add.h"
 #include "battery.h"
+#include "buzzer.h"
 
 #define DEVICE_LIST_SIZE 16
 #define CHANGE_MENU_TIMEOUT_MS 1500
@@ -29,6 +30,7 @@ typedef enum
 	STATE_INFO,
 	STATE_MOTOR_CHANGE,
 	STATE_SERVO_VIBRO_CHANGE,
+	STATE_LOW_SILOS,
 	STATE_STOP,
 	STATE_ERROR_CHECK,
 	STATE_RECONNECT,
@@ -68,6 +70,7 @@ typedef struct
 	char buff[128];
 	char ap_name[64];
 	uint32_t timeout_con;
+	uint32_t low_silos_ckeck_timeout;
 	
 	error_type_t error_dev;
 	edit_value_t edit_value;
@@ -82,6 +85,7 @@ typedef struct
 	uint8_t animation_cnt;
 	TickType_t change_menu_timeout;
 	TickType_t go_to_power_save_timeout;
+	TickType_t low_silos_timeout;
 	TimerHandle_t servo_timer;
 
 } menu_start_context_t;
@@ -114,6 +118,7 @@ static char *state_name[] =
 	[STATE_INFO] = "STATE_INFO",
 	[STATE_MOTOR_CHANGE] = "STATE_MOTOR_CHANGE",
 	[STATE_SERVO_VIBRO_CHANGE] = "STATE_SERVO_VIBRO_CHANGE",
+	[STATE_LOW_SILOS] = "STATE_LOW_SILOS",
 	[STATE_STOP] = "STATE_STOP",
 	[STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
 	[STATE_RECONNECT] = "STATE_RECONNECT",
@@ -148,7 +153,7 @@ static void menu_error(error_type_t error)
 static void set_change_menu(edit_value_t val)
 {
 	debug_function_name(__func__);
-	if (ctx.state == STATE_READY || ctx.state == STATE_SERVO_VIBRO_CHANGE || ctx.state == STATE_MOTOR_CHANGE)
+	if (ctx.state == STATE_READY || ctx.state == STATE_SERVO_VIBRO_CHANGE || ctx.state == STATE_MOTOR_CHANGE || ctx.state == STATE_LOW_SILOS)
 	{
 		switch(val)
 		{
@@ -171,7 +176,7 @@ static void set_change_menu(edit_value_t val)
 
 static bool _is_working_state(void)
 {
-	if((ctx.state == STATE_READY) || (ctx.state == STATE_SERVO_VIBRO_CHANGE) || (ctx.state == STATE_MOTOR_CHANGE))
+	if((ctx.state == STATE_READY) || (ctx.state == STATE_SERVO_VIBRO_CHANGE) || (ctx.state == STATE_MOTOR_CHANGE) || (ctx.state == STATE_LOW_SILOS))
 	{
 		return true;
 	}
@@ -200,6 +205,24 @@ static void _exit_power_save(void)
 static void _reset_power_save_timer(void)
 {
 	ctx.go_to_power_save_timeout = MS2ST(POWER_SAVE_TIMEOUT_MS) + xTaskGetTickCount();
+}
+
+static bool _check_low_silos_flag(void)
+{
+	uint32_t flag = menuGetValue(MENU_LOW_LEVEL_SILOS);
+	//printf("------SILOS FLAG %d---------\n\r", flag);
+	if (flag > 0)
+	{
+		if (ctx.low_silos_ckeck_timeout < xTaskGetTickCount())
+		{
+			ctx.low_silos_ckeck_timeout = MS2ST(30000) + xTaskGetTickCount();
+			change_state(STATE_LOW_SILOS);
+			buzzer_click();
+			ctx.low_silos_timeout = MS2ST(5000) + xTaskGetTickCount();
+			return true;
+		}
+	}
+	return false;
 }
 
 static void menu_button_up_callback(void * arg)
@@ -872,6 +895,11 @@ static void menu_start_ready(void)
 		return;
 	}
 
+	if (_check_low_silos_flag())
+	{
+		return;
+	}
+
 	if (ctx.go_to_power_save_timeout < xTaskGetTickCount())
 	{
 		_enter_power_save();
@@ -971,7 +999,33 @@ static void menu_start_power_save(void)
 		return;
 	}
 
+	if (_check_low_silos_flag())
+	{
+		return;
+	}
+
 	menuPrintfInfo("Power save\n\r");
+}
+
+static void menu_start_low_silos(void)
+{
+	if (!menu_is_connected())
+	{
+		menu_set_error_msg("Lost connection with server");
+		return;
+	}
+
+	if (ctx.low_silos_timeout < xTaskGetTickCount())
+	{
+		change_state(STATE_READY);
+		return;
+	}
+
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(2, 2);
+	ssd1306_WriteString("Low", Font_16x26, White);
+	ssd1306_SetCursor(2, 2 + 28);
+	ssd1306_WriteString("silos", Font_16x26, White);
 }
 
 static void menu_start_error(void)
@@ -1147,6 +1201,10 @@ static bool menu_process(void * arg)
 
 		case STATE_SERVO_VIBRO_CHANGE:
 			menu_start_vibro_change();
+			break;
+
+		case STATE_LOW_SILOS:
+			menu_start_low_silos();
 			break;
 
 		case STATE_STOP:

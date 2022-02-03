@@ -60,6 +60,7 @@ void parse_client(uint8_t * buff, uint32_t len)
 				sendBuff[2] = PC_SET;
 				memcpy(&value, &buff[4], 4);
 				if (menuSetValue(buff[3], value)) {
+					menuPrintParameter(buff[3]);
 					sendBuff[3] = POSITIVE_RESP;
 				}
 				else {

@@ -414,7 +414,7 @@ static void menu_state_process(menu_token_t * menu)
 		ctx.state = MENU_STATE_EXIT;
 	}
 
-	drawBattery(115, 1, battery_get_voltage(), 0);
+	drawBattery(115, 1, battery_get_voltage(), battery_get_charging_status());
 
 	if (ssd1306_UpdateScreen())
 	{

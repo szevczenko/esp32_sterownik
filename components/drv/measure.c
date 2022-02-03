@@ -5,15 +5,19 @@
 #include "freertos/timers.h"
 #include "menu_param.h"
 #include "parse_cmd.h"
+#include "cmd_server.h"
 
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
+#include "measure.h"
+#include "ultrasonar.h"
 
 //#undef debug_msg
 //#define debug_msg(...)
 
 static adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static adc_atten_t atten = ADC_ATTEN_DB_11;
+static uint32_t send_cnt;
 
 #define ADC_IN_CH		ADC_CHANNEL_6
 #define ADC_MOTOR_CH	ADC_CHANNEL_7
@@ -102,7 +106,7 @@ static void _read_adc_values(void)
 		}
 		if (meas_data[ch].unit == ADC_UNIT_2)
 		{
-			printf("Pomiar 2 %d\n\r", ret_v);
+			//printf("Pomiar 2 %d\n\r", ret_v);
 		}
 		
 		meas_data[ch].adc /= NO_OF_SAMPLES;
@@ -115,6 +119,9 @@ static void _read_adc_values(void)
 		table_size++;
 	}
 }
+
+#define SILOS_START_MEASURE 230
+#define SILOS_LOW 300
 
 static void measure_process(void * arg)
 {
@@ -129,7 +136,26 @@ static void measure_process(void * arg)
 		// #if CONFIG_DEVICE_SIEWNIK
 		// accum_adc += motor_filter_value*0.27; //motor_filter_value*0.0075*1025/5/5.7
 		// #endif
+
+		uint32_t silos_distance = ultrasonar_get_distance() > SILOS_START_MEASURE ? ultrasonar_get_distance() - SILOS_START_MEASURE : 0;
+		int silos_percent = (SILOS_LOW - silos_distance) * 100 / SILOS_LOW;
+		if (silos_percent < 0 || silos_percent > 100)
+		{
+			silos_percent = 0;
+		}
 		
+
+		if (send_cnt % 30 == 0)
+		{
+			if (cmdServerSetValueWithoutResp(MENU_LOW_LEVEL_SILOS, silos_percent < 10) == 0)
+			{
+				printf("[MEAS] Can't send silos data\n\r");
+			}
+			printf("silos_distance %d silos_percent %d\n\r", silos_distance, silos_percent);
+		}
+		send_cnt++;
+		
+		menuSetValue(MENU_SILOS_LEVEL, (uint32_t)silos_percent);
 		menuSetValue(MENU_VOLTAGE_ACCUM, (uint32_t)(accum_get_voltage() * 10000.0));
 		menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_CH_MOTOR, 0.1) * 1000.0));
 		menuSetValue(MENU_TEMPERATURE, (uint32_t)(measure_get_temperature() * 100.0));
@@ -174,7 +200,6 @@ float measure_get_current(enum_meas_ch type, float resistor)
 {
 	uint32_t adc = measure_get_filtered_value(type) < 1900 ? 0 : measure_get_filtered_value(type) - 1900;
 	float volt = (float) adc / 23 /* Volt */;
-	printf("ADC: %d %f", adc, volt);
 	return volt;
 }
 
