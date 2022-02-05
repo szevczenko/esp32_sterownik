@@ -13,9 +13,10 @@ typedef enum
 {
 	PARAM_CURRENT,
 	PARAM_VOLTAGE,
-	PARAM_SIGNAL,
+	PARAM_SILOS,
 	PARAM_TEMEPRATURE,
 	PARAM_CONECTION,
+	PARAM_SIGNAL,
 	PARAM_TOP
 
 } parameters_type_t;
@@ -39,14 +40,16 @@ typedef struct
 
 static void get_current(uint32_t *value);
 static void get_voltage(uint32_t *value);
+static void get_silos(uint32_t *value);
 static void get_signal(uint32_t *value);
 static void get_temp(uint32_t *value);
 static void get_conection(uint32_t *value);
 
 static parameters_t parameters_list[] = 
 {
-	[PARAM_CURRENT] 	= { .name = "Current", .unit = "mA", .unit_type = UNIT_DOUBLE, .get_value = get_current},
-	[PARAM_VOLTAGE] 	= { .name = "Voltage", .unit = "mV", .unit_type = UNIT_DOUBLE, .get_value = get_voltage},
+	[PARAM_CURRENT] 	= { .name = "Current", .unit = "A", .unit_type = UNIT_DOUBLE, .get_value = get_current},
+	[PARAM_VOLTAGE] 	= { .name = "Voltage", .unit = "V", .unit_type = UNIT_DOUBLE, .get_value = get_voltage},
+	[PARAM_SILOS]		= { .name = "Silos", .unit = "%", .unit_type = UNIT_INT, .get_value = get_silos},
 	[PARAM_SIGNAL] 		= { .name = "Signal", .unit = "", .unit_type = UNIT_INT, .get_value = get_signal},
 	[PARAM_TEMEPRATURE] = { .name = "Temp", .unit = "\"C", .unit_type = UNIT_INT, .get_value = get_temp},
 	[PARAM_CONECTION] 	= { .name = "Connect", .unit = "", .unit_type = UNIT_BOOL, .get_value = get_conection}
@@ -65,6 +68,11 @@ static void get_current(uint32_t *value)
 static void get_voltage(uint32_t *value)
 {
 	*value = menuGetValue(MENU_VOLTAGE_ACCUM);
+}
+
+static void get_silos(uint32_t *value)
+{
+	*value = menuGetValue(MENU_SILOS_LEVEL);
 }
 
 static void get_signal(uint32_t *value)
@@ -230,7 +238,16 @@ static bool menu_process(void * arg)
 	{
 		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
 		int pos = line + menu->line.start;
-		sprintf(buff, "%s: %d %s", parameters_list[pos].name, parameters_list[pos].value, parameters_list[pos].unit);
+		
+		if (parameters_list[pos].unit_type == UNIT_DOUBLE)
+		{
+			sprintf(buff, "%s: %.2f %s", parameters_list[pos].name, (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
+		}
+		else
+		{
+			sprintf(buff, "%s: %d %s", parameters_list[pos].name, parameters_list[pos].value, parameters_list[pos].unit);
+		}
+		
 		if (line + menu->line.start == menu->position)
 		{
 			ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT*line, LINE_HEIGHT);

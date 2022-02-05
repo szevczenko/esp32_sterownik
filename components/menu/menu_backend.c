@@ -16,19 +16,22 @@ typedef enum
 {
 	STATE_INIT,
 	STATE_IDLE,
+	STATE_START,
 	STATE_MENU_PARAMETERS,
 	STATE_ERROR_CHECK,
 	STATE_EMERGENCY_DISABLE,
 	STATE_EMERGENCY_DISABLE_EXIT,
 	STATE_TOP,
-}state_backend_t;
+} state_backend_t;
 
-typedef struct 
+typedef struct
 {
 	state_backend_t state;
 	bool error_flag;
-	char * error_msg;
+	char *error_msg;
+	uint32_t get_data_cnt;
 
+	bool menu_start_is_active;
 	bool menu_param_is_active;
 	bool emergency_msg_sended;
 	bool emergency_exit_msg_sended;
@@ -37,12 +40,13 @@ typedef struct
 
 static menu_start_context_t ctx;
 
-static char * state_name[] = 
+static char *state_name[] =
 {
-	[STATE_INIT] 			= "STATE_INIT",
-	[STATE_IDLE] 			= "STATE_IDLE",
+	[STATE_INIT] = "STATE_INIT",
+	[STATE_IDLE] = "STATE_IDLE",
+	[STATE_START] = "STATE_START",
 	[STATE_MENU_PARAMETERS] = "STATE_MENU_PARAMETERS",
-	[STATE_ERROR_CHECK] 	= "STATE_ERROR_CHECK",
+	[STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
 	[STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
 	[STATE_EMERGENCY_DISABLE_EXIT] = "STATE_EMERGENCY_DISABLE_EXIT"
 };
@@ -106,6 +110,36 @@ static void backend_idle(void)
 		change_state(STATE_MENU_PARAMETERS);
 		return;
 	}
+
+	if (ctx.menu_start_is_active)
+	{
+		change_state(STATE_START);
+		return;
+	}
+
+	osDelay(50);
+}
+
+static void backent_start(void)
+{
+	if (ctx.get_data_cnt % 300 == 0)
+	{
+		cmdClientGetValue(MENU_LOW_LEVEL_SILOS, NULL, 2000);
+		printf("Get new value %d \n\r", menuGetValue(MENU_LOW_LEVEL_SILOS));
+	}
+	ctx.get_data_cnt++;
+
+	if (ctx.menu_param_is_active)
+	{
+		change_state(STATE_MENU_PARAMETERS);
+		return;
+	}
+
+	if (!ctx.menu_start_is_active)
+	{
+		change_state(STATE_IDLE);
+		return;
+	}
 	osDelay(50);
 }
 
@@ -119,6 +153,7 @@ static void backend_menu_parameters(void)
 	cmdClientGetValue(MENU_TEMPERATURE, NULL, 2000);
 	cmdClientGetValue(MENU_VOLTAGE_ACCUM, NULL, 2000);
 	cmdClientGetValue(MENU_CURRENT_MOTOR, NULL, 2000);
+	cmdClientGetValue(MENU_SILOS_LEVEL, NULL, 2000);
 	osDelay(50);
 }
 
@@ -157,7 +192,6 @@ static void backend_emergency_disable_exit(void)
 	}
 }
 
-
 void backendEnterMenuParameters(void)
 {
 	ctx.menu_param_is_active = true;
@@ -166,6 +200,16 @@ void backendEnterMenuParameters(void)
 void backendExitMenuParameters(void)
 {
 	ctx.menu_param_is_active = false;
+}
+
+void backendEnterMenuStart(void)
+{
+	ctx.menu_start_is_active= true;
+}
+
+void backendExitMenuStart(void)
+{
+	ctx.menu_start_is_active = false;
 }
 
 void backendToggleEmergencyDisable(void)
@@ -183,43 +227,46 @@ void backendToggleEmergencyDisable(void)
 	}
 }
 
-static void menu_task(void * arg)
+static void menu_task(void *arg)
 {
 
-	while(1)
-	{		
+	while (1)
+	{
 		_check_emergency_disable();
 
-		switch(ctx.state)
+		switch (ctx.state)
 		{
-			case STATE_INIT:
-				backend_init_state();
-				break;
-			
-			case STATE_IDLE:
-				backend_idle();
-				break;
-			
-			case STATE_MENU_PARAMETERS:
-				backend_menu_parameters();
-				break;
+		case STATE_INIT:
+			backend_init_state();
+			break;
 
-			case STATE_ERROR_CHECK:
-				backend_error_check();
-				break;
+		case STATE_IDLE:
+			backend_idle();
+			break;
 
-			case STATE_EMERGENCY_DISABLE:
-				backend_emergency_disable_state();
-				break;
+		case STATE_START:
+			backent_start();
+			break;
 
-			case STATE_EMERGENCY_DISABLE_EXIT:
-				backend_emergency_disable_exit();
-				break;
+		case STATE_MENU_PARAMETERS:
+			backend_menu_parameters();
+			break;
 
-			default:
-				ctx.state = STATE_IDLE;
-				break;
+		case STATE_ERROR_CHECK:
+			backend_error_check();
+			break;
 
+		case STATE_EMERGENCY_DISABLE:
+			backend_emergency_disable_state();
+			break;
+
+		case STATE_EMERGENCY_DISABLE_EXIT:
+			backend_emergency_disable_exit();
+			break;
+
+		default:
+			ctx.state = STATE_IDLE;
+			break;
 		}
 	}
 }

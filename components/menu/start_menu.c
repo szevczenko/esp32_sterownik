@@ -4,6 +4,7 @@
 #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "menu_default.h"
+#include "menu_backend.h"
 #include "freertos/timers.h"
 
 #include "wifidrv.h"
@@ -779,6 +780,9 @@ static bool menu_enter_cb(void * arg)
 static bool menu_exit_cb(void * arg)
 {
 	debug_function_name(__func__);
+
+	backendExitMenuStart();
+
 	menu_token_t *menu = arg;
 	if (menu == NULL)
 	{
@@ -989,6 +993,7 @@ static void menu_start_ready(void)
 		drawServo(10, 35, 0);
 	}
 	#endif
+	backendEnterMenuStart();
 }
 
 static void menu_start_power_save(void)
@@ -1005,6 +1010,7 @@ static void menu_start_power_save(void)
 	}
 
 	menuPrintfInfo("Power save\n\r");
+	backendEnterMenuStart();
 }
 
 static void menu_start_low_silos(void)
@@ -1102,6 +1108,8 @@ static void menu_start_error_check(void)
 
 static void menu_reconnect(void)
 {
+	backendExitMenuStart();
+
 	wifiDrvGetAPName(ctx.ap_name);
 	if (strlen(ctx.ap_name) > 5)
 	{
