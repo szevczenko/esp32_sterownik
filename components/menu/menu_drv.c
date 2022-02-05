@@ -243,20 +243,20 @@ static void menu_init_buttons(void)
 
 static void menu_activate_but(menu_token_t * menu)
 {
-	button1_menu.arg = (void*) menu;
-	button1_menu.fall_callback = menu->button.up.fall_callback;
-	button1_menu.rise_callback = menu->button.up.rise_callback;
-	button1_menu.timer_callback = menu->button.up.timer_callback;
-
 	button2_menu.arg = (void*) menu;
-	button2_menu.fall_callback = menu->button.down.fall_callback;
-	button2_menu.rise_callback = menu->button.down.rise_callback;
-	button2_menu.timer_callback = menu->button.down.timer_callback;
+	button2_menu.fall_callback = menu->button.up.fall_callback;
+	button2_menu.rise_callback = menu->button.up.rise_callback;
+	button2_menu.timer_callback = menu->button.up.timer_callback;
 
 	button3_menu.arg = (void*) menu;
-	button3_menu.fall_callback = menu->button.enter.fall_callback;
-	button3_menu.rise_callback = menu->button.enter.rise_callback;
-	button3_menu.timer_callback = menu->button.enter.timer_callback;
+	button3_menu.fall_callback = menu->button.down.fall_callback;
+	button3_menu.rise_callback = menu->button.down.rise_callback;
+	button3_menu.timer_callback = menu->button.down.timer_callback;
+
+	button1_menu.arg = (void*) menu;
+	button1_menu.fall_callback = menu->button.enter.fall_callback;
+	button1_menu.rise_callback = menu->button.enter.rise_callback;
+	button1_menu.timer_callback = menu->button.enter.timer_callback;
 
 	button4_menu.arg = (void*) menu;
 	button4_menu.fall_callback = menu->button.up_minus.fall_callback;
