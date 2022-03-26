@@ -52,7 +52,7 @@ static char * state_name[] =
 	[STATE_EXIT] 			= "STATE_EXIT",
 };
 
-extern void mainMenuInit(void);
+extern void mainMenuInit(menu_drv_init_t init_type);
 extern void enterMenuStart(void);
 
 menu_token_t bootup_menu = 
@@ -204,7 +204,7 @@ static void bootup_checking_data(void)
 
 static void bootup_exit(void)
 {
-	mainMenuInit();
+	mainMenuInit(MENU_DRV_NORMAL_INIT);
 	if (ctx.system_connected)
 	{
 		enterMenuStart();

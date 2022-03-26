@@ -30,6 +30,7 @@
 #include "esp_sleep.h"
 #include "sleep_e.h"
 #include "server_controller.h"
+#include "power_on.h"
 
 uint16_t test_value;
 static gpio_config_t io_conf;
@@ -109,18 +110,11 @@ void app_main()
 {
     configInit();
     checkDevType();
-    debug_msg("Dev type %d\n\r", config.dev_type);
-    wifiDrvInit();
-    keepAliveStartTask();
-    menuParamInit();
+    
     if (config.dev_type != T_DEV_TYPE_SERVER)
     {
         battery_init();
-        init_buttons();
-        fastProcessStartTask();
-        ssd1306_Init();
-        init_menu();
-        // init_sleep();
+        osDelay(10);
         // Inicjalizacja diod
         blink_pin = MOTOR_LED;
         io_conf.intr_type = GPIO_INTR_DISABLE;
@@ -129,10 +123,51 @@ void app_main()
         io_conf.pull_down_en = 0;
         io_conf.pull_up_en = 0;
         gpio_config(&io_conf);
+
+        io_conf.intr_type = GPIO_INTR_DISABLE;
+        io_conf.mode = GPIO_MODE_INPUT;
+        io_conf.pin_bit_mask = BIT64(32);
+        io_conf.pull_down_en = 0;
+        io_conf.pull_up_en = 1;
+        gpio_config(&io_conf);
+
         buzzer_init();
+        power_on_init();
+
+        /* Wait to measure voltage */
+        while(!battery_is_measured())
+        {
+            osDelay(10);
+        }
+        float voltage = battery_get_voltage();
+
+        printf("!!!!!!!!!!!Voltage measured %f!!!!!!!!!!!!!!\n\r", voltage);
+
+        ssd1306_Init();
+
+        if (voltage > 3.2)
+        {
+            power_on_enable_system();
+            init_menu(MENU_DRV_NORMAL_INIT);
+            wifiDrvInit();
+            keepAliveStartTask();
+            menuParamInit();
+            init_buttons();
+            fastProcessStartTask();
+            // init_sleep();
+        }
+        else
+        {
+            power_on_disable_system();
+            init_menu(MENU_DRV_LOW_BATTERY_INIT);
+        }
     }
     else {
-        //esp_log_set_putchar(ets_putc);
+
+        wifiDrvInit();
+        keepAliveStartTask();
+        menuParamInit();
+
         #if CONFIG_DEVICE_SOLARKA
         vibro_init();
         #endif
@@ -161,6 +196,14 @@ void app_main()
     while(1)
     {
         vTaskDelay(MS2ST(975));
+        if (gpio_get_level(32))
+        {
+            printf("Pin stan wysoki\n\r");
+        }
+        else
+        {
+            printf("Pin stan niski\n\r");
+        }
         // if (config.dev_type == T_DEV_TYPE_SERVER)
         // {
         //    gpio_set_level(blink_pin, 0);

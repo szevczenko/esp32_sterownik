@@ -7,6 +7,7 @@
 
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
+#include "power_on.h"
 
 #define DEFAULT_VREF        1100        //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES       64          //Multisampling
@@ -24,6 +25,7 @@ static const adc_unit_t unit = ADC_UNIT_1;
 #define MIN_ADC 290
 #define MAX_ADC_FOR_MAX_VOL 2000
 #define MIN_VOL 3200
+#define CRITICAL_VOLTAGE 3000
 #define MAX_VOL 4200
 
 #define ADC_BUFFOR_SIZE 32
@@ -33,6 +35,7 @@ static uint32_t voltage_average;
 static uint32_t voltage_table[ADC_BUFFOR_SIZE];
 static uint32_t voltage_measure_cnt;
 static uint32_t voltage_table_size;
+static bool voltage_is_measured;
 
 static void adc_task()
 {
@@ -69,9 +72,22 @@ static void adc_task()
         }
         voltage_average = voltage_sum / voltage_table_size;
 
+        voltage_is_measured = true;
+
+        if (voltage < CRITICAL_VOLTAGE)
+        {
+            printf("INFO: Found critical battery voltage. Power off");
+            power_on_disable_system();
+        }
+
 		//printf("Average: %d measured %d\n\r", voltage_average, voltage );
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
+}
+
+bool battery_is_measured(void)
+{
+    return voltage_is_measured;
 }
 
 float battery_get_voltage(void) {

@@ -53,7 +53,7 @@ typedef struct
 
 static menu_drv_t ctx;
 
-extern void mainMenuInit(void);
+extern void mainMenuInit(menu_drv_init_t init_type);
 
 static char *state_name[] = 
 {
@@ -429,10 +429,20 @@ static void menu_state_process(menu_token_t * menu)
 
 static void menu_state_emergency_disable(void)
 {
+	static uint32_t led_cnt;
+	static bool led_status;
+
+	led_cnt++;
 	ssd1306_Fill(Black);
 	ssd1306_SetCursor(2, MENU_HEIGHT);
-	ssd1306_WriteString("  Stop", Font_16x26, White);
+	ssd1306_WriteString("  STOP", Font_16x26, White);
 	ssd1306_UpdateScreen();
+	if (led_cnt % 10 == 0)
+	{
+		MOTOR_LED_SET(led_status);
+		SERVO_VIBRO_LED_SET(led_status);
+		led_status = led_status ? false : true;
+	}
 	osDelay(100);
 }
 
@@ -627,17 +637,26 @@ void menuDrvExitEmergencyDisable(void)
 	}
 }
 
-void init_menu(void)
+void init_menu(menu_drv_init_t init_type)
 {
 	ctx.update_screen_req = xSemaphoreCreateBinary();
-	if (menuGetValue(MENU_BOOTUP_SYSTEM))
+	
+	if (init_type == MENU_DRV_LOW_BATTERY_INIT)
 	{
-		menuInitBootupMenu();
+		mainMenuInit(MENU_DRV_LOW_BATTERY_INIT);
 	}
 	else
 	{
-		mainMenuInit();
+		if (menuGetValue(MENU_BOOTUP_SYSTEM))
+		{
+			menuInitBootupMenu();
+		}
+		else
+		{
+			mainMenuInit(MENU_DRV_NORMAL_INIT);
+		}
 	}
+	
 	#if CONFIG_MENU_TEST_TASK
 	xTaskCreate(menu_test, "menu_test", 8192, NULL, 12, NULL);
 	#else

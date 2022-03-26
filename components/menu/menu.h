@@ -12,6 +12,12 @@ typedef enum
 	T_ARG_TYPE_PARAMETERS
 }menu_token_type_t;
 
+typedef enum 
+{
+	MENU_DRV_NORMAL_INIT,
+	MENU_DRV_LOW_BATTERY_INIT,
+}menu_drv_init_t;
+
 typedef struct
 {
 	void (*new_value)(uint32_t value);
@@ -73,7 +79,7 @@ extern uint32_t servo_value;
 extern bool motor_on;
 extern bool servo_on;
 
-void init_menu(void);
+void init_menu(menu_drv_init_t init_type);
 void button_minus_callback(void * arg);
 void menuDeactivateButtons(void);
 void menuActivateButtons(void);

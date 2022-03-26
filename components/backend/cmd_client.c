@@ -375,6 +375,7 @@ int cmdClientSendDataWaitResp(uint8_t * buff, uint32_t len, uint8_t * buff_rx, u
 int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value) 
 {
 	debug_function_name("cmdClientSetValueWithoutResp");
+	printf("cmdClientSetValueWithoutResp: %d %d\n\r", val, value);
 	if (menuSetValue(val, value) == FALSE){
 		return FALSE;
 	}
@@ -618,7 +619,7 @@ static void cmdClientErrorKACb(void)
 
 void cmdClientStartTask(void)
 {
-	keepAliveInit(&ctx.keepAlive, 3800, keepAliveSend, cmdClientErrorKACb);
+	keepAliveInit(&ctx.keepAlive, 2800, keepAliveSend, cmdClientErrorKACb);
 	ctx.waitResponceSem = xSemaphoreCreateBinary();
 	ctx.mutexSemaphore = xSemaphoreCreateBinary();
 	cmd_client_ctx_init();

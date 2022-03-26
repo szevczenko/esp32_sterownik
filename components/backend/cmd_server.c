@@ -555,12 +555,14 @@ static void cmdServerErrorKACb(void)
     debug_msg("cmdServerErrorKACb keepAlive");
     ctx.disconnect_req = true;
     ctx.is_connected = false;
+    menuSetValue(MENU_SERVO_IS_ON, 0);
+    menuSetValue(MENU_MOTOR_IS_ON, 0);
 }
 
 void cmdServerStartTask(void)
 {
     for (uint8_t i = 0; i < NUMBER_CLIENT; i++) {
-        keepAliveInit(&ctx.keepAlive, 4000, keepAliveSend, cmdServerErrorKACb);
+        keepAliveInit(&ctx.keepAlive, 3000, keepAliveSend, cmdServerErrorKACb);
     }
     ctx.waitResponceSem = xSemaphoreCreateBinary();
     ctx.mutexSemaphore = xSemaphoreCreateBinary();

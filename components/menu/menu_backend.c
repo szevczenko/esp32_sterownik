@@ -11,6 +11,7 @@
 #include "menu_param.h"
 #include "wifidrv.h"
 #include "cmd_client.h"
+#include "start_menu.h"
 
 typedef enum
 {
@@ -82,11 +83,14 @@ static void _send_emergency_msg(void)
 	{
 		return;
 	}
-	int ret = cmdClientSetValue(MENU_EMERGENCY_DISABLE, 1, 2000);
+	bool ret = (cmdClientSetValue(MENU_EMERGENCY_DISABLE, 1, 2000) > 0) 
+		&& (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 2000) > 0) 
+		&& (cmdClientSetValue(MENU_SERVO_IS_ON, 0, 2000) > 0);
 	debug_msg("%s %d\n\r", __func__, ret);
-	if (ret > 0)
+	if (ret)
 	{
 		ctx.emergency_msg_sended = true;
+		menuStartReset();
 	}
 }
 

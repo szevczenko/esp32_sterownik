@@ -4,7 +4,7 @@
             "path": "."
         },
         {
-            "path": "..\\esp32-tools"
+            "path": "..\\esp-idf"
         }
     ],
     
@@ -16,14 +16,14 @@
         ],
         "idf.customExtraVars": "",
         "terminal.integrated.env.windows": {
-            "IDF_PATH": "C:\\projekty\\tools\\idf",
-            "PATH": "${env:PATH};C:\\projekty\\tools\\idf;C:\\projekty\\tools\\idf/tools/python;C:\\projekty\\tools\\idf/tools/python/Scripts;C:\\projekty\\tools\\idf/tools/python/Scripts",
+            "IDF_PATH": "C:\\pojekty\\esp-idf\\",
+            "PATH": "${env:PATH};C:\\pojekty\\esp-idf\\;C:\\pojekty\\esp-idf/tools/python;C:\\pojekty\\esp-idf/tools/python/Scripts;C:\\pojekty\\esp-idf/tools/python/Scripts",
             "OPENOCD_SCRIPTS": "${env:IDF_TOOLS_PATH}/tools/openocd-esp32/v0.10.0-esp32-20200309/openocd-esp32/share/openocd/scripts",
         },
         "terminal.integrated.profiles.windows":{
             "msys32": {
                 "path": "C:\\WINDOWS\\System32\\cmd.exe",
-                "args": ["/K", "C:\\projekty\\tools\\idf\\export.bat"],
+                "args": ["/K", "C:\\pojekty\\esp-idf\\export.bat"],
             },
         },
 

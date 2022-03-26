@@ -186,7 +186,7 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 float measure_get_temperature(void)
 {
 	int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
-	printf("Temperature %d %d\n\r", measure_get_filtered_value(MEAS_CH_TEMP), temp);
+	//printf("Temperature %d %d\n\r", measure_get_filtered_value(MEAS_CH_TEMP), temp);
 	return temp;
 }
 

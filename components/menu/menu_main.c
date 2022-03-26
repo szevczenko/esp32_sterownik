@@ -8,6 +8,7 @@
 #include "start_menu.h"
 #include "menu_state.h"
 #include "menu_settings.h"
+#include "menu_low_battery.h"
 
 static menu_token_t setings = 
 {
@@ -33,6 +34,12 @@ static menu_token_t parameters_menu =
 	.name = "PARAMETERS",
 };
 
+static menu_token_t low_battery_menu = 
+{
+	.name = "LOW_BAT",
+	.arg_type = T_ARG_TYPE_MENU,
+};
+
 menu_token_t* main_menu_tokens[] = {&start_menu, &setings, &wifi_menu, &parameters_menu, NULL};
 
 menu_token_t main_menu = 
@@ -42,14 +49,22 @@ menu_token_t main_menu =
 	.menu_list = main_menu_tokens
 };
 
-void mainMenuInit(void)
+void mainMenuInit(menu_drv_init_t init_type)
 {
-	menuInitDefaultList(&main_menu);
-	menuInitSettingsMenu(&setings);
-	menuInitWifiMenu(&wifi_menu);
-	menuInitStartMenu(&start_menu);
-	menuInitParametersMenu(&parameters_menu);
-	menuSetMain(&main_menu);
+	if (init_type == MENU_DRV_NORMAL_INIT)
+	{
+		menuInitDefaultList(&main_menu);
+		menuInitSettingsMenu(&setings);
+		menuInitWifiMenu(&wifi_menu);
+		menuInitStartMenu(&start_menu);
+		menuInitParametersMenu(&parameters_menu);
+		menuSetMain(&main_menu);
+	}
+	else
+	{
+		menuInitLowBatteryLvl(&low_battery_menu);
+		menuSetMain(&low_battery_menu);
+	}
 }
 
 void enterMenuStart(void)

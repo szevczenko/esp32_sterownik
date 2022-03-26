@@ -3,5 +3,6 @@
 #include "config.h"
 
 void menuInitStartMenu(menu_token_t *menu);
+void menuStartReset(void);
 
 #endif
