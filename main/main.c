@@ -48,39 +48,22 @@ static int i2cInit(void)
     conf.sda_pullup_en = 1;
     conf.scl_io_num = I2C_EXAMPLE_MASTER_SCL_IO;
     conf.scl_pullup_en = 1;
-    conf.master.clk_speed = 100000; // 300 ticks, Clock stretch is about 210us, you can make changes according to the actual situation.
+    conf.master.clk_speed = 100000;
     ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, conf.mode, 0, 0 ,0));
     ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
     return ESP_OK;
 }
 
-RTC_NOINIT_ATTR char * last_task_name;
-RTC_NOINIT_ATTR char * last_out_task_name;
-RTC_NOINIT_ATTR char * last_function_name;
-RTC_NOINIT_ATTR char * last_function_out_name;
-RTC_NOINIT_ATTR char * last_function_out_out_name;
-RTC_NOINIT_ATTR char * last_function_out_out_out_name;
-
-void debug_function_name(const char * name) {
-    last_function_out_out_out_name = last_function_out_out_name;
-    last_function_out_out_name = last_function_out_name;
-    last_function_out_name = last_function_name;
-    last_function_name = (char *)name;
+void debug_function_name(const char * name) 
+{
 }
 
-static char * restart_task_name;
-static char * restart_task_out_name;
-static char * restart_function_name;
-static char * restart_function_out_name;
-static char * restart_function_out_out_name;
-static char * restart_function_out_out_out_name;
-
-void debug_last_task(char * task_name) {
-    last_task_name = task_name;
+void debug_last_task(char * task_name) 
+{
 }
 
-void debug_last_out_task(char * task_name) {
-    last_out_task_name = task_name;
+void debug_last_out_task(char * task_name) 
+{
 }
 
 static void checkDevType(void) {
@@ -96,16 +79,6 @@ static void checkDevType(void) {
     }
 }
 
-int __esp_os_init(void) {
-    restart_function_name = last_function_name;
-    restart_task_name = last_task_name;
-    restart_task_out_name = last_out_task_name;
-    restart_function_out_name = last_function_out_name;
-    restart_function_out_out_name = last_function_out_out_name;
-    restart_function_out_out_out_name = last_function_out_out_out_name;
-    return 0;
-}
-
 void app_main()
 {
     configInit();
@@ -115,18 +88,11 @@ void app_main()
     {
         battery_init();
         osDelay(10);
-        // Inicjalizacja diod
-        blink_pin = MOTOR_LED;
-        io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = GPIO_MODE_OUTPUT;
-        io_conf.pin_bit_mask = (1 << MOTOR_LED) | (1 << SERVO_VIBRO_LED) | (1 << blink_pin);
-        io_conf.pull_down_en = 0;
-        io_conf.pull_up_en = 0;
-        gpio_config(&io_conf);
 
+        // Inicjalizacja diod
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
-        io_conf.pin_bit_mask = BIT64(32);
+        io_conf.pin_bit_mask = BIT64(MOTOR_LED_RED) | BIT64(MOTOR_LED_GREEN) | BIT64(SERVO_VIBRO_LED_RED) | BIT64(SERVO_VIBRO_LED_GREEN);
         io_conf.pull_down_en = 0;
         io_conf.pull_up_en = 1;
         gpio_config(&io_conf);
@@ -144,21 +110,20 @@ void app_main()
         printf("!!!!!!!!!!!Voltage measured %f!!!!!!!!!!!!!!\n\r", voltage);
 
         ssd1306_Init();
+        power_on_enable_system();
+        init_buttons();
 
         if (voltage > 3.2)
         {
-            power_on_enable_system();
             init_menu(MENU_DRV_NORMAL_INIT);
             wifiDrvInit();
             keepAliveStartTask();
             menuParamInit();
-            init_buttons();
             fastProcessStartTask();
             // init_sleep();
         }
         else
         {
-            power_on_disable_system();
             init_menu(MENU_DRV_LOW_BATTERY_INIT);
         }
     }
@@ -186,30 +151,17 @@ void app_main()
         io_conf.pull_up_en = 0;
         gpio_config(&io_conf);
     }
-    ets_printf("Init last out task: %s\n\r", restart_task_out_name);
-    ets_printf("Init last task: %s\n\r", restart_task_name);
-    ets_printf("Last func name out out: %s \n\r", restart_function_out_out_out_name);
-    ets_printf("Last func name out: %s \n\r", restart_function_out_out_name);
-    ets_printf("Last func name out: %s \n\r", restart_function_out_name);
-    ets_printf("Last func name: %s \n\r", restart_function_name);
+
     printf("-----------------------START SYSTEM--------------------------\n\r");
     while(1)
     {
         vTaskDelay(MS2ST(975));
-        if (gpio_get_level(32))
-        {
-            printf("Pin stan wysoki\n\r");
-        }
-        else
-        {
-            printf("Pin stan niski\n\r");
-        }
         // if (config.dev_type == T_DEV_TYPE_SERVER)
         // {
         //    gpio_set_level(blink_pin, 0);
         // }
 
-        // vTaskDelay(MS2ST(25));
+        vTaskDelay(MS2ST(25));
 
         // if (config.dev_type == T_DEV_TYPE_SERVER)
         // {

@@ -54,10 +54,15 @@
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// LED
 #include "driver/gpio.h"
-#define MOTOR_LED GPIO_NUM_25
-#define SERVO_VIBRO_LED GPIO_NUM_26
-#define MOTOR_LED_SET(x) gpio_set_level(MOTOR_LED, x);
-#define SERVO_VIBRO_LED_SET(x) gpio_set_level(SERVO_VIBRO_LED, x);
+#define MOTOR_LED_RED 					GPIO_NUM_25
+#define SERVO_VIBRO_LED_RED 			GPIO_NUM_26
+#define MOTOR_LED_GREEN 				GPIO_NUM_15
+#define SERVO_VIBRO_LED_GREEN 			GPIO_NUM_12
+
+#define MOTOR_LED_SET_RED(x) 			gpio_set_level(MOTOR_LED_RED, x);
+#define SERVO_VIBRO_LED_SET_RED(x) 		gpio_set_level(SERVO_VIBRO_LED_RED, x);
+#define MOTOR_LED_SET_GREEN(x) 			gpio_set_level(MOTOR_LED_GREEN, x);
+#define SERVO_VIBRO_LED_SET_GREEN(x) 	gpio_set_level(SERVO_VIBRO_LED_GREEN, x);
 
 //////////////////////////////////////  END  //////////////////////////////////////////////
 
@@ -128,8 +133,8 @@ void telnetSendToAll(const char * data, size_t size);
 // thdTCPShell
 #define CONFIG_thdTCPShell_CLIENTS_MAX 1
 
-#define MS2ST(ms) (ms / portTICK_RATE_MS)
-#define ST2MS(tick) (tick * portTICK_RATE_MS)
+#define MS2ST(ms) ((ms) / portTICK_RATE_MS)
+#define ST2MS(tick) ((tick) * portTICK_RATE_MS)
 #define TIME_IMMEDIATE 0
 #define osDelay(ms) vTaskDelay(MS2ST(ms))
 

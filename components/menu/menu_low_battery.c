@@ -4,6 +4,7 @@
 #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "menu_default.h"
+#include "power_on.h"
 
 static bool menu_button_init_cb(void * arg)
 {
@@ -62,6 +63,10 @@ static bool menu_process(void * arg)
 	ssd1306_WriteString("Low battery lvl.", Font_7x10, Black);
 	ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
 	ssd1306_WriteString("Connect charger", Font_7x10, Black);
+	ssd1306_UpdateScreen();
+
+	osDelay(5000);
+	power_on_enable_system();
 
 	return true;
 }

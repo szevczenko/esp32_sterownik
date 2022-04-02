@@ -791,8 +791,8 @@ static bool menu_exit_cb(void * arg)
 		NULL_ERROR_MSG();
 		return false;
 	}
-	MOTOR_LED_SET(0);
-	SERVO_VIBRO_LED_SET(0);
+	MOTOR_LED_SET_RED(0);
+	SERVO_VIBRO_LED_SET_RED(0);
 	return true;
 }
 
@@ -1247,20 +1247,20 @@ static bool menu_process(void * arg)
 
 	if (ctx.motor_on)
 	{
-		MOTOR_LED_SET(1);
+		MOTOR_LED_SET_RED(1);
 	}
 	else
 	{
-		MOTOR_LED_SET(0);
+		MOTOR_LED_SET_RED(0);
 	}
 
 	if (ctx.servo_vibro_on)
 	{
-		SERVO_VIBRO_LED_SET(1);
+		SERVO_VIBRO_LED_SET_RED(1);
 	}
 	else
 	{
-		SERVO_VIBRO_LED_SET(0);
+		SERVO_VIBRO_LED_SET_RED(0);
 	}
 	return true;
 }

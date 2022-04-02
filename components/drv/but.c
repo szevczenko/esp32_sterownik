@@ -163,12 +163,19 @@ static void process_button(void * arg)
 			if (red_val == 0)
 			{
 				but_tab[i]->tim_cnt++;
-				if ((but_tab[i]->tim_cnt >= TIMER_CNT_TIMEOUT) && (but_tab[i]->state != 1))
+				if ((but_tab[i]->tim_cnt >= TIMER_CNT_TIMEOUT) && (but_tab[i]->state == 0))
 				{
 					if (but_tab[i]->timer_callback != 0)
-					but_tab[i]->timer_callback(but_tab[i]->arg);
-					but_tab[i]->tim_cnt = 0;
+						but_tab[i]->timer_callback(but_tab[i]->arg);
 					but_tab[i]->state = 1;
+				}
+
+				if ((but_tab[i]->tim_cnt >= TIMER_LONG_CNT_TIMEOUT) && (but_tab[i]->state == 1))
+				{
+					if (but_tab[i]->timer_callback != 0)
+						but_tab[i]->timer_long_callback(but_tab[i]->arg);
+					but_tab[i]->tim_cnt = 0;
+					but_tab[i]->state = 2;
 				}
 			}
 			else
@@ -188,7 +195,7 @@ static void set_bit_mask(uint64_t *mask)
 	{
 		if (but_tab[i]->is_gpio)
 		{
-			*mask |= (1ULL<<but_tab[i]->gpio);
+			*mask |= BIT64(but_tab[i]->gpio);
 		}	
 	}
 }

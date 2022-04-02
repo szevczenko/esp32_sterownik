@@ -69,7 +69,8 @@
             "*.idl": "c",
             "esp_wifi_types.h": "c",
             "menu_settings.h": "c",
-            "menu_param.h": "c"
+            "menu_param.h": "c",
+            "power_on.h": "c"
         },
         "files.exclude": {
             "**/.git": true,         // this is a default value

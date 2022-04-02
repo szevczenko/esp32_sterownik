@@ -14,6 +14,7 @@
 #include "menu_bootup.h"
 #include "menu_backend.h"
 #include "battery.h"
+#include "power_on.h"
 
 #define CONFIG_MENU_TEST_TASK 	0
 #define LINE_HEIGHT 			10
@@ -21,6 +22,7 @@
 #define MAX_LINE 				(SSD1306_HEIGHT - MENU_HEIGHT) / LINE_HEIGHT
 #define PROCESS_TASK_TIMEOUT    50
 #define MENU_TAB_SIZE			8
+#define POWER_OFF_TIMEOUT_MS	3500
 
 typedef enum
 {
@@ -30,6 +32,8 @@ typedef enum
 	MENU_STATE_EXIT,
 	MENU_STATE_PROCESS,
 	MENU_STATE_INFO,
+	MENU_STATE_POWER_OFF_COUNT,
+	MENU_STATE_POWER_OFF,
 	MENU_STATE_EMERGENCY_DISABLE,
 	MENU_STATE_ERROR_CHECK,
 	MENU_STATE_TOP
@@ -45,10 +49,12 @@ typedef struct
 	bool exit_req;
 	bool enter_req;
 	bool error_flag;
+	bool power_off_req;
 	int error_code;
 	char * error_msg;
 	menu_token_t *new_menu;
 	SemaphoreHandle_t update_screen_req;
+	TickType_t power_off_timer;
 } menu_drv_t;
 
 static menu_drv_t ctx;
@@ -64,7 +70,9 @@ static char *state_name[] =
 	[MENU_STATE_PROCESS] = "MENU_STATE_PROCESS",
 	[MENU_STATE_INFO] = "MENU_STATE_INFO",
 	[MENU_STATE_ERROR_CHECK] = "MENU_STATE_ERROR_CHECK",
-	[MENU_STATE_EMERGENCY_DISABLE] = "MENU_STATE_EMERGENCY_DISABLE"
+	[MENU_STATE_EMERGENCY_DISABLE] = "MENU_STATE_EMERGENCY_DISABLE",
+	[MENU_STATE_POWER_OFF_COUNT] = "MENU_STATE_POWER_OFF_COUNT",
+	[MENU_STATE_POWER_OFF] = "MENU_STATE_POWER_OFF",
 };
 
 static but_t button1_menu, button2_menu, button3_menu, button4_menu, button5_menu, button6_menu, button7_menu, button8_menu, button9_menu, button10_menu;
@@ -158,6 +166,38 @@ static void menu_fall_turn_on_off_but_cb(void * arg)
 	backendToggleEmergencyDisable();
 }
 
+static void menu_timer_power_off_but_cb(void * arg)
+{
+	but_t * button = (but_t*)arg;
+	if (button->fall_callback != NULL)
+	{
+		button->fall_callback(button->arg);
+		update_screen();
+	}
+	ctx.power_off_req = true;
+	ctx.state = MENU_STATE_POWER_OFF_COUNT;
+	ctx.power_off_timer = xTaskGetTickCount() + MS2ST(POWER_OFF_TIMEOUT_MS);
+}
+
+static void menu_rise_power_off_but_cb(void * arg)
+{
+	ctx.power_off_req = false;
+}
+
+static void menu_timer_long_power_off_but_cb(void * arg)
+{
+	if ((ctx.state == MENU_STATE_POWER_OFF_COUNT) || (ctx.state == MENU_STATE_POWER_OFF))
+	{
+		power_on_disable_system();
+
+		while(1)
+		{
+			ssd1306_Fill(Black);
+			ssd1306_UpdateScreen();
+		}
+	}
+}
+
 static void menu_fall_callback_but_cb(void * arg)
 {
 	but_t * button = (but_t*)arg;
@@ -237,8 +277,9 @@ static void menu_init_buttons(void)
 
 	button10.arg = &button10_menu;
 	button10.fall_callback = menu_fall_turn_on_off_but_cb;
-	button10.rise_callback = menu_rise_callback_but_cb;
-	button10.timer_callback = menu_timer_callback_but_cb;
+	button10.rise_callback = menu_rise_power_off_but_cb;
+	button10.timer_callback = menu_timer_power_off_but_cb;
+	button10.timer_long_callback = menu_timer_long_power_off_but_cb;
 }
 
 static void menu_activate_but(menu_token_t * menu)
@@ -439,8 +480,8 @@ static void menu_state_emergency_disable(void)
 	ssd1306_UpdateScreen();
 	if (led_cnt % 10 == 0)
 	{
-		MOTOR_LED_SET(led_status);
-		SERVO_VIBRO_LED_SET(led_status);
+		MOTOR_LED_SET_RED(led_status);
+		SERVO_VIBRO_LED_SET_RED(led_status);
 		led_status = led_status ? false : true;
 	}
 	osDelay(100);
@@ -502,6 +543,46 @@ static void menu_state_error_check(menu_token_t *menu)
 	ctx.state = MENU_STATE_IDLE;
 }
 
+static void menu_state_power_off_count(menu_token_t *menu)
+{
+	char buff[64] = {0};
+
+	if (!ctx.power_off_req)
+	{
+		ctx.state = MENU_STATE_PROCESS;
+		return;
+	}
+
+	int time = 0;
+	TickType_t now = xTaskGetTickCount();
+
+	if (ctx.power_off_timer > now)
+	{
+		time = ST2MS(ctx.power_off_timer - now) / 1000;
+	}
+	else
+	{
+		ctx.state = MENU_STATE_POWER_OFF;
+		return;
+	}
+
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(2, MENU_HEIGHT);
+	sprintf(buff, "POWER OFF %d", time);
+	ssd1306_WriteString(buff, Font_7x10, White);
+	ssd1306_UpdateScreen();
+	osDelay(100);
+}
+
+static void menu_state_power_off(menu_token_t *menu)
+{
+	power_on_disable_system();
+
+	ssd1306_Fill(Black);
+	ssd1306_UpdateScreen();
+	osDelay(100);
+}
+
 static void menu_task(void * arg)
 {
 	menu_token_t *menu = NULL;
@@ -549,6 +630,14 @@ static void menu_task(void * arg)
 
 			case MENU_STATE_INFO:
 				
+				break;
+
+			case MENU_STATE_POWER_OFF_COUNT:
+				menu_state_power_off_count(menu);
+				break;
+
+			case MENU_STATE_POWER_OFF:
+				menu_state_power_off(menu);
 				break;
 
 			case MENU_STATE_EMERGENCY_DISABLE:

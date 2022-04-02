@@ -8,7 +8,7 @@
 #include "power_on.h"
 #include "driver/gpio.h"
 
-#define POWER_HOLD_PIN 12
+#define POWER_HOLD_PIN 13
 
 void power_on_init(void)
 {

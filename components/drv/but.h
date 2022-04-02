@@ -11,6 +11,7 @@
 
 #define BUTTON_CNT 10 //ilo�� przycisk�w
 #define TIMER_CNT_TIMEOUT 20 
+#define TIMER_LONG_CNT_TIMEOUT 100 
 
 #define CONFIG_BUTTON_I2C TRUE
 
@@ -21,7 +22,7 @@ void init_buttons(void);
 #define BUT3_GPIO 5
 #define BUT4_GPIO 17
 #define BUT5_GPIO 16
-#define BUT6_GPIO 35
+#define BUT6_GPIO 23
 #define BUT7_GPIO 14
 #define BUT8_GPIO 27
 #define BUT9_GPIO 33
@@ -40,6 +41,7 @@ typedef struct
 	void (*rise_callback)(void *arg);
 	void (*fall_callback)(void *arg);
 	void (*timer_callback)(void *arg);
+	void (*timer_long_callback)(void *arg);
 }but_t;
 
 
