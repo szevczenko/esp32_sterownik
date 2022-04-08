@@ -9,20 +9,172 @@
 
 #include "cmd_server.h"
 
+typedef enum
+{
+	STATE_INIT,
+	STATE_IDLE,
+	STATE_WORKING,
+	STATE_ERROR_TEMPERATURE,
+	STATE_ERROR_MOTOR_CURRENT,
+	STATE_ERROR_SERVO,
+	STATE_WAIT_RESET_ERROR,
+	STATE_TOP
+} state_t;
 
-void error_event(void * arg)
+struct error_siewnik_ctx
+{
+	state_t state;
+	TickType_t motor_error_timer;
+	bool motor_find_overcurrent;
+
+};
+
+static struct error_siewnik_ctx ctx;
+
+static char *state_name[] = 
+{
+	[STATE_INIT] = "STATE_INIT",
+	[STATE_IDLE] = "STATE_IDLE",
+	[STATE_WORKING] = "STATE_WORKING",
+	[STATE_ERROR_TEMPERATURE] = "STATE_ERROR_TEMPERATURE",
+	[STATE_ERROR_MOTOR_CURRENT] = "STATE_ERROR_MOTOR_CURRENT",
+	[STATE_ERROR_SERVO] = "STATE_ERROR_SERVO",
+	[STATE_WAIT_RESET_ERROR] = "STATE_WAIT_RESET_ERROR",
+};
+
+static void _change_state(state_t new_state)
+{
+	if (ctx.state < STATE_TOP)
+	{
+		if (ctx.state != new_state)
+		{
+			debug_msg("[Error] state %s\n\r", state_name[new_state]);
+		}
+		ctx.state = new_state;
+	}
+}
+
+static void _state_init(void)
+{
+	_change_state(STATE_IDLE);
+}
+
+static void _state_idle(void)
+{
+	ctx.motor_find_overcurrent = false;
+	if (menuGetValue(MENU_START_SYSTEM))
+	{
+		_change_state(STATE_WORKING);
+	}
+}
+
+static void _state_working(void)
+{
+	if (menuGetValue(MENU_START_SYSTEM) == 0)
+	{
+		_change_state(STATE_IDLE);
+	}
+
+	/*Motor error */
+	uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
+	printf("[Error] Motor current %d\n\r", motor_current);
+	if (motor_current > 4)
+	{
+		if (!ctx.motor_find_overcurrent)
+		{
+			debug_msg("[Error] find motor overcurrent\n\r");
+			ctx.motor_find_overcurrent = true;
+			ctx.motor_error_timer = MS2ST(5000) + xTaskGetTickCount();
+		}
+		else
+		{
+			if (ctx.motor_error_timer < xTaskGetTickCount())
+			{
+				_change_state(STATE_ERROR_MOTOR_CURRENT);
+			}
+		}
+	}
+	else
+	{
+		if (ctx.motor_find_overcurrent)
+		{
+			debug_msg("[Error] reset motor overcurrent\n\r");
+		}
+		ctx.motor_find_overcurrent = false;
+		
+	}
+
+}
+
+static void _state_error_temperature(void)
+{
+	
+}
+
+static void _state_error_mototr_current(void)
+{
+	/* ToDo zatrzymanie silnika */
+	cmdServerSetValueWithoutResp(MENU_MOTOR_ERROR_IS_ON, 1);
+	_change_state(STATE_WAIT_RESET_ERROR);
+}
+
+static void _state_error_servo(void)
+{
+	
+}
+
+static void _state_wait_reset_error(void)
+{
+	bool errors = ((menuGetValue(MENU_MOTOR_ERROR_IS_ON) > 0) || (menuGetValue(MENU_SERVO_ERROR_IS_ON)));
+	if (!errors)
+	{
+		/* ToDo uruchomic system z powrotem */
+		_change_state(STATE_IDLE);
+	}
+}
+
+
+static void _error_task(void * arg)
 {
 	//static uint32_t error_event_timer;
 	while(1)
 	{
-		vTaskDelay(350 / portTICK_RATE_MS);
+		switch (ctx.state)
+		{
+		case STATE_INIT:
+			_state_init();
+			break;
+
+		case STATE_IDLE:
+			_state_idle();
+			break;
+
+		case STATE_WORKING:
+			_state_working();
+			break;
+
+		case STATE_ERROR_TEMPERATURE:
+			_state_error_temperature();
+			break;
+
+		case STATE_ERROR_MOTOR_CURRENT:
+			_state_error_mototr_current();
+			break;
+
+		case STATE_ERROR_SERVO:
+			_state_error_servo();
+			break;
+
+		case STATE_WAIT_RESET_ERROR:
+			_state_wait_reset_error();
+			break;
+		
+		default:
+			ctx.state = STATE_INIT;
+			break;
+		}
+		vTaskDelay(200 / portTICK_RATE_MS);
 	} //error_event_timer
-}
-
-
-void error_led_blink(void)
-{
-
 }
 
 #if 0
@@ -97,5 +249,5 @@ static uint16_t count_servo_error_value(void)
 
 void errorSiewnikStart(void)
 {
-	xTaskCreate(error_event, "error_event", 748*2, NULL, NORMALPRIO, NULL);
+	xTaskCreate(_error_task, "_error_task", 4096, NULL, NORMALPRIO, NULL);
 }

@@ -150,6 +150,12 @@ static void menu_error(error_type_t error)
 	change_state(STATE_ERROR);
 }
 
+static void _reset_error(void)
+{
+	ctx.error_dev = ERROR_NO_ERROR;
+	change_state(STATE_READY);
+}
+
 static void set_change_menu(edit_value_t val)
 {
 	debug_function_name(__func__);
@@ -235,6 +241,7 @@ static void menu_button_up_callback(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -261,6 +268,7 @@ static void menu_button_down_callback(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -274,6 +282,8 @@ static void menu_button_down_callback(void * arg)
 		return;
 	}
 	ctx.edit_value = EDIT_PERIOD;
+	/*Test Error */
+	menu_error(ERROR_MOTOR_OVER_CURRENT);
 }
 
 static void menu_button_exit_callback(void * arg)
@@ -301,6 +311,7 @@ static void menu_button_servo_callback(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -330,6 +341,7 @@ static void menu_button_motor_callback(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -378,6 +390,7 @@ static void menu_button_motor_plus_push_cb(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -435,6 +448,7 @@ static void menu_button_motor_minus_push_cb(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -493,6 +507,7 @@ static void menu_button_motor_p_m_pull_cb(void * arg)
 	}
 	fastProcessStop(&ctx.motor_value);
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -538,6 +553,7 @@ static void menu_button_servo_plus_push_cb(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())
@@ -620,6 +636,7 @@ static void menu_button_servo_minus_push_cb(void * arg)
 		return;
 	}
 
+	_reset_error();
 	_reset_power_save_timer();
 
 	if (_is_power_save())

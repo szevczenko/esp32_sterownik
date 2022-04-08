@@ -142,7 +142,7 @@ void app_main()
         srvrControllStart();
         ultrasonar_start();
         //WYLACZONE
-        //errorSiewnikStart();
+        errorSiewnikStart();
         //LED on
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
