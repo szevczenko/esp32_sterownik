@@ -107,8 +107,6 @@ void app_main()
         }
         float voltage = battery_get_voltage();
 
-        printf("!!!!!!!!!!!Voltage measured %f!!!!!!!!!!!!!!\n\r", voltage);
-
         ssd1306_Init();
         power_on_enable_system();
         init_buttons();
@@ -146,10 +144,11 @@ void app_main()
         //LED on
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
-        io_conf.pin_bit_mask = (1 << blink_pin);
+        io_conf.pin_bit_mask = (1 << blink_pin) | (1 << 23);
         io_conf.pull_down_en = 0;
         io_conf.pull_up_en = 0;
         gpio_config(&io_conf);
+        gpio_set_level(23, 1);
     }
 
     printf("-----------------------START SYSTEM--------------------------\n\r");

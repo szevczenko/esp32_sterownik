@@ -16,7 +16,8 @@
 #include "keepalive.h"
 #include "parse_cmd.h"
 
-#define LOG(...) debug_msg(__VA_ARGS__); \
+#define MODULE_NAME "[CMD Cl] "
+#define LOG(...) debug_msg(MODULE_NAME __VA_ARGS__); \
 	debug_msg("\n\r")
 
 #define PAYLOAD_SIZE 128
@@ -375,7 +376,7 @@ int cmdClientSendDataWaitResp(uint8_t * buff, uint32_t len, uint8_t * buff_rx, u
 int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value) 
 {
 	debug_function_name("cmdClientSetValueWithoutResp");
-	printf("cmdClientSetValueWithoutResp: %d %d\n\r", val, value);
+	//printf("cmdClientSetValueWithoutResp: %d %d\n\r", val, value);
 	if (menuSetValue(val, value) == FALSE){
 		return FALSE;
 	}

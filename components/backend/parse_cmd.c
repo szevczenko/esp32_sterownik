@@ -6,7 +6,7 @@
 #include "menu_param.h"
 #include "error_siewnik.h"
 
-static uint8_t sendBuff[128];
+static uint8_t sendBuff[256];
 static uint32_t frameLenClient;
 
 void parse_client_buffer(uint8_t * buff, uint32_t len) {
@@ -17,11 +17,15 @@ void parse_client_buffer(uint8_t * buff, uint32_t len) {
 
 		if (frameLenClient > len)
 			break;
-		// debug_msg("frameLenClient %d len %d parsed_len %d %p\n\r", frameLenClient, len, parsed_len, buff);
-		// for (uint8_t i = 0; i < frameLenClient; i++) {
-		// 	debug_msg("%d ", buff[i]);
-		// }
-		// debug_msg("\n\r");
+		
+		if (frameLenClient == 0)
+			break;
+		
+		//debug_msg("frameLenClient %d len %d parsed_len %d %p\n\r", frameLenClient, len, parsed_len, buff);
+		for (uint8_t i = 0; i < frameLenClient; i++) {
+			debug_msg("%d ", buff[i]);
+		}
+		debug_msg("\n\r");
 		parse_client(&buff[parsed_len], frameLenClient);
 		len -= frameLenClient;
 		parsed_len += frameLenClient;
@@ -33,7 +37,7 @@ void parse_client(uint8_t * buff, uint32_t len)
 	debug_function_name("parse_client");
 	//uint32_t * val;
 	uint32_t value;
-	debug_msg("Parse: %d %d\n\r", buff[1], buff[2]);
+	//debug_msg("Parse: %d %d\n\r", buff[1], buff[2]);
 	if (buff[1] == CMD_REQEST || buff[1] == CMD_DATA) {
 		switch(buff[2]) {
 			case PC_KEEP_ALIVE:
@@ -154,7 +158,7 @@ void parse_server(uint8_t * buff, uint32_t len)
 {
 	//uint32_t * val;
 	debug_function_name("parse_server");
-	debug_msg("Parse: %d %d\n\r", buff[1], buff[2]);
+	//debug_msg("Parse: %d %d\n\r", buff[1], buff[2]);
 	uint32_t value;
 	if (buff[1] == CMD_REQEST || buff[1] == CMD_DATA) {
 		switch(buff[2]) {

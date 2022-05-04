@@ -14,11 +14,13 @@
 
 typedef enum
 {
-    ERR_REASON_NO,
-    ERR_REASON_MOTOR,
-    ERR_REASON_SERVO,
-	ERR_REASON_TEMPERATURE
-}error_reason_;
+	ERROR_MOTOR_NOT_CONNECTED,
+	ERROR_SERVO_NOT_CONNECTED,
+	ERROR_MOTOR_OVER_CURRENT,
+	ERROR_SERVO_OVER_CURRENT,
+	ERROR_OVER_TEMPERATURE,
+	ERROR_TOP
+} error_type_t;
 
 typedef enum
 {
@@ -47,7 +49,7 @@ void error_led_blink(void);
 void error_servo_timer(void);
 
 void errorSiewnikStart(void);
-void errorReset(void);
+void errorSiewnikErrorReset(void);
 
 #endif //#if CONFIG_DEVICE_SIEWNIK
 

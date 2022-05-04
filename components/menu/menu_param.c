@@ -19,18 +19,22 @@ static menuPStruct_t menuParameters[] =
 	[MENU_VIBRO_WORKING_TIME] = {.max_value = 100, .default_value = 0},
 	[MENU_MOTOR_IS_ON] = {.max_value = 1, .default_value = 0},
 	[MENU_SERVO_IS_ON] = {.max_value = 1, .default_value = 0},
-	[MENU_MOTOR_ERROR_IS_ON] = {.max_value = 1, .default_value = 0},
-	[MENU_SERVO_ERROR_IS_ON] = {.max_value = 1, .default_value = 0},
 	[MENU_CURRENT_SERVO] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_CURRENT_MOTOR] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_VOLTAGE_ACCUM] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_TEMPERATURE] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_SILOS_LEVEL] = {.max_value = 100, .default_value = 0},
-	[MENU_ERRORS] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_START_SYSTEM] = {.max_value = 1, .default_value = 0},
 	[MENU_BOOTUP_SYSTEM] = {.max_value = 1, .default_value = 1},
 	[MENU_EMERGENCY_DISABLE] = {.max_value = 1, .default_value = 0},
 	[MENU_LOW_LEVEL_SILOS] = {.max_value = 1, .default_value = 0},
+
+	[MENU_TEMPERATURE_IS_ERROR_ON] = {.max_value = 0xFFFF, .default_value = 0},
+	[MENU_MOTOR_ERROR_OVERCURRENT] = {.max_value = 1, .default_value = 0},
+	[MENU_SERVO_ERROR_OVERCURRENT] = {.max_value = 1, .default_value = 0},
+	[MENU_MOTOR_ERROR_NOT_CONNECTED] = {.max_value = 1, .default_value = 0},
+	[MENU_SERVO_ERROR_NOT_CONNECTED] = {.max_value = 1, .default_value = 0},
+	[MENU_SERVO_ERROR_CANOT_CLOSE] = {.max_value = 1, .default_value = 0},
 
 	[MENU_ERROR_SERVO] = {.max_value = 1, .default_value = 1},
 	[MENU_ERROR_MOTOR] = {.max_value = 1, .default_value = 1},
@@ -46,25 +50,29 @@ static menuPStruct_t menuParameters[] =
 
 static char *parameters_name[] = 
 {
-	[MENU_MOTOR] 				= "MENU_MOTOR",
-	[MENU_MOTOR2]				= "MENU_MOTOR2",
-	[MENU_SERVO] 				= "MENU_SERVO",
-	[MENU_VIBRO_PERIOD] 		= "MENU_VIBRO_PERIOD",
-	[MENU_VIBRO_WORKING_TIME] 	= "MENU_VIBRO_WORKING_TIME",
-	[MENU_MOTOR_IS_ON] 			= "MENU_MOTOR_IS_ON",
-	[MENU_SERVO_IS_ON] 			= "MENU_SERVO_IS_ON",
-	[MENU_MOTOR_ERROR_IS_ON] 	= "MENU_MOTOR_ERROR_IS_ON",
-	[MENU_SERVO_ERROR_IS_ON] 	= "MENU_SERVO_ERROR_IS_ON",
-	[MENU_CURRENT_SERVO] 		= "MENU_CURRENT_SERVO",
-	[MENU_CURRENT_MOTOR] 		= "MENU_CURRENT_MOTOR",
-	[MENU_VOLTAGE_ACCUM] 		= "MENU_VOLTAGE_ACCUM",
-	[MENU_TEMPERATURE] 			= "MENU_TEMPERATURE",
-	[MENU_SILOS_LEVEL]			= "MENU_SILOS_LEVEL",
-	[MENU_ERRORS] 				= "MENU_ERRORS",
-	[MENU_START_SYSTEM] 		= "MENU_START_SYSTEM",
-	[MENU_BOOTUP_SYSTEM] 		= "MENU_BOOTUP_SYSTEM",
-	[MENU_EMERGENCY_DISABLE] 	= "MENU_EMERGENCY_DISABLE",
-	[MENU_LOW_LEVEL_SILOS]		= "MENU_LOW_LEVEL_SILOS",
+	[MENU_MOTOR] 					= "MENU_MOTOR",
+	[MENU_MOTOR2]					= "MENU_MOTOR2",
+	[MENU_SERVO] 					= "MENU_SERVO",
+	[MENU_VIBRO_PERIOD] 			= "MENU_VIBRO_PERIOD",
+	[MENU_VIBRO_WORKING_TIME] 		= "MENU_VIBRO_WORKING_TIME",
+	[MENU_MOTOR_IS_ON] 				= "MENU_MOTOR_IS_ON",
+	[MENU_SERVO_IS_ON] 				= "MENU_SERVO_IS_ON",
+	[MENU_CURRENT_SERVO] 			= "MENU_CURRENT_SERVO",
+	[MENU_CURRENT_MOTOR] 			= "MENU_CURRENT_MOTOR",
+	[MENU_VOLTAGE_ACCUM] 			= "MENU_VOLTAGE_ACCUM",
+	[MENU_TEMPERATURE] 				= "MENU_TEMPERATURE",
+	[MENU_SILOS_LEVEL]				= "MENU_SILOS_LEVEL",
+	[MENU_START_SYSTEM] 			= "MENU_START_SYSTEM",
+	[MENU_BOOTUP_SYSTEM] 			= "MENU_BOOTUP_SYSTEM",
+	[MENU_EMERGENCY_DISABLE] 		= "MENU_EMERGENCY_DISABLE",
+	[MENU_LOW_LEVEL_SILOS]			= "MENU_LOW_LEVEL_SILOS",
+
+	[MENU_TEMPERATURE_IS_ERROR_ON]	= "MENU_TEMPERATURE_IS_ERROR_ON",
+	[MENU_MOTOR_ERROR_OVERCURRENT] 	= "MENU_MOTOR_ERROR_OVERCURRENT",
+	[MENU_SERVO_ERROR_OVERCURRENT] 	= "MENU_SERVO_ERROR_OVERCURRENT",
+	[MENU_MOTOR_ERROR_NOT_CONNECTED] = "MENU_MOTOR_ERROR_NOT_CONNECTED",
+	[MENU_SERVO_ERROR_NOT_CONNECTED] = "MENU_SERVO_ERROR_NOT_CONNECTED",
+	[MENU_SERVO_ERROR_CANOT_CLOSE] 	 = "MENU_SERVO_ERROR_CANOT_CLOSE",
 
 	/* calibration value */
 	[MENU_ERROR_SERVO] 				= "MENU_ERROR_SERVO",
@@ -154,11 +162,14 @@ esp_err_t menuReadParameters(void) {
 }
 
 static void menuSetDefaultForReadValue(void) {
-	menuSaveParameters_data[MENU_MOTOR_ERROR_IS_ON] = 0;
-	menuSaveParameters_data[MENU_SERVO_ERROR_IS_ON] = 0;
+	menuSaveParameters_data[MENU_MOTOR_ERROR_OVERCURRENT] = 0;
+	menuSaveParameters_data[MENU_SERVO_ERROR_OVERCURRENT] = 0;
+	menuSaveParameters_data[MENU_MOTOR_ERROR_NOT_CONNECTED] = 0,
+	menuSaveParameters_data[MENU_SERVO_ERROR_NOT_CONNECTED] = 0,
+	menuSaveParameters_data[MENU_SERVO_ERROR_CANOT_CLOSE] = 0,
 	menuSaveParameters_data[MENU_MOTOR_IS_ON] = 0;
 	menuSaveParameters_data[MENU_SERVO_IS_ON] = 0;
-	menuSaveParameters_data[MENU_ERRORS] = 0;
+	menuSaveParameters_data[MENU_TEMPERATURE_IS_ERROR_ON] = 0;
 	menuSaveParameters_data[MENU_START_SYSTEM] = 0;
 }
 
@@ -245,7 +256,7 @@ void menuParamInit(void) {
 	}
 	else {
 		debug_msg("menu_param: system started\n\r");
-		menuPrintParameters();
+		//menuPrintParameters();
 	}
 	
 	menuSetValue(MENU_MOTOR_IS_ON, 0);

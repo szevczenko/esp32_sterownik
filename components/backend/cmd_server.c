@@ -75,7 +75,7 @@ extern portMUX_TYPE portMux;
 
 static void _change_state(enum state_t new_state)
 {
-    LOG("CMD Sr %s", cmd_server_state_name[new_state]);
+    //LOG("CMD Sr %s", cmd_server_state_name[new_state]);
     osDelay(10);
     ctx.state = new_state;
 }

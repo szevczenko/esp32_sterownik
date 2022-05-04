@@ -35,11 +35,11 @@
 #include "menu.h"
 #include "sleep_e.h"
 
-
+#define MODULE_NAME "[WiFi] "
 #define DEFAULT_SCAN_LIST_SIZE 32
 #define CONFIG_TCPIP_EVENT_THD_WA_SIZE 4096
 #define MAX_VAL(a, b) a > b ? a : b
-#define LOG(...) debug_msg(__VA_ARGS__)
+#define LOG(...) debug_msg(MODULE_NAME __VA_ARGS__)
 
 typedef enum 
 {
@@ -51,7 +51,8 @@ typedef enum
     WIFI_APP_START,
     WIFI_APP_STOP,
     WIFI_APP_READY,
-    WIFI_APP_DEINIT
+    WIFI_APP_DEINIT,
+    WIFI_APP_TOP
 }wifi_app_status_t;
 
 char *wifi_state_name[] = 
@@ -99,6 +100,19 @@ wifi_config_t wifi_config_ap = {
 
 static void wifi_read_info_cb(void *arg, wifi_vendor_ie_type_t type, const uint8_t sa[6], const vendor_ie_data_t *vnd_ie, int rssi);
 
+static void _change_state(wifi_app_status_t new_state)
+{
+	if (new_state < WIFI_APP_TOP)
+	{
+		ctx.state = new_state;
+		LOG("State: %s", wifi_state_name[new_state]);
+	}
+	else
+	{
+		LOG("Error change state: %d", new_state);
+	}
+}
+
 static void on_wifi_disconnect(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     system_event_sta_disconnected_t *event = (system_event_sta_disconnected_t *)event_data;
@@ -109,7 +123,7 @@ static void on_wifi_disconnect(void *arg, esp_event_base_t event_base, int32_t e
 
 static void scan_done_handler(void)
 {
-    printf("SCAN DONE!!!!!!\n\r");
+    LOG("SCAN DONE!!!!!!\n\r");
 }
 
 static void wifi_scan_done_handler(void* arg, esp_event_base_t event_base,
@@ -143,11 +157,11 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
 
 static void debug_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-  printf("--------------EVENT_WIFI %s %d----------------\n\r",event_base, event_id); 
+  LOG("--------------EVENT_WIFI %s %d----------------\n\r",event_base, event_id); 
   if (event_id == WIFI_EVENT_STA_DISCONNECTED)
   {
     wifi_event_sta_disconnected_t * data = event_data;
-    printf("Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reasen %d/n/r", data->ssid, data->bssid[0],data->bssid[1] ,data->bssid[2] ,data->bssid[3] ,data->bssid[4] ,data->bssid[5], \
+    LOG("Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reasen %d/n/r", data->ssid, data->bssid[0],data->bssid[1] ,data->bssid[2] ,data->bssid[3] ,data->bssid[4] ,data->bssid[5], \
                                                                     data->ssid_len, data->reason);
   }
 }
@@ -263,7 +277,7 @@ static void wifi_init(void)
   ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_MASK_ALL, &debug_handler, NULL));
   ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, WIFI_EVENT_MASK_ALL, &debug_handler, NULL));
 
-  ctx.state = WIFI_APP_IDLE;
+  _change_state(WIFI_APP_IDLE);
   LOG("Wifi init ok\n\r");
 }
 
@@ -271,7 +285,7 @@ static void wifi_idle(void)
 {
   if (config.dev_type == T_DEV_TYPE_SERVER)
   {
-    ctx.state = WIFI_APP_START;
+    _change_state(WIFI_APP_START);
     ctx.connected = true;
   }
   else
@@ -279,7 +293,7 @@ static void wifi_idle(void)
     vTaskDelay(MS2ST(250));
     if (ctx.connect_req)
     {
-      ctx.state = WIFI_APP_CONNECT;
+      _change_state(WIFI_APP_CONNECT);
     }
   }
 }
@@ -290,7 +304,7 @@ static void wifi_connect(void)
 
   if (!ctx.is_started)
   {
-    printf("WiFiDrv: WiFi start Device\n\r");
+    LOG("WiFiDrv: WiFi start Device\n\r");
     wifiStartDevice();
   }
   
@@ -298,12 +312,12 @@ static void wifi_connect(void)
   ret = esp_wifi_connect();
   if (ret == ESP_OK)
   {
-    ctx.state = WIFI_APP_WAIT_CONNECT;
+    _change_state(WIFI_APP_WAIT_CONNECT);
   }
   else
   {
     LOG("Internal error connect %d attemps %d", ret, ctx.connect_attemps);
-    ctx.state = WIFI_APP_IDLE;
+    _change_state(WIFI_APP_IDLE);
     if(ctx.connect_attemps > 3)
     {
       ctx.connect_attemps = 0;
@@ -322,7 +336,7 @@ static void wifi_wait_connect(void)
     ctx.disconect_req = false;
     ctx.connect_req = false;
     ctx.connect_attemps = 0;
-    ctx.state = WIFI_APP_START;
+    _change_state(WIFI_APP_START);
   }
   else
   {
@@ -331,7 +345,7 @@ static void wifi_wait_connect(void)
       LOG("Timeout connect\n\r");
       ctx.connect_req = false;
       ctx.connect_attemps = 0;
-      ctx.state = WIFI_APP_IDLE;
+      _change_state(WIFI_APP_IDLE);
       ctx.is_started = false;
       esp_wifi_disconnect();
       esp_wifi_stop();
@@ -354,7 +368,7 @@ static void wifi_app_start(void)
   {
     cmdClientStart();
   }
-  ctx.state = WIFI_APP_READY;
+  _change_state(WIFI_APP_READY);
 }
 
 static void wifi_app_stop(void)
@@ -381,7 +395,7 @@ static void wifi_app_stop(void)
   }
   esp_wifi_disconnect();
   ctx.connected = 0;
-  ctx.state = WIFI_APP_IDLE;
+  _change_state(WIFI_APP_IDLE);
 }
 
 static void wifi_app_ready(void)
@@ -389,7 +403,7 @@ static void wifi_app_ready(void)
   if (ctx.disconect_req || !ctx.connected || ctx.connect_req)
   {
     LOG("WiFi STOP reason %d %d %d\n\r", ctx.disconect_req, !ctx.connected, ctx.connect_req);
-    ctx.state = WIFI_APP_STOP;
+    _change_state(WIFI_APP_STOP);
   }
   vTaskDelay(MS2ST(200));
 }
@@ -502,7 +516,7 @@ void wifiDrvGetScanResult(uint16_t *ap_count)
   ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(ap_count));
   // for (uint32_t i = 0; i < *ap_count; i++)
   // {
-  //   printf("AP: %s CH %d CH2 %d RSSI %d\n\r",ctx.scan_list[i].ssid, ctx.scan_list[i].primary, ctx.scan_list[i].second, ctx.scan_list[i].rssi);
+  //   LOG("AP: %s CH %d CH2 %d RSSI %d\n\r",ctx.scan_list[i].ssid, ctx.scan_list[i].primary, ctx.scan_list[i].second, ctx.scan_list[i].rssi);
   //   print_auth_mode(ctx.scan_list[i].authmode);
   //   if (ctx.scan_list[i].authmode != WIFI_AUTH_WEP) {
   //       print_cipher_type(ctx.scan_list[i].pairwise_cipher, ctx.scan_list[i].group_cipher);
@@ -528,7 +542,7 @@ int wifiDrvSetAPName(char* name, size_t len)
   memset(ctx.wifi_config.sta.ssid, 0, sizeof(ctx.wifi_config.sta.ssid));
   if (len > sizeof(ctx.wifi_config.sta.ssid)) return 0;
   memcpy(ctx.wifi_config.sta.ssid, name, len);
-  printf("Set AP Name %s\n\r", ctx.wifi_config.sta.ssid);
+  LOG("Set AP Name %s\n\r", ctx.wifi_config.sta.ssid);
   return 1;
 }
 
@@ -609,7 +623,6 @@ bool wifiDrvTryingConnect(void)
 
 static void wifi_event_task(void * pv)
 { 
-  uint32_t prev_state = 0;
 	while(1)
 	{
     // if (ctx.retry > 10) {
@@ -619,12 +632,6 @@ static void wifi_event_task(void * pv)
     //   wifiDrvConnect();
     //   ctx.retry = 0;
     // }
-    if (prev_state != ctx.state)
-    {
-      LOG("Wifi state %s\n\r", wifi_state_name[ctx.state]);
-      prev_state = ctx.state;
-      osDelay(20);
-    }
     
     switch (ctx.state)
     {
@@ -661,7 +668,7 @@ static void wifi_event_task(void * pv)
         break;
 
       default:
-        ctx.state = WIFI_APP_IDLE;
+        _change_state(WIFI_APP_IDLE);
     }
   }
 }

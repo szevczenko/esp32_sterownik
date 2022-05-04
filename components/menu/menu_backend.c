@@ -1,5 +1,6 @@
 #include "stdint.h"
 #include "stdarg.h"
+#include <stdbool.h>
 
 #include "config.h"
 #include "menu.h"
@@ -124,12 +125,50 @@ static void backend_idle(void)
 	osDelay(50);
 }
 
+typedef struct
+{
+	menuValue_t menuVal;
+} error_wrap_t;
+
+static error_wrap_t error_wraper[] = 
+{
+	[ERROR_MOTOR_NOT_CONNECTED] = {MENU_MOTOR_ERROR_NOT_CONNECTED},
+	[ERROR_SERVO_NOT_CONNECTED] = {MENU_SERVO_ERROR_NOT_CONNECTED},
+	[ERROR_MOTOR_OVER_CURRENT] = {MENU_MOTOR_ERROR_OVERCURRENT},
+	[ERROR_SERVO_OVER_CURRENT] = {MENU_SERVO_ERROR_OVERCURRENT},
+	[ERROR_OVER_TEMPERATURE] = {MENU_TEMPERATURE_IS_ERROR_ON},
+};
+
+static error_type_t _check_error(void)
+{
+	error_type_t error_reason = 0;
+	for (int i = 0; i < ERROR_TOP; i++)
+	{
+		cmdClientGetValue(error_wraper[i].menuVal, NULL, 2000);
+		if (menuGetValue(error_wraper[i].menuVal) > 0)
+		{
+			error_reason = error_wraper[i].menuVal;
+			menuStartSetError(i);
+		}
+	}
+	return error_reason;
+}
+
 static void backent_start(void)
 {
-	if (ctx.get_data_cnt % 300 == 0)
+	if (ctx.get_data_cnt % 20 == 0)
 	{
-		cmdClientGetValue(MENU_LOW_LEVEL_SILOS, NULL, 2000);
-		printf("Get new value %d \n\r", menuGetValue(MENU_LOW_LEVEL_SILOS));
+		bool errors = _check_error() > 0;
+		if (errors)
+		{
+			printf("[BACKEND] Error detected on machine\n\r");
+		}
+		else
+		{
+			menuStartResetError();
+			// printf("[BACKEND] No error\n\r");
+		}
+		//printf("Get new value %d \n\r", menuGetValue(MENU_LOW_LEVEL_SILOS));
 	}
 	ctx.get_data_cnt++;
 
@@ -208,7 +247,7 @@ void backendExitMenuParameters(void)
 
 void backendEnterMenuStart(void)
 {
-	ctx.menu_start_is_active= true;
+	ctx.menu_start_is_active = true;
 }
 
 void backendExitMenuStart(void)

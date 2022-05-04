@@ -172,7 +172,7 @@ static void process_button(void * arg)
 
 				if ((but_tab[i]->tim_cnt >= TIMER_LONG_CNT_TIMEOUT) && (but_tab[i]->state == 1))
 				{
-					if (but_tab[i]->timer_callback != 0)
+					if (but_tab[i]->timer_long_callback != 0)
 						but_tab[i]->timer_long_callback(but_tab[i]->arg);
 					but_tab[i]->tim_cnt = 0;
 					but_tab[i]->state = 2;
