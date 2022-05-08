@@ -279,7 +279,7 @@ static void menu_wifi_find_devices(void)
 			if (memcmp(dev_name, WIFI_AP_NAME, strlen(WIFI_AP_NAME) - 1) == 0)
 			{
 				LOG(PRINT_INFO, "%s\n", dev_name);
-				strcpy(ctx.devices_list[ctx.devices_count++], dev_name);
+				strncpy(ctx.devices_list[ctx.devices_count++], dev_name, sizeof(dev_name));
 			}
 		}
 		change_state(ST_WIFI_DEVICE_LIST);

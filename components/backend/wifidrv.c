@@ -161,8 +161,8 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
             (memcmp(ctx.wifi_con_data.password, ctx.wifi_config.sta.password,
             MAX_VAL(strlen((char *)ctx.wifi_config.sta.password), strlen((char *)ctx.wifi_con_data.password))) != 0))
         {
-            strcpy((char *)ctx.wifi_con_data.ssid, (char *)ctx.wifi_config.sta.ssid);
-            strcpy((char *)ctx.wifi_con_data.password, (char *)ctx.wifi_config.sta.password);
+            strncpy((char *)ctx.wifi_con_data.ssid, (char *)ctx.wifi_config.sta.ssid, sizeof(ctx.wifi_con_data.ssid));
+            strncpy((char *)ctx.wifi_con_data.password, (char *)ctx.wifi_config.sta.password, sizeof(ctx.wifi_con_data.password));
             wifiDataSave(&ctx.wifi_con_data);
         }
 
@@ -292,8 +292,8 @@ static void wifi_init(void)
     {
         if (wifiDataRead(&ctx.wifi_con_data) == ESP_OK)
         {
-            strcpy((char *)ctx.wifi_config.sta.ssid, (char *)ctx.wifi_con_data.ssid);
-            strcpy((char *)ctx.wifi_config.sta.password, (char *)ctx.wifi_con_data.password);
+            strncpy((char *)ctx.wifi_config.sta.ssid, (char *)ctx.wifi_con_data.ssid, sizeof(ctx.wifi_config.sta.ssid));
+            strncpy((char *)ctx.wifi_config.sta.password, (char *)ctx.wifi_con_data.password, sizeof(ctx.wifi_config.sta.password));
             ctx.read_wifi_data = true;
         }
         else
@@ -581,7 +581,7 @@ int wifiDrvSetFromAPList(uint8_t num)
         return 0;
     }
 
-    strcpy((char *)ctx.wifi_config.sta.ssid, (char *)ctx.scan_list[num].ssid);
+    strncpy((char *)ctx.wifi_config.sta.ssid, (char *)ctx.scan_list[num].ssid, sizeof(ctx.wifi_config.sta.ssid));
     return 1;
 }
 
@@ -590,6 +590,7 @@ int wifiDrvSetAPName(char *name, size_t len)
     memset(ctx.wifi_config.sta.ssid, 0, sizeof(ctx.wifi_config.sta.ssid));
     if (len > sizeof(ctx.wifi_config.sta.ssid))
     {
+        LOG(PRINT_ERROR, "%s name is to long", __func__)
         return 0;
     }
 
@@ -606,7 +607,7 @@ int wifiDrvGetAPName(char *name)
 
 int wifiDrvSetPassword(char *passwd, size_t len)
 {
-    strcpy((char *)ctx.wifi_config.sta.password, passwd);
+    strncpy((char *)ctx.wifi_config.sta.password, passwd, sizeof(ctx.wifi_config.sta.password));
     return 1;
 }
 
