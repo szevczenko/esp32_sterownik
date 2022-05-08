@@ -19,8 +19,7 @@
 
 #if CONFIG_DEBUG_MENU_BACKEND
 #define LOG(_lvl, ...)                          \
-    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
-    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
 #endif

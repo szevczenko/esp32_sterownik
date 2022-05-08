@@ -10,7 +10,13 @@
 #define START_CONFIG         0xDEADBEAF
 #define END_CONFIG           0xBEAFDEAD
 
-//portMUX_TYPE osalSysMutex = portMUX_INITIALIZER_UNLOCKED;
+static const char * error_lvl_str[] = 
+{
+    [PRINT_DEBUG] = "DEBUG: ",
+    [PRINT_INFO] = "INFO: ",
+    [PRINT_WARNING] = "WARNING: ",
+    [PRINT_ERROR] = "ERROR: "
+};
 
 config_t config =
 {
@@ -26,10 +32,12 @@ void config_printf(enum config_print_lvl module_lvl, enum config_print_lvl msg_l
 {
 	if (module_lvl <= msg_lvl)
 	{
+        printf(error_lvl_str[msg_lvl]);
 		va_list args;
 		va_start(args, format);
 		printf(format, args);
 		va_end(args);
+        printf("\n\r");
 	}
 }
 

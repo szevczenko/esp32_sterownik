@@ -13,8 +13,7 @@
 
 #if CONFIG_DEBUG_MENU_BACKEND
 #define LOG(_lvl, ...)                          \
-    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
-    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
 #endif
@@ -279,7 +278,7 @@ static void menu_wifi_find_devices(void)
 			if (memcmp(dev_name, WIFI_AP_NAME, strlen(WIFI_AP_NAME) - 1) == 0)
 			{
 				LOG(PRINT_INFO, "%s\n", dev_name);
-				strncpy(ctx.devices_list[ctx.devices_count++], dev_name, sizeof(dev_name));
+				strncpy(ctx.devices_list[ctx.devices_count++], dev_name, 33);
 			}
 		}
 		change_state(ST_WIFI_DEVICE_LIST);

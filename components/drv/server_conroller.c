@@ -16,8 +16,7 @@
 
 #if CONFIG_DEBUG_SERVER_CONTROLLER
 #define LOG(_lvl, ...)                          \
-    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
-    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
 #endif
@@ -84,7 +83,7 @@ static void change_state(state_t state)
 	
 	if (state != ctx.state)
 	{
-		LOG(PRINT_DEBUG, "Change state -> %s\n\r", state_name[state])
+		LOG(PRINT_DEBUG, "Change state -> %s\n\r", state_name[state]);
 		ctx.state = state;
 	}
 }

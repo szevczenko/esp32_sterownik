@@ -39,8 +39,7 @@
 
 #if CONFIG_DEBUG_WIFI
 #define LOG(_lvl, ...)                          \
-    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
-    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
 #endif
@@ -590,7 +589,7 @@ int wifiDrvSetAPName(char *name, size_t len)
     memset(ctx.wifi_config.sta.ssid, 0, sizeof(ctx.wifi_config.sta.ssid));
     if (len > sizeof(ctx.wifi_config.sta.ssid))
     {
-        LOG(PRINT_ERROR, "%s name is to long", __func__)
+        LOG(PRINT_ERROR, "%s name is to long", __func__);
         return 0;
     }
 
