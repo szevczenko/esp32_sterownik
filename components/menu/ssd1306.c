@@ -18,8 +18,8 @@
 
 #include "esp_task_wdt.h"
 
-#undef debug_msg
-#define debug_msg(...) //debug_msg( __VA_ARGS__)
+#undef LOG
+#define LOG(...) //LOG( __VA_ARGS__)
 
 #define OLED_I2C_ADDRESS   0x3C
 

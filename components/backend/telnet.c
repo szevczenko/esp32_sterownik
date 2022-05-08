@@ -31,7 +31,6 @@
 
 #include "wifidrv.h"
 
-#if (CONFIG_USE_TCPIP)
 extern portMUX_TYPE portMux;
 
 // The global tnHandle ... since we are only processing ONE telnet
@@ -129,7 +128,7 @@ static void delete_client(uint8_t number)
 }
 
 static void doTelnet(void * pv) {
-	debug_msg(   "--> doTelnet\n");
+	printf(   "--> doTelnet\n");
 	int rv, max_socket;
 	struct timeval timeout_time;
 	fd_set set;
@@ -161,7 +160,7 @@ static void doTelnet(void * pv) {
 
 		if (rv<0)
 	    {
-		    debug_msg(   "doTelnet select: %d (%s)\n", errno, strerror(errno)); // an error accured 
+		    printf(   "doTelnet select: %d (%s)\n", errno, strerror(errno)); // an error accured 
 	    }
 	    else if(rv == 0)
 	    {
@@ -175,13 +174,13 @@ static void doTelnet(void * pv) {
 			int len = read(pTelnetUserData[i].sockfd, (char *)buffer, sizeof(buffer));
 	 		if (len < 0)
 			{		
-				debug_msg(   "doTelnet read %d: %d (%s)\n", pTelnetUserData[i].sockfd, errno, strerror(errno)); // an error accured
+				printf(   "doTelnet read %d: %d (%s)\n", pTelnetUserData[i].sockfd, errno, strerror(errno)); // an error accured
 				delete_client(i);
   			}
 			if (len == 0)
 			{
 				delete_client(i);
-				debug_msg(   "Telnet partner %d finished. Has %d clients\n",i, telnetServer.client_count);
+				printf(   "Telnet partner %d finished. Has %d clients\n",i, telnetServer.client_count);
 			}
 			if (len>0)
 			{
@@ -203,7 +202,7 @@ static void telnet_initListenClients(void)
 			telnetServer.socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (telnetServer.socket < 0)
 		{
-			debug_msg(   "server socket error: %d (%s)\n", errno, strerror(errno));
+			printf(   "server socket error: %d (%s)\n", errno, strerror(errno));
 			vTaskDelay(500);
 			continue;
 		} 
@@ -213,25 +212,25 @@ static void telnet_initListenClients(void)
 		int flags = 1;
 
 		flags = 1;
-  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&flags, sizeof(flags))) { debug_msg("ERROR: setsocketopt(), SO_KEEPIDLE"); };
+  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&flags, sizeof(flags))) { printf("ERROR: setsocketopt(), SO_KEEPIDLE"); };
 
  	 	flags = 1;
-  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPCNT, (void *)&flags, sizeof(flags))) { debug_msg("ERROR: setsocketopt(), SO_KEEPCNT");};
+  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPCNT, (void *)&flags, sizeof(flags))) { printf("ERROR: setsocketopt(), SO_KEEPCNT");};
 
   		flags = 1;
-  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&flags, sizeof(flags))) { debug_msg("ERROR: setsocketopt(), SO_KEEPINTVL"); };
+  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&flags, sizeof(flags))) { printf("ERROR: setsocketopt(), SO_KEEPINTVL"); };
 
 		int rc = bind(telnetServer.socket, (struct sockaddr *)&telnetServer.addr, sizeof(telnetServer.addr));
 		if (rc < 0) {
-			debug_msg("bind: %d (%s)\n", errno, strerror(errno));
+			printf("bind: %d (%s)\n", errno, strerror(errno));
 			vTaskDelay(500);
 			continue;
 		}
 
 		rc = listen(telnetServer.socket, 5);
-		//debug_msg(   "listen");
+		//printf(   "listen");
 		if (rc < 0) {
-			debug_msg("listen: %d (%s)\n", errno, strerror(errno));
+			printf("listen: %d (%s)\n", errno, strerror(errno));
 			vTaskDelay(500);
 			continue;
 		}
@@ -254,7 +253,7 @@ static void telnet_listenForClients(void *arg)
 		{
 			telnet_initListenClients();
 			status_telnet = 1;
-			debug_msg( "was init listen telnet thd \n");
+			printf( "was init listen telnet thd \n");
 		}
 		socklen_t len = sizeof(telnetServer.addr);
 		fd_set set;
@@ -269,20 +268,20 @@ static void telnet_listenForClients(void *arg)
 		rv = select(telnetServer.socket + 1, &set, NULL, NULL, &timeout);
 		if (rv<0)
 		{
-			debug_msg(   "listenForClients select: %d (%s)\n", errno, strerror(errno)); /* an error accured */
+			printf(   "listenForClients select: %d (%s)\n", errno, strerror(errno)); /* an error accured */
 		}
 		else if(rv == 0)
 		{
-    		// debug_msg(  "timeout occurred (10 second) \n"); /* a timeout occured */
+    		// printf(  "timeout occurred (10 second) \n"); /* a timeout occured */
 		}
 		else 
 		{
 			int partnerSocket = accept(telnetServer.socket, (struct sockaddr *)&telnetServer.addr, &len);
 			if (partnerSocket < 0) {
-				debug_msg(   "accept: %d (%s)\n", errno, strerror(errno));
+				printf(   "accept: %d (%s)\n", errno, strerror(errno));
 				continue;
 			}
-			debug_msg(   "We have a new client connection! %d\n", partnerSocket);
+			printf(   "We have a new client connection! %d\n", partnerSocket);
 			if (telnetServer.client_count<TELNET_MAX_CLIENT)
 			{
 				
@@ -368,5 +367,3 @@ void telnetPrintfToAll(const char *format, ...)
 		}
 	}
 }
-
-#endif //#if (CONFIG_USE_TCPIP)

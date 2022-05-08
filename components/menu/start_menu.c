@@ -14,6 +14,17 @@
 #include "buzzer.h"
 #include "start_menu.h"
 
+#define MODULE_NAME                       "[SETTING] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define DEVICE_LIST_SIZE 16
 #define CHANGE_MENU_TIMEOUT_MS 1500
 #define POWER_SAVE_TIMEOUT_MS 30 * 1000
@@ -124,13 +135,13 @@ static void change_state(state_start_menu_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			debug_msg("Start menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Start menu %s\n\r", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
 	else
 	{
-		debug_msg("ERROR: change state %d\n\r", new_state);
+		LOG(PRINT_INFO, "ERROR: change state %d\n\r", new_state);
 	}
 }
 
@@ -203,7 +214,7 @@ static void _reset_power_save_timer(void)
 static bool _check_low_silos_flag(void)
 {
 	uint32_t flag = menuGetValue(MENU_LOW_LEVEL_SILOS);
-	//printf("------SILOS FLAG %d---------\n\r", flag);
+	//LOG(PRINT_INFO, "------SILOS FLAG %d---------\n\r", flag);
 	if (flag > 0)
 	{
 		if (ctx.low_silos_ckeck_timeout < xTaskGetTickCount())
@@ -810,13 +821,13 @@ static bool menu_is_connected(void)
 	debug_function_name(__func__);
 	if (!wifiDrvIsConnected())
 	{
-		printf("START_MENU: WiFi not connected\n\r");
+		LOG(PRINT_INFO, "START_MENU: WiFi not connected\n\r");
 		return false;
 	}
 
 	if (!cmdClientIsConnected())
 	{
-		printf("START_MENU: Client not connected\n\r");
+		LOG(PRINT_INFO, "START_MENU: Client not connected\n\r");
 		return false;
 	}
 
@@ -843,7 +854,7 @@ static void menu_check_connection(void)
 
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		printf("START_MENU: cmdClientGetAllValue try %d\n\r", i);
+		LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d\n\r", i);
 		osDelay(250);
 		ret = cmdClientGetAllValue(100);
 		if (ret)
@@ -867,7 +878,7 @@ static void menu_check_connection(void)
 
 	if (ret != TRUE)
 	{
-		debug_msg("%s: error get parameters\n\r", __func__);
+		LOG(PRINT_INFO, "%s: error get parameters\n\r", __func__);
 		cmdClientSetValueWithoutResp(MENU_MOTOR_IS_ON, 0);
 		cmdClientSetValueWithoutResp(MENU_SERVO_IS_ON, 0);
 		change_state(STATE_IDLE);

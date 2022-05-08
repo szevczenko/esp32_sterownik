@@ -6,6 +6,17 @@
 #include "menu_default.h"
 #include "power_on.h"
 
+#define MODULE_NAME                       "[M_LOW_BAT] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 static bool menu_button_init_cb(void * arg)
 {
 	menu_token_t *menu = arg;

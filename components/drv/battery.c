@@ -9,6 +9,17 @@
 #include "esp_adc_cal.h"
 #include "power_on.h"
 
+#define MODULE_NAME                       "[Battery] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_BATTERY
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define DEFAULT_VREF        1100        //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES       64          //Multisampling
 #define CHARGER_STATUS_PIN  2
@@ -54,7 +65,7 @@ static void adc_task()
         adc_reading /= NO_OF_SAMPLES;
         //Convert adc_reading to voltage in mV
         uint32_t voltage_meas = esp_adc_cal_raw_to_voltage(adc_reading, &adc_chars);
-        //printf("Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
+        LOG(PRINT_DEBUG, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
 
         voltage = MAX_VOL * voltage_meas / MAX_ADC_FOR_MAX_VOL;
 
@@ -76,11 +87,11 @@ static void adc_task()
 
         if (voltage < CRITICAL_VOLTAGE)
         {
-            printf("INFO: Found critical battery voltage. Power off");
+            LOG(PRINT_INFO, "INFO: Found critical battery voltage. Power off");
             power_on_disable_system();
         }
 
-		//printf("Average: %d measured %d\n\r", voltage_average, voltage );
+		LOG(PRINT_DEBUG, "Average: %d measured %d\n\r", voltage_average, voltage );
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }

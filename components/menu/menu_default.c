@@ -5,6 +5,17 @@
 #include "ssdFigure.h"
 #include "menu_default.h"
 
+#define MODULE_NAME                       "[DEFAULT] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 static scrollBar_t scrollBar = {
 	.line_max = MAX_LINE,
 	.y_start = MENU_HEIGHT
@@ -140,7 +151,6 @@ static bool menu_process(void * arg)
 			menu->line.end = menu->position;
 			menu->line.start = menu->line.end - MAX_LINE + 1;
 		}
-		debug_msg("menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n", menu->line.start, menu->line.end, menu->position, menu->last_button);
 	}
 
 	int line = 0;

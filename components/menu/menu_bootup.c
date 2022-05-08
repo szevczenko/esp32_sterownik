@@ -14,6 +14,17 @@
 #include "cmd_client.h"
 #include "parse_cmd.h"
 
+#define MODULE_NAME                       "[BOOTUP] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 typedef enum
 {
 	STATE_INIT,
@@ -68,13 +79,13 @@ static void change_state(state_bootup_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			debug_msg("Bootup menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Bootup menu %s\n\r", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
 	else
 	{
-		debug_msg("ERROR: change state %d\n\r", new_state);
+		LOG(PRINT_ERROR, "ERROR: change state %d\n\r", new_state);
 	}
 }
 
@@ -177,7 +188,7 @@ static void bootup_get_server_data(void)
 		}
 		else 
 		{
-			debug_msg("Timeout get MENU_START_SYSTEM\n\r");
+			LOG(PRINT_INFO, "Timeout get MENU_START_SYSTEM\n\r");
 			change_state(STATE_EXIT);
 			return;
 		}
@@ -186,7 +197,7 @@ static void bootup_get_server_data(void)
 	if (start_status > 0) 
 	{
 		if (cmdClientGetAllValue(150) == 0) {
-			debug_msg("Timeout get ALL VALUES\n\r");
+			LOG(PRINT_INFO, "Timeout get ALL VALUES\n\r");
 			change_state(STATE_EXIT);
 		}
 	}

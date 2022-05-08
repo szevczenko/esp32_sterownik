@@ -10,6 +10,17 @@
 #include "cmd_server.h"
 #include "server_controller.h"
 
+#define MODULE_NAME                       "[Err_siew] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_ERROR_SIEWNIK
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 typedef enum
 {
 	STATE_INIT,
@@ -55,7 +66,7 @@ static void _change_state(state_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			debug_msg("[Error] state %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "state %s\n\r", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
@@ -91,12 +102,12 @@ static void _state_working(void)
 
 	/* Motor error overcurrent */
 	uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
-	// printf("[Error] Motor current %d\n\r", motor_current);
+	// LOG(PRINT_INFO, "Motor current %d\n\r", motor_current);
 	// if (motor_current > 15000)
 	// {
 	// 	if (!ctx.motor_find_overcurrent)
 	// 	{
-	// 		debug_msg("[Error] find motor overcurrent\n\r");
+	// 		LOG(PRINT_INFO, "find motor overcurrent\n\r");
 	// 		ctx.motor_find_overcurrent = true;
 	// 		ctx.motor_error_timer = MS2ST(5000) + xTaskGetTickCount();
 	// 	}
@@ -112,7 +123,7 @@ static void _state_working(void)
 	// {
 	// 	if (ctx.motor_find_overcurrent)
 	// 	{
-	// 		debug_msg("[Error] reset motor overcurrent\n\r");
+	// 		LOG(PRINT_INFO, "reset motor overcurrent\n\r");
 	// 	}
 	// 	ctx.motor_find_overcurrent = false;
 	// }
@@ -122,7 +133,7 @@ static void _state_working(void)
 	// {
 	// 	if (!ctx.motor_find_not_connected)
 	// 	{
-	// 		debug_msg("[Error] find motor not connected\n\r");
+	// 		LOG(PRINT_INFO, "find motor not connected\n\r");
 	// 		ctx.motor_find_not_connected = true;
 	// 		ctx.motor_not_connected_timer = MS2ST(250) + xTaskGetTickCount();
 	// 	}
@@ -138,7 +149,7 @@ static void _state_working(void)
 	// {
 	// 	if (ctx.motor_find_not_connected)
 	// 	{
-	// 		debug_msg("[Error] reset motor not connected\n\r");
+	// 		LOG(PRINT_INFO, "reset motor not connected\n\r");
 	// 	}
 	// 	ctx.motor_find_not_connected = false;
 	// }
@@ -264,7 +275,7 @@ static float count_motor_error_value(uint16_t x, float volt_accum)
 	#if DARK_MENU
 	temp += (float)(dark_menu_get_value(MENU_ERROR_MOTOR_CALIBRATION) - 50) * x/400;
 	#endif
-	/* Jak chcesz dobrac parametry mozesz dla testu odkomentowac linijke nizej debug_msg()
+	/* Jak chcesz dobrac parametry mozesz dla testu odkomentowac linijke nizej LOG(PRINT_INFO, )
 		Funkcja zwraca prad maksymalny
 		x						- wartosc na wyswietlaczu PWM
 		volt					- napiecie akumulatora
@@ -273,21 +284,21 @@ static float count_motor_error_value(uint16_t x, float volt_accum)
 		volt_in_motor_nominal	- napiecie przy ktorym wykonane pomiary (14,2 V) przeskalowane wedlug PWM
 		*/
 	
-	//debug_msg("CURRENT volt_in: %d, volt_nominal: %f, out_value: %f\n", volt_in_motor, volt_in_motor_nominal, temp);
+	//LOG(PRINT_INFO, "CURRENT volt_in: %d, volt_nominal: %f, out_value: %f\n", volt_in_motor, volt_in_motor_nominal, temp);
 	return temp;
 }
 
 static uint16_t count_motor_timeout_wait(uint16_t x)
 {
 	uint16_t timeout = 5000 - x*30;
-	debug_msg("count_motor_timeout_wait: %d\n\r", timeout);
+	LOG(PRINT_INFO, "count_motor_timeout_wait: %d\n\r", timeout);
 	return timeout; //5000[ms] - pwm*30
 }
 
 static uint16_t count_motor_timeout_axelerate(uint16_t x)
 {
 	uint16_t timeout = 5000 - x*30;
-	debug_msg("count_motor_timeout_axelerate: %d\n\r", timeout);
+	LOG(PRINT_INFO, "count_motor_timeout_axelerate: %d\n\r", timeout);
 	return timeout; //5000[ms] - pwm*30
 }
 

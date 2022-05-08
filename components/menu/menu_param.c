@@ -4,11 +4,19 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
+#define MODULE_NAME                       "[PARAM] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define STORAGE_NAMESPACE "MENU"
 #define PARAMETERS_TAB_SIZE MENU_LAST_VALUE
-
-// #undef debug_msg
-// #define debug_msg(...) //debug_msg( __VA_ARGS__)
 
 static menuPStruct_t menuParameters[] = 
 {
@@ -92,7 +100,7 @@ RTC_NOINIT_ATTR uint32_t menuSaveParameters_data[MENU_LAST_VALUE];
 void menuPrintParameters(void)
 {
 	for (uint8_t i = 0; i < PARAMETERS_TAB_SIZE; i++) {
-		debug_msg("%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
+		LOG(PRINT_INFO, "%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
 	}
 }
 
@@ -101,7 +109,7 @@ void menuPrintParameter(menuValue_t val)
 	if (val >= MENU_LAST_VALUE)
 		return;
 	
-	debug_msg("Param: %s : %d\n\r", parameters_name[val],  menuSaveParameters_data[val]);
+	LOG(PRINT_INFO, "Param: %s : %d\n\r", parameters_name[val],  menuSaveParameters_data[val]);
 }
 
 esp_err_t menuSaveParameters(void) {
@@ -111,7 +119,7 @@ esp_err_t menuSaveParameters(void) {
 	 // Open
     err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
     if (err != ESP_OK) {
-		debug_msg("nvs_open error %d\n\r", err);
+		LOG(PRINT_INFO, "nvs_open error %d\n\r", err);
 		nvs_close(my_handle);
 		return err;
 	}
@@ -119,7 +127,7 @@ esp_err_t menuSaveParameters(void) {
 	err = nvs_set_blob(my_handle, "menu", menuSaveParameters_data, sizeof(menuSaveParameters_data));
 
 	if (err != ESP_OK) {
-		debug_msg("nvs_set_blob error %d\n\r", err);
+		LOG(PRINT_INFO, "nvs_set_blob error %d\n\r", err);
 		nvs_close(my_handle);
 		return err;
 	}
@@ -127,13 +135,13 @@ esp_err_t menuSaveParameters(void) {
     // Commit
     err = nvs_commit(my_handle);
     if (err != ESP_OK) {
-		debug_msg("nvs_commit error %d\n\r", err);
+		LOG(PRINT_INFO, "nvs_commit error %d\n\r", err);
 		nvs_close(my_handle);
 		return err;
 	}
     // Close
     nvs_close(my_handle);
-	debug_msg("menuSaveParameters success\n\r");
+	LOG(PRINT_INFO, "menuSaveParameters success\n\r");
     return ESP_OK;
 }
 
@@ -242,20 +250,20 @@ void menuParamSetDataNSize(void * data, uint32_t size) {
 void menuParamInit(void) {
 	int ret_val = 0;
 	if (menuCheckValues() == FALSE || menuGetValue(MENU_START_SYSTEM) == 0) {
-		debug_msg("menu_param: system not started\n\r");
+		LOG(PRINT_INFO, "menu_param: system not started\n\r");
 		ret_val = menuReadParameters();
 		if (ret_val != ESP_OK) {
-			debug_msg("menu_param: menuReadParameters error %d\n\r", ret_val);
+			LOG(PRINT_INFO, "menu_param: menuReadParameters error %d\n\r", ret_val);
 			menuSetDefaultValue();
 		}
 		else {
-			debug_msg("menu_param: menuReadParameters succes\n\r");
+			LOG(PRINT_INFO, "menu_param: menuReadParameters succes\n\r");
 			menuPrintParameters();
 			menuSetDefaultForReadValue();
 		}
 	}
 	else {
-		debug_msg("menu_param: system started\n\r");
+		LOG(PRINT_INFO, "menu_param: system started\n\r");
 		//menuPrintParameters();
 	}
 	

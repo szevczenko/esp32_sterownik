@@ -16,8 +16,16 @@
 #include "pcf8574.h"
 #include "buzzer.h"
 
+#define MODULE_NAME                       "[Button] "
+#define DEBUG_LVL                         PRINT_INFO
 
-
+#if CONFIG_DEBUG_BUTTON
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 extern uint8_t test_number;
 
@@ -139,9 +147,7 @@ static void process_button(void * arg)
 	{
 		esp_task_wdt_reset();
 		start_time = xTaskGetTickCount();
-		//process
-		//read_i2c_value = pcf8574_getinput(0);
-		//taskENTER_CRITICAL();
+
 		for (uint8_t i=0; i<BUTTON_CNT; i++)
 		{
 			red_val = read_button(but_tab[i]);
@@ -184,7 +190,6 @@ static void process_button(void * arg)
 				but_tab[i]->state = 0;
 			}
 		} // end for
-		//taskEXIT_CRITICAL();
 		vTaskDelay(30 / portTICK_RATE_MS);
 	}// end while
 }

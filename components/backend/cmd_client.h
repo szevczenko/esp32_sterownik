@@ -33,8 +33,6 @@ void cmdClientStart(void);
 void cmdClientStop(void);
 int cmdClientSend(uint8_t * buffer, uint32_t len);
 
-void cmdClientSetIp(char * ip);
-void cmdClientSetPort(uint32_t port);
 void cmdClientDisconnect(void);
 int cmdClientTryConnect(uint32_t timeout);
 int cmdClientIsConnected(void);
@@ -46,9 +44,7 @@ int cmdClientGetAllValue(uint32_t timeout);
 int cmdClientSetAllValue(void);
 int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout_ms);
 int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value);
-int cmdClientSetValueWithoutRespI(menuValue_t val, uint32_t value);
 int cmdClientGetValue(menuValue_t val, uint32_t * value, uint32_t timeout);
 int cmdClientSendCmd(parseCmd_t cmd);
-int cmdClientSendCmdI(parseCmd_t cmd);
 
 #endif

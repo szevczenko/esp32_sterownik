@@ -16,6 +16,17 @@
 #include "battery.h"
 #include "power_on.h"
 
+#define MODULE_NAME                       "[MENU Drv] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define CONFIG_MENU_TEST_TASK 	0
 #define LINE_HEIGHT 			10
 #define MENU_HEIGHT 			18
@@ -98,7 +109,7 @@ int menuDrvElementsCnt(menu_token_t * menu)
 {
 	if (menu->menu_list == NULL)
 	{
-		debug_msg("menu->menu_list == NULL (%s)\n", menu->name);
+		LOG(PRINT_INFO, "menu->menu_list == NULL (%s)\n", menu->name);
 		return 0;
 	}
 	int len = 0;
@@ -596,11 +607,11 @@ static void menu_task(void * arg)
 		{
 			if (menu != NULL)
 			{
-				debug_msg("state: %s, menu %s\n\r", state_name[ctx.state], menu->name);
+				LOG(PRINT_INFO, "state: %s, menu %s\n\r", state_name[ctx.state], menu->name);
 			}
 			else
 			{
-				debug_msg("state %s, menu is NULL\n\r", state_name[ctx.state]);
+				LOG(PRINT_INFO, "state %s, menu is NULL\n\r", state_name[ctx.state]);
 			}
 			prev_state = ctx.state;
 		}

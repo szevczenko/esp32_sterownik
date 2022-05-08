@@ -11,6 +11,17 @@
 #include "error_siewnik.h"
 #include "measure.h"
 
+#define MODULE_NAME                       "[Srvr Ctrl] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_SERVER_CONTROLLER
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define MOTOR_PWM_PIN 27
 #define SERVO_PWM_PIN 26
 #define MOTOR_PWM_PIN2 25
@@ -73,7 +84,7 @@ static void change_state(state_t state)
 	
 	if (state != ctx.state)
 	{
-		debug_msg("Change state -> %s\n\r", state_name[state])
+		LOG(PRINT_DEBUG, "Change state -> %s\n\r", state_name[state])
 		ctx.state = state;
 	}
 }
@@ -118,11 +129,11 @@ static void set_working_data(void)
 		gpio_set_level(15, 0);
 	}
 
-	//printf("motor %d %f %d\n\r", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
+	LOG(PRINT_DEBUG, "motor %d %f %d\n\r", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
 	if (ctx.motor_on)
 	{
 		float duty = (float)ctx.motor_pwm;
-		//printf("duty motor %f\n\r", duty);
+		LOG(PRINT_DEBUG, "duty motor %f\n\r", duty);
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
 		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
 
@@ -137,7 +148,7 @@ static void set_working_data(void)
 	}
 
 	float duty = (float)ctx.servo_pwm * 100 / 19999.0;
-	printf("duty servo %f %d %d\n\r", duty, ctx.servo_value, ctx.servo_pwm);
+	LOG(PRINT_INFO, "duty servo %f %d %d\n\r", duty, ctx.servo_value, ctx.servo_pwm);
 	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
 	mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 }

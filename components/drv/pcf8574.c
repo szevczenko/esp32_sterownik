@@ -14,8 +14,8 @@ Please refer to LICENSE file for licensing information.
 #include "pcf8574.h"
 
 
-// #undef debug_msg
-// #define debug_msg(...) //debug_msg( __VA_ARGS__)
+#undef LOG
+#define LOG(...) //LOG( __VA_ARGS__)
 
 #ifndef PCF8574_I2C_PORT
 #define PCF8574_I2C_PORT		I2C_NUM_0
@@ -164,7 +164,7 @@ int pcf8574_getinput(uint8_t deviceid) {
 		i2c_cmd_link_delete(cmd);
 		if (ret != ESP_OK) 
 		{
-			//debug_msg("i2c status %d\n", ret);
+			//LOG("i2c status %d\n", ret);
 			return ret;
 		}
 	}

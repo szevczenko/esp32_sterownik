@@ -15,7 +15,6 @@
 #include "keepalive.h"
 #include "menu_param.h"
 #include "cmd_client.h"
-#include "atmega_communication.h"
 #include "error_siewnik.h"
 #include "measure.h"
 #include "driver/gpio.h"

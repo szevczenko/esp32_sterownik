@@ -28,8 +28,6 @@
         },
 
         "terminal.integrated.defaultProfile.windows": "msys32",
-        "editor.insertSpaces": false,
-        "editor.tabCompletion": "on",
         "git.ignoreLimitWarning": true,
         "files.associations": {
             "cmd_server.h": "c",

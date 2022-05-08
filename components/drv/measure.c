@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include "measure.h"
 #include "config.h"
-#include "atmega_communication.h"
 #include "freertos/timers.h"
 #include "menu_param.h"
 #include "parse_cmd.h"
@@ -12,8 +11,16 @@
 #include "measure.h"
 #include "ultrasonar.h"
 
-//#undef debug_msg
-//#define debug_msg(...)
+#define MODULE_NAME                       "[Meas] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MEASURE
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__); \
+    debug_printf(DEBUG_LVL, _lvl, "\n\r");
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 static adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static adc_atten_t atten = ADC_ATTEN_DB_11;
@@ -64,7 +71,7 @@ static uint32_t calibration_value;
 static void measure_get_servo_calibration(TimerHandle_t xTimer)
 {
 	calibration_value = measure_get_filtered_value(MEAS_CH_SERVO);
-	debug_msg("MEASURE SERVO Calibration value = %d\n\r", calibration_value);
+	LOG(PRINT_INFO, "MEASURE SERVO Calibration value = %d\n\r", calibration_value);
 }
 #endif
 
@@ -73,11 +80,11 @@ static void measure_get_motor_calibration(TimerHandle_t xTimer)
 	if (!menuGetValue(MENU_MOTOR_IS_ON))
 	{
 		motor_calibration_meas = measure_get_filtered_value(MEAS_CH_MOTOR);
-		debug_msg("MEASURE MOTOR Calibration value = %d\n\r", calibration_value);
+		LOG(PRINT_INFO, "MEASURE MOTOR Calibration value = %d\n\r", calibration_value);
 	}
 	else
 	{
-		debug_msg("MEASURE MOTOR Fail get. Motor is on\n\r");
+		LOG(PRINT_INFO, "MEASURE MOTOR Fail get. Motor is on\n\r");
 	}
 	
 }
@@ -119,7 +126,7 @@ static void _read_adc_values(void)
 		}
 		if (meas_data[ch].unit == ADC_UNIT_2)
 		{
-			//printf("Pomiar 2 %d\n\r", ret_v);
+			LOG(PRINT_DEBUG, "Pomiar 2 %d\n\r", ret_v);
 		}
 		
 		meas_data[ch].adc /= NO_OF_SAMPLES;
@@ -193,7 +200,7 @@ void measure_start(void)
 
 void measure_meas_calibration_value(void)
 {
-	printf("%s\n\r", __func__);
+	LOG(PRINT_INFO, "%s\n\r", __func__);
 	xTimerStart( servoCalibrationTimer, 0 );
 	xTimerStart( motorCalibrationTimer, 0 );
 }
@@ -210,13 +217,13 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 float measure_get_temperature(void)
 {
 	int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
-	//printf("Temperature %d %d\n\r", measure_get_filtered_value(MEAS_CH_TEMP), temp);
+	LOG(PRINT_DEBUG, "Temperature %d %d\n\r", measure_get_filtered_value(MEAS_CH_TEMP), temp);
 	return temp;
 }
 
 float measure_get_current(enum_meas_ch type, float resistor)
 {
-	//printf("Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
+	LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
 	uint32_t adc = measure_get_filtered_value(type) < motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
 	float current = (float) adc / 1.1 /* Amp */;
 	return current;
