@@ -86,7 +86,7 @@ static void adc_task()
 
         if (voltage < CRITICAL_VOLTAGE)
         {
-            LOG(PRINT_INFO, "INFO: Found critical battery voltage. Power off");
+            LOG(PRINT_INFO, "Found critical battery voltage. Power off");
             power_on_disable_system();
         }
 

@@ -212,13 +212,13 @@ static void telnet_initListenClients(void)
 		int flags = 1;
 
 		flags = 1;
-  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&flags, sizeof(flags))) { printf("ERROR: setsocketopt(), SO_KEEPIDLE"); };
+  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&flags, sizeof(flags))) { printf("setsocketopt(), SO_KEEPIDLE"); };
 
  	 	flags = 1;
-  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPCNT, (void *)&flags, sizeof(flags))) { printf("ERROR: setsocketopt(), SO_KEEPCNT");};
+  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPCNT, (void *)&flags, sizeof(flags))) { printf("setsocketopt(), SO_KEEPCNT");};
 
   		flags = 1;
-  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&flags, sizeof(flags))) { printf("ERROR: setsocketopt(), SO_KEEPINTVL"); };
+  		if (setsockopt(telnetServer.socket, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&flags, sizeof(flags))) { printf("setsocketopt(), SO_KEEPINTVL"); };
 
 		int rc = bind(telnetServer.socket, (struct sockaddr *)&telnetServer.addr, sizeof(telnetServer.addr));
 		if (rc < 0) {

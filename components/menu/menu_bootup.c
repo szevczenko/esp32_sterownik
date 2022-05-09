@@ -84,7 +84,7 @@ static void change_state(state_bootup_t new_state)
 	}
 	else
 	{
-		LOG(PRINT_ERROR, "ERROR: change state %d\n\r", new_state);
+		LOG(PRINT_ERROR, "change state %d\n\r", new_state);
 	}
 }
 

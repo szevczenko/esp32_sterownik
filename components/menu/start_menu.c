@@ -140,7 +140,7 @@ static void change_state(state_start_menu_t new_state)
 	}
 	else
 	{
-		LOG(PRINT_INFO, "ERROR: change state %d\n\r", new_state);
+		LOG(PRINT_INFO, "change state %d\n\r", new_state);
 	}
 }
 
