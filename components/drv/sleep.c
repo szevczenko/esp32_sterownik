@@ -83,7 +83,7 @@ static void sleep_task(void * arg)
 				break;
 
 			case SLEEP_STATE_START_SLEEPING:
-				LOG(PRINT_INFO, "SLEEP_STATE_START_SLEEPING\n\r");
+				LOG(PRINT_INFO, "SLEEP_STATE_START_SLEEPING");
 				esp_sleep_enable_timer_wakeup(10 * 1000000);
 				esp_sleep_enable_gpio_wakeup();
 				gpio_wakeup_enable(WAKE_UP_PIN, GPIO_INTR_LOW_LEVEL);
@@ -104,20 +104,20 @@ static void sleep_task(void * arg)
 				break;
 
 			case SLEEP_STATE_UNSLEEP_PROCESS:
-				LOG(PRINT_INFO, "SLEEP_STATE_UNSLEEP_PROCESS\n\r");
+				LOG(PRINT_INFO, "SLEEP_STATE_UNSLEEP_PROCESS");
 				if (wifiDrvConnect() == ESP_OK)
 				{
-					LOG(PRINT_INFO, "wifiDrvConnected\n\r");
+					LOG(PRINT_INFO, "wifiDrvConnected");
 					if(!cmdClientIsConnected())
 					{
 						if (cmdClientTryConnect(3000) == 1)
 						{
-							LOG(PRINT_INFO, "cmdClientTryConnected\n\r");
+							LOG(PRINT_INFO, "cmdClientTryConnected");
 							sendKeepAliveFrame();
 							vTaskDelay(MS2ST(1000));
 						}
 					}
-					LOG(PRINT_INFO, "cmdClientConnect or wifiDrvConnected error\n\r");
+					LOG(PRINT_INFO, "cmdClientConnect or wifiDrvConnected error");
 				}
 
 				BUZZER_ON();
@@ -127,7 +127,7 @@ static void sleep_task(void * arg)
 				if (sleep_signal == 0)
 				{
 					sleep_state = SLEEP_STATE_WAKE_UP;
-					LOG(PRINT_INFO, "SLEEP_STATE_WAKE_UP\n\r");
+					LOG(PRINT_INFO, "SLEEP_STATE_WAKE_UP");
 				}
 				else
 				{

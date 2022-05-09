@@ -71,7 +71,7 @@ static void keepAliveProcess(void * pv)
 				if (keep->keepAliveTry < KEEP_ALIVE_TRY)
 				{
 					if (keep->keepAliveSend != NULL) {
-						LOG(PRINT_DEBUG, "keepAliveSend\n\r");
+						LOG(PRINT_DEBUG, "keepAliveSend");
 						keep->keepAliveSend(keep_alive_frame, sizeof(keep_alive_frame));
 					}
 					keep->keepAliveTry++;

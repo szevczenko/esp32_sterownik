@@ -239,6 +239,8 @@ static void _close_soc_state(void)
     {
         close(ctx.socket);
         ctx.socket = -1;
+        xQueueReset((QueueHandle_t)ctx.waitResponceSem);
+        xQueueReset((QueueHandle_t)ctx.mutexSemaphore);
     }
     else
     {
@@ -319,6 +321,8 @@ void cmd_client_ctx_init(void)
 
 int cmdClientSend(uint8_t *buffer, uint32_t len)
 {
+    LOG(PRINT_DEBUG, "%s", __func__);
+
     if ((ctx.socket == -1) || ((ctx.state != CMD_CLIENT_STATE_READY) && (ctx.state != CMD_CLIENT_PARSE_RESPONSE)))
     {
         LOG(PRINT_INFO, "%s bad module state", __func__);
@@ -331,12 +335,14 @@ int cmdClientSend(uint8_t *buffer, uint32_t len)
     {
         LOG(PRINT_ERROR, "%s error send msg", __func__);
     }
-
+    LOG(PRINT_DEBUG, "%s: %d", __func__, ret);
     return ret;
 }
 
 int cmdClientSendDataWaitResp(uint8_t *buff, uint32_t len, uint8_t *buff_rx, uint32_t *rx_len, uint32_t timeout)
 {
+    LOG(PRINT_DEBUG, "%s", __func__);
+
     if (buff[1] != CMD_REQEST)
     {
         LOG(PRINT_ERROR, "%s bad frame", __func__);
@@ -357,6 +363,7 @@ int cmdClientSendDataWaitResp(uint8_t *buff, uint32_t len, uint8_t *buff_rx, uin
 
         if (xSemaphoreTake(ctx.waitResponceSem, timeout) == pdTRUE)
         {
+            LOG(PRINT_DEBUG, "%s ctx.waitResponceSem", __func__);
             if (buff[2] != ctx.responce_buff[2])
             {
                 xSemaphoreGive(ctx.mutexSemaphore);
@@ -378,7 +385,10 @@ int cmdClientSendDataWaitResp(uint8_t *buff, uint32_t len, uint8_t *buff_rx, uin
             }
             else
             {
-                LOG(PRINT_ERROR, "%s buffer is small", __func__, len);
+                if (buff_rx != 0)
+                {
+                    LOG(PRINT_ERROR, "%s buffer is small", __func__, len);
+                }
             }
 
             ctx.responce_buff_len = 0;
@@ -417,7 +427,7 @@ int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value)
 
 int cmdClientGetValue(menuValue_t val, uint32_t *value, uint32_t timeout)
 {
-    debug_function_name("cmdClientGetValue");
+    LOG(PRINT_DEBUG, "%s %d", __func__, val);
     if (val >= MENU_LAST_VALUE)
     {
         return FALSE;
@@ -443,7 +453,7 @@ int cmdClientGetValue(menuValue_t val, uint32_t *value, uint32_t timeout)
 
             if (ctx.responce_buff[3] != val)
             {
-                LOG(PRINT_ERROR, "%s receive %d wait %d", ctx.responce_buff[3], val);
+                LOG(PRINT_ERROR, "%s receive %d wait %d", __func__, ctx.responce_buff[3], val);
                 xSemaphoreGive(ctx.mutexSemaphore);
                 return 0;
             }
@@ -476,13 +486,13 @@ int cmdClientGetValue(menuValue_t val, uint32_t *value, uint32_t timeout)
         }
     }
 
-    LOG(PRINT_INFO, "cmdClientGetValue error get semaphore");
+    LOG(PRINT_INFO, "%s error get semaphore", __func__);
     return FALSE;
 }
 
 int cmdClientSendCmd(parseCmd_t cmd)
 {
-    debug_function_name("cmdClientSendCmd");
+    LOG(PRINT_DEBUG, "cmdClientSendCmd");
     int ret_val = TRUE;
 
     if (cmd > PC_CMD_LAST)
@@ -503,6 +513,8 @@ int cmdClientSendCmd(parseCmd_t cmd)
 
 int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout_ms)
 {
+    LOG(PRINT_DEBUG, "%s", __func__);
+
     if (menuSetValue(val, value) == 0)
     {
         return 0;
@@ -534,6 +546,8 @@ int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout_ms)
 
 int cmdClientSetAllValue(void)
 {
+    LOG(PRINT_DEBUG, "%s", __func__);
+
     void *data;
     uint32_t data_size = 0;
     static uint8_t sendBuff[PAYLOAD_SIZE] = {0};
@@ -558,7 +572,7 @@ int cmdClientSetAllValue(void)
 
 int cmdClientGetAllValue(uint32_t timeout)
 {
-    debug_function_name("cmdClientGetAllValue");
+    LOG(PRINT_DEBUG, "%s", __func__);
     if (xSemaphoreTake(ctx.mutexSemaphore, timeout) == pdTRUE)
     {
         uint8_t sendBuff[3] = {0};
@@ -609,7 +623,8 @@ int cmdClientGetAllValue(uint32_t timeout)
 
 int cmdClientAnswerData(uint8_t *buff, uint32_t len)
 {
-    debug_function_name("cmdClientAnswerData");
+    LOG(PRINT_DEBUG, "%s len %d", __func__, len);
+
     if (buff == NULL)
     {
         return FALSE;
@@ -617,11 +632,10 @@ int cmdClientAnswerData(uint8_t *buff, uint32_t len)
 
     if (len > sizeof(ctx.responce_buff))
     {
-        LOG(PRINT_INFO, "cmdClientAnswerData error len %d", len);
+        LOG(PRINT_INFO, "%s error len %d", __func__, len);
         return FALSE;
     }
 
-    LOG(PRINT_DEBUG, "cmdClientAnswerData len %d %p", len, buff);
     ctx.responce_buff_len = len;
     memcpy(ctx.responce_buff, buff, ctx.responce_buff_len);
 
@@ -631,12 +645,13 @@ int cmdClientAnswerData(uint8_t *buff, uint32_t len)
 
 static int keepAliveSend(uint8_t *data, uint32_t dataLen)
 {
+    LOG(PRINT_DEBUG, "%s", __func__);
     return cmdClientSendDataWaitResp(data, dataLen, NULL, NULL, 1000);
 }
 
 static void cmdClientErrorKACb(void)
 {
-    LOG(PRINT_INFO, "cmdClientErrorKACb keepAlive");
+    LOG(PRINT_DEBUG, "%s", __func__);
     cmdClientDisconnect();
 }
 

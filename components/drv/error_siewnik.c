@@ -65,7 +65,7 @@ static void _change_state(state_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			LOG(PRINT_INFO, "state %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "state %s", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
@@ -101,12 +101,12 @@ static void _state_working(void)
 
 	/* Motor error overcurrent */
 	uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
-	// LOG(PRINT_INFO, "Motor current %d\n\r", motor_current);
+	// LOG(PRINT_INFO, "Motor current %d", motor_current);
 	// if (motor_current > 15000)
 	// {
 	// 	if (!ctx.motor_find_overcurrent)
 	// 	{
-	// 		LOG(PRINT_INFO, "find motor overcurrent\n\r");
+	// 		LOG(PRINT_INFO, "find motor overcurrent");
 	// 		ctx.motor_find_overcurrent = true;
 	// 		ctx.motor_error_timer = MS2ST(5000) + xTaskGetTickCount();
 	// 	}
@@ -122,7 +122,7 @@ static void _state_working(void)
 	// {
 	// 	if (ctx.motor_find_overcurrent)
 	// 	{
-	// 		LOG(PRINT_INFO, "reset motor overcurrent\n\r");
+	// 		LOG(PRINT_INFO, "reset motor overcurrent");
 	// 	}
 	// 	ctx.motor_find_overcurrent = false;
 	// }
@@ -132,7 +132,7 @@ static void _state_working(void)
 	// {
 	// 	if (!ctx.motor_find_not_connected)
 	// 	{
-	// 		LOG(PRINT_INFO, "find motor not connected\n\r");
+	// 		LOG(PRINT_INFO, "find motor not connected");
 	// 		ctx.motor_find_not_connected = true;
 	// 		ctx.motor_not_connected_timer = MS2ST(250) + xTaskGetTickCount();
 	// 	}
@@ -148,7 +148,7 @@ static void _state_working(void)
 	// {
 	// 	if (ctx.motor_find_not_connected)
 	// 	{
-	// 		LOG(PRINT_INFO, "reset motor not connected\n\r");
+	// 		LOG(PRINT_INFO, "reset motor not connected");
 	// 	}
 	// 	ctx.motor_find_not_connected = false;
 	// }
@@ -290,14 +290,14 @@ static float count_motor_error_value(uint16_t x, float volt_accum)
 static uint16_t count_motor_timeout_wait(uint16_t x)
 {
 	uint16_t timeout = 5000 - x*30;
-	LOG(PRINT_INFO, "count_motor_timeout_wait: %d\n\r", timeout);
+	LOG(PRINT_INFO, "count_motor_timeout_wait: %d", timeout);
 	return timeout; //5000[ms] - pwm*30
 }
 
 static uint16_t count_motor_timeout_axelerate(uint16_t x)
 {
 	uint16_t timeout = 5000 - x*30;
-	LOG(PRINT_INFO, "count_motor_timeout_axelerate: %d\n\r", timeout);
+	LOG(PRINT_INFO, "count_motor_timeout_axelerate: %d", timeout);
 	return timeout; //5000[ms] - pwm*30
 }
 

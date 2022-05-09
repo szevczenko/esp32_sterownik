@@ -150,7 +150,7 @@ void app_main()
         gpio_set_level(23, 1);
     }
 
-    printf("-----------------------START SYSTEM--------------------------\n\r");
+    config_printf(PRINT_DEBUG, PRINT_DEBUG, "[MENU] ------------START SYSTEM-------------");
     while(1)
     {
         vTaskDelay(MS2ST(975));

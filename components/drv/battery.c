@@ -90,7 +90,7 @@ static void adc_task()
             power_on_disable_system();
         }
 
-		LOG(PRINT_DEBUG, "Average: %d measured %d\n\r", voltage_average, voltage );
+		LOG(PRINT_DEBUG, "Average: %d measured %d", voltage_average, voltage );
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }

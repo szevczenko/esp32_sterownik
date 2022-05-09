@@ -154,7 +154,7 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
     switch (event_id)
     {
     case IP_EVENT_STA_GOT_IP:
-        ctx.connected = true;
+        LOG(PRINT_INFO, "%s Have IP", __func__, event_base, event_id);
         if ((memcmp(ctx.wifi_con_data.ssid, ctx.wifi_config.sta.ssid,
             MAX_VAL(strlen((char *)ctx.wifi_config.sta.ssid), strlen((char *)ctx.wifi_con_data.ssid))) != 0) ||
             (memcmp(ctx.wifi_con_data.password, ctx.wifi_config.sta.password,
@@ -164,18 +164,18 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
             strncpy((char *)ctx.wifi_con_data.password, (char *)ctx.wifi_config.sta.password, sizeof(ctx.wifi_con_data.password));
             wifiDataSave(&ctx.wifi_con_data);
         }
-
+        ctx.connected = true;
         break;
     }
 }
 
 static void debug_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-    LOG(PRINT_INFO, "--------------EVENT_WIFI %s %d----------------", event_base, event_id);
+    LOG(PRINT_DEBUG, "%s EVENT_WIFI %s %d", __func__, event_base, event_id);
     if (event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         wifi_event_sta_disconnected_t *data = event_data;
-        LOG(PRINT_INFO, "Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reasen %d/n/r", data->ssid, data->bssid[0], data->bssid[1],
+        LOG(PRINT_DEBUG, "Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reason %d/n/r", data->ssid, data->bssid[0], data->bssid[1],
             data->bssid[2], data->bssid[3], data->bssid[4], data->bssid[5], data->ssid_len, data->reason);
     }
 }
@@ -391,6 +391,7 @@ static void wifi_wait_connect(void)
 
 static void wifi_app_start(void)
 {
+    osDelay(100);
     if (config.dev_type == T_DEV_TYPE_SERVER)
     {
 #if CONFIG_USE_CONSOLE_TELNET

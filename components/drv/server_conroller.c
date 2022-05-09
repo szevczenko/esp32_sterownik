@@ -83,7 +83,7 @@ static void change_state(state_t state)
 	
 	if (state != ctx.state)
 	{
-		LOG(PRINT_DEBUG, "Change state -> %s\n\r", state_name[state]);
+		LOG(PRINT_DEBUG, "Change state -> %s", state_name[state]);
 		ctx.state = state;
 	}
 }
@@ -128,11 +128,11 @@ static void set_working_data(void)
 		gpio_set_level(15, 0);
 	}
 
-	LOG(PRINT_DEBUG, "motor %d %f %d\n\r", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
+	LOG(PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
 	if (ctx.motor_on)
 	{
 		float duty = (float)ctx.motor_pwm;
-		LOG(PRINT_DEBUG, "duty motor %f\n\r", duty);
+		LOG(PRINT_DEBUG, "duty motor %f", duty);
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
 		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
 
@@ -147,7 +147,7 @@ static void set_working_data(void)
 	}
 
 	float duty = (float)ctx.servo_pwm * 100 / 19999.0;
-	LOG(PRINT_INFO, "duty servo %f %d %d\n\r", duty, ctx.servo_value, ctx.servo_pwm);
+	LOG(PRINT_DEBUG, "duty servo %f %d %d", duty, ctx.servo_value, ctx.servo_pwm);
 	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
 	mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 }

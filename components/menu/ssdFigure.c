@@ -264,5 +264,5 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
 		_drawBattery(x, y, x_charge);
 		break;
 	}	
-	//LOG("x %d, cnt %d\n\r", x_charge, animation_cnt);
+	//LOG("x %d, cnt %d", x_charge, animation_cnt);
 }

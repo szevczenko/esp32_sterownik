@@ -73,7 +73,7 @@ void parse_client(uint8_t *buff, uint32_t len)
             sendBuff[0] = 8;
             sendBuff[1] = CMD_ANSWER;
             sendBuff[2] = PC_GET;
-            sendBuff[3] = POSITIVE_RESP;
+            sendBuff[3] = buff[3];
             value = menuGetValue(buff[3]);
             memcpy(&sendBuff[4], &value, 4);
             cmdClientSend(sendBuff, 8);
@@ -191,6 +191,13 @@ void parse_server_buffer(uint8_t *buff, uint32_t len)
 
         if (frameLenServer > len)
         {
+            LOG(PRINT_ERROR, "Bad lenth", frameLenServer, len, parsed_len, buff);
+            break;
+        }
+
+        if (frameLenServer == 0)
+        {
+            LOG(PRINT_ERROR, "Lenth is 0", frameLenServer, len, parsed_len, buff);
             break;
         }
 
@@ -226,7 +233,7 @@ void parse_server(uint8_t *buff, uint32_t len)
             sendBuff[0] = 8;
             sendBuff[1] = CMD_ANSWER;
             sendBuff[2] = PC_GET;
-            sendBuff[3] = POSITIVE_RESP;
+            sendBuff[3] = buff[3];
             value = menuGetValue(buff[3]);
             memcpy(&sendBuff[4], &value, 4);
             if (buff[1] != CMD_DATA)
@@ -314,7 +321,6 @@ void parse_server(uint8_t *buff, uint32_t len)
     {
         switch (buff[2])
         {
-        LOG(PRINT_DEBUG, "Answer data %d", len);
         case PC_KEEP_ALIVE:
         case PC_SET:
         case PC_GET:

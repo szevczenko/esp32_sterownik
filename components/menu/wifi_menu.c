@@ -74,7 +74,7 @@ static scrollBar_t scrollBar = {
 static void change_state(stateWifiMenu_t new_state)
 {
 	ctx.state = new_state;
-	LOG(PRINT_INFO, "WiFi menu %s\n\r", state_name[new_state]);
+	LOG(PRINT_INFO, "WiFi menu %s", state_name[new_state]);
 }
 
 static void menu_button_up_callback(void * arg)
@@ -196,7 +196,7 @@ static bool menu_exit_cb(void * arg)
 
 static bool connectToDevice(char *dev)
 {
-	LOG(PRINT_INFO, "Try connect %s \n\r", dev);
+	LOG(PRINT_INFO, "Try connect %s ", dev);
 	if (memcmp(WIFI_AP_NAME, dev, strlen(WIFI_AP_NAME) - 1) == 0)
 	{
 		/* Disconnect if connected */
@@ -445,7 +445,7 @@ static void menu_wifi_error_check(void)
 		{
 			sprintf(error_buff, "%s:%d", ctx.error_msg, ctx.error_code);
 			ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-			LOG(PRINT_INFO, "Wifi error [%d] %s\n\r", ctx.error_code, ctx.error_msg);
+			LOG(PRINT_INFO, "Wifi error [%d] %s", ctx.error_code, ctx.error_msg);
 		}
 		wifiDrvDisconnect();
 		if (ctx.scan_req)

@@ -56,7 +56,7 @@ static void vibro_process(void * pv) {
 			vibroD.type = VIBRO_TYPE_OFF;
 			vTaskDelay(MS2ST(250));
 		}
-		//LOG("period %d working_time %d, type %d state %d\n\r", vibroD.period, vibroD.working_time, vibroD.type, vibroD.state);
+		//LOG("period %d working_time %d, type %d state %d", vibroD.period, vibroD.working_time, vibroD.type, vibroD.state);
 	}
 }
 

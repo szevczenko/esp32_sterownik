@@ -1,4 +1,7 @@
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "config.h"
 #include "configCmd.h"
@@ -26,18 +29,23 @@ config_t config =
     .dev_type     = DEFAULT_DEV_TYPE,
     .end_config   = END_CONFIG
 };
+
+static xSemaphoreHandle mutexSemaphore;
+
 uint8_t test_config_save(void);
 
-void config_printf(enum config_print_lvl module_lvl, enum config_print_lvl msg_lvl, char *format, ...)
+void config_printf(enum config_print_lvl module_lvl, enum config_print_lvl msg_lvl, const char *format, ...)
 {
 	if (module_lvl <= msg_lvl)
 	{
+        xSemaphoreTake(mutexSemaphore, 250);
         printf(error_lvl_str[msg_lvl]);
 		va_list args;
 		va_start(args, format);
-		printf(format, args);
+		vprintf (format, args);
 		va_end(args);
         printf("\n\r");
+        xSemaphoreGive(mutexSemaphore);
 	}
 }
 
@@ -73,6 +81,8 @@ static void configInitStruct(config_t *con)
 
 void configInit(void)
 {
+    mutexSemaphore = xSemaphoreCreateBinary();
+    xSemaphoreGive(mutexSemaphore);
     // Read and verify config
     esp_err_t err = nvs_flash_init();
 

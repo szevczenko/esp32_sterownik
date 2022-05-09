@@ -70,7 +70,7 @@ static uint32_t calibration_value;
 static void measure_get_servo_calibration(TimerHandle_t xTimer)
 {
 	calibration_value = measure_get_filtered_value(MEAS_CH_SERVO);
-	LOG(PRINT_INFO, "MEASURE SERVO Calibration value = %d\n\r", calibration_value);
+	LOG(PRINT_INFO, "MEASURE SERVO Calibration value = %d", calibration_value);
 }
 #endif
 
@@ -79,11 +79,11 @@ static void measure_get_motor_calibration(TimerHandle_t xTimer)
 	if (!menuGetValue(MENU_MOTOR_IS_ON))
 	{
 		motor_calibration_meas = measure_get_filtered_value(MEAS_CH_MOTOR);
-		LOG(PRINT_INFO, "MEASURE MOTOR Calibration value = %d\n\r", calibration_value);
+		LOG(PRINT_INFO, "MEASURE MOTOR Calibration value = %d", calibration_value);
 	}
 	else
 	{
-		LOG(PRINT_INFO, "MEASURE MOTOR Fail get. Motor is on\n\r");
+		LOG(PRINT_INFO, "MEASURE MOTOR Fail get. Motor is on");
 	}
 	
 }
@@ -125,7 +125,7 @@ static void _read_adc_values(void)
 		}
 		if (meas_data[ch].unit == ADC_UNIT_2)
 		{
-			LOG(PRINT_DEBUG, "Pomiar 2 %d\n\r", ret_v);
+			LOG(PRINT_DEBUG, "Pomiar 2 %d", ret_v);
 		}
 		
 		meas_data[ch].adc /= NO_OF_SAMPLES;
@@ -199,7 +199,7 @@ void measure_start(void)
 
 void measure_meas_calibration_value(void)
 {
-	LOG(PRINT_INFO, "%s\n\r", __func__);
+	LOG(PRINT_INFO, "%s", __func__);
 	xTimerStart( servoCalibrationTimer, 0 );
 	xTimerStart( motorCalibrationTimer, 0 );
 }
@@ -216,7 +216,7 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 float measure_get_temperature(void)
 {
 	int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
-	LOG(PRINT_DEBUG, "Temperature %d %d\n\r", measure_get_filtered_value(MEAS_CH_TEMP), temp);
+	LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
 	return temp;
 }
 

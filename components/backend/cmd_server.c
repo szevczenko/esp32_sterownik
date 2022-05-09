@@ -18,7 +18,7 @@
 #include "menu_param.h"
 
 #define MODULE_NAME "[CMD Srv] "
-#define DEBUG_LVL PRINT_INFO
+#define DEBUG_LVL PRINT_DEBUG
 
 #if CONFIG_DEBUG_CMD_SERVER
 #define LOG(_lvl, ...)                                      \
@@ -32,7 +32,7 @@
 
 enum state_t
 {
-    CMD_SERVER_IDLE,
+    CMD_SERVER_IDLE = 0,
     CMD_SERVER_CREATE_SOC,
     CMD_SERVER_LISTEN,
     CMD_SERVER_STATE_READY,
@@ -43,14 +43,14 @@ enum state_t
 };
 
 static const char *cmd_server_state_name[] =
-    {
-        [CMD_SERVER_IDLE] = "CMD_SERVER_IDLE",
-        [CMD_SERVER_CREATE_SOC] = "CMD_SERVER_CREATE_SOC",
-        [CMD_SERVER_LISTEN] = "CMD_SERVER_LISTEN",
-        [CMD_SERVER_STATE_READY] = "CMD_SERVER_STATE_READY",
-        [CMD_SERVER_PARSE_RESPONSE] = "CMD_SERVER_PARSE_RESPONSE",
-        [CMD_SERVER_CLOSE_SOC] = "CMD_SERVER_CLOSE_SOC",
-        [CMD_SERVER_CHECK_ERRORS] = "CMD_SERVER_CHECK_ERRORS",
+{
+    [CMD_SERVER_IDLE] = "CMD_SERVER_IDLE",
+    [CMD_SERVER_CREATE_SOC] = "CMD_SERVER_CREATE_SOC",
+    [CMD_SERVER_LISTEN] = "CMD_SERVER_LISTEN",
+    [CMD_SERVER_STATE_READY] = "CMD_SERVER_STATE_READY",
+    [CMD_SERVER_PARSE_RESPONSE] = "CMD_SERVER_PARSE_RESPONSE",
+    [CMD_SERVER_CLOSE_SOC] = "CMD_SERVER_CLOSE_SOC",
+    [CMD_SERVER_CHECK_ERRORS] = "CMD_SERVER_CHECK_ERRORS",
 };
 
 typedef struct
@@ -360,7 +360,7 @@ void cmd_server_task(void *arg)
 
 void cmd_server_ctx_init(void)
 {
-    _change_state(CMD_SERVER_IDLE);
+    ctx.state = CMD_SERVER_IDLE;
     ctx.error = false;
     ctx.start = false;
     ctx.disconnect_req = false;
@@ -420,7 +420,10 @@ int cmdServerSendDataWaitResp(uint8_t *buff, uint32_t len, uint8_t *buff_rx, uin
             }
             else
             {
-                LOG(PRINT_ERROR, "%s buffer is small", __func__, len);
+                if (buff_rx != 0)
+                {
+                    LOG(PRINT_ERROR, "%s buffer is small responce_buff_len %d", __func__, ctx.responce_buff_len);
+                }
             }
 
             if (rx_len != NULL)
@@ -630,7 +633,7 @@ static int keepAliveSend(uint8_t *data, uint32_t dataLen)
 
 static void cmdServerErrorKACb(void)
 {
-    LOG(PRINT_INFO, "cmdServerErrorKACb keepAlive");
+    LOG(PRINT_INFO, "%s", __func__);
     ctx.disconnect_req = true;
     ctx.is_connected = false;
     menuSetValue(MENU_SERVO_IS_ON, 0);
@@ -647,6 +650,7 @@ void cmdServerStartTask(void)
     ctx.waitResponceSem = xSemaphoreCreateBinary();
     ctx.mutexSemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(ctx.mutexSemaphore);
+    cmd_server_ctx_init();
     xTaskCreate(cmd_server_task, "cmd_server_task", CONFIG_DO_TELNET_THD_WA_SIZE, NULL, NORMALPRIO, NULL);
 }
 

@@ -606,11 +606,11 @@ static void menu_task(void * arg)
 		{
 			if (menu != NULL)
 			{
-				LOG(PRINT_INFO, "state: %s, menu %s\n\r", state_name[ctx.state], menu->name);
+				LOG(PRINT_INFO, "state: %s, menu %s", state_name[ctx.state], menu->name);
 			}
 			else
 			{
-				LOG(PRINT_INFO, "state %s, menu is NULL\n\r", state_name[ctx.state]);
+				LOG(PRINT_INFO, "state %s, menu is NULL", state_name[ctx.state]);
 			}
 			prev_state = ctx.state;
 		}

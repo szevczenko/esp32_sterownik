@@ -134,13 +134,13 @@ static void change_state(state_start_menu_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			LOG(PRINT_INFO, "Start menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Start menu %s", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
 	else
 	{
-		LOG(PRINT_INFO, "change state %d\n\r", new_state);
+		LOG(PRINT_INFO, "change state %d", new_state);
 	}
 }
 
@@ -213,7 +213,7 @@ static void _reset_power_save_timer(void)
 static bool _check_low_silos_flag(void)
 {
 	uint32_t flag = menuGetValue(MENU_LOW_LEVEL_SILOS);
-	//LOG(PRINT_INFO, "------SILOS FLAG %d---------\n\r", flag);
+	//LOG(PRINT_INFO, "------SILOS FLAG %d---------", flag);
 	if (flag > 0)
 	{
 		if (ctx.low_silos_ckeck_timeout < xTaskGetTickCount())
@@ -820,13 +820,13 @@ static bool menu_is_connected(void)
 	debug_function_name(__func__);
 	if (!wifiDrvIsConnected())
 	{
-		LOG(PRINT_INFO, "START_MENU: WiFi not connected\n\r");
+		LOG(PRINT_INFO, "START_MENU: WiFi not connected");
 		return false;
 	}
 
 	if (!cmdClientIsConnected())
 	{
-		LOG(PRINT_INFO, "START_MENU: Client not connected\n\r");
+		LOG(PRINT_INFO, "START_MENU: Client not connected");
 		return false;
 	}
 
@@ -853,7 +853,7 @@ static void menu_check_connection(void)
 
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d\n\r", i);
+		LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i);
 		osDelay(250);
 		ret = cmdClientGetAllValue(100);
 		if (ret)
@@ -877,7 +877,7 @@ static void menu_check_connection(void)
 
 	if (ret != TRUE)
 	{
-		LOG(PRINT_INFO, "%s: error get parameters\n\r", __func__);
+		LOG(PRINT_INFO, "%s: error get parameters", __func__);
 		cmdClientSetValueWithoutResp(MENU_MOTOR_IS_ON, 0);
 		cmdClientSetValueWithoutResp(MENU_SERVO_IS_ON, 0);
 		change_state(STATE_IDLE);
@@ -1030,7 +1030,7 @@ static void menu_start_power_save(void)
 		return;
 	}
 
-	menuPrintfInfo("Power save\n\r");
+	menuPrintfInfo("Power save");
 	backendEnterMenuStart();
 }
 

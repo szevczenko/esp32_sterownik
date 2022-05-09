@@ -123,7 +123,7 @@ int configRead(config_t *config);
 void telnetPrintfToAll(const char *format, ...);
 void telnetSendToAll(const char *data, size_t size);
 
-void config_printf(enum config_print_lvl module_lvl, enum config_print_lvl msg_lvl, char *format, ...);
+void config_printf(enum config_print_lvl module_lvl, enum config_print_lvl msg_lvl, const char *format, ...);
 
 void configInit(void);
 void debug_function_name(const char *name);

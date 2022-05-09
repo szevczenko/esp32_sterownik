@@ -78,13 +78,13 @@ static void change_state(state_bootup_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			LOG(PRINT_INFO, "Bootup menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Bootup menu %s", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
 	else
 	{
-		LOG(PRINT_ERROR, "change state %d\n\r", new_state);
+		LOG(PRINT_ERROR, "change state %d", new_state);
 	}
 }
 
@@ -177,7 +177,7 @@ static void bootup_wait_connect(void)
 static void bootup_get_server_data(void)
 {
 	uint32_t time_to_connect = 0;
-	uint32_t start_status;
+	uint32_t start_status = 0;
 
 	while(cmdClientGetValue(MENU_START_SYSTEM, &start_status, 150) == 0) 
 	{
@@ -187,7 +187,7 @@ static void bootup_get_server_data(void)
 		}
 		else 
 		{
-			LOG(PRINT_INFO, "Timeout get MENU_START_SYSTEM\n\r");
+			LOG(PRINT_INFO, "Timeout get MENU_START_SYSTEM");
 			change_state(STATE_EXIT);
 			return;
 		}
@@ -196,7 +196,7 @@ static void bootup_get_server_data(void)
 	if (start_status > 0) 
 	{
 		if (cmdClientGetAllValue(150) == 0) {
-			LOG(PRINT_INFO, "Timeout get ALL VALUES\n\r");
+			LOG(PRINT_INFO, "Timeout get ALL VALUES");
 			change_state(STATE_EXIT);
 		}
 	}

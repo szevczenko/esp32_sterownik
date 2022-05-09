@@ -99,7 +99,7 @@ RTC_NOINIT_ATTR uint32_t menuSaveParameters_data[MENU_LAST_VALUE];
 void menuPrintParameters(void)
 {
 	for (uint8_t i = 0; i < PARAMETERS_TAB_SIZE; i++) {
-		LOG(PRINT_INFO, "%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
+		LOG(PRINT_DEBUG, "%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
 	}
 }
 
@@ -108,7 +108,7 @@ void menuPrintParameter(menuValue_t val)
 	if (val >= MENU_LAST_VALUE)
 		return;
 	
-	LOG(PRINT_INFO, "Param: %s : %d", parameters_name[val],  menuSaveParameters_data[val]);
+	LOG(PRINT_DEBUG, "Param: %s : %d", parameters_name[val],  menuSaveParameters_data[val]);
 }
 
 esp_err_t menuSaveParameters(void) {

@@ -70,7 +70,7 @@ static void change_state(state_backend_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			LOG(PRINT_INFO, "Backend menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Backend menu %s", state_name[new_state]);
 			ctx.state = new_state;
 		}
 	}
@@ -80,7 +80,7 @@ static void _enter_emergency(void)
 {
 	if (ctx.state != STATE_EMERGENCY_DISABLE)
 	{
-		LOG(PRINT_INFO, "%s %s\n\r", __func__, state_name[ctx.state]);
+		LOG(PRINT_INFO, "%s %s", __func__, state_name[ctx.state]);
 		change_state(STATE_EMERGENCY_DISABLE);
 		ctx.emergency_msg_sended = false;
 		ctx.emergency_exit_msg_sended = false;
@@ -97,7 +97,7 @@ static void _send_emergency_msg(void)
 	bool ret = (cmdClientSetValue(MENU_EMERGENCY_DISABLE, 1, 2000) > 0) 
 		&& (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 2000) > 0) 
 		&& (cmdClientSetValue(MENU_SERVO_IS_ON, 0, 2000) > 0);
-	LOG(PRINT_INFO, "%s %d\n\r", __func__, ret);
+	LOG(PRINT_INFO, "%s %d", __func__, ret);
 	if (ret)
 	{
 		ctx.emergency_msg_sended = true;
@@ -171,14 +171,14 @@ static void backent_start(void)
 		bool errors = _check_error() > 0;
 		if (errors)
 		{
-			LOG(PRINT_INFO, "Error detected on machine\n\r");
+			LOG(PRINT_INFO, "Error detected on machine");
 		}
 		else
 		{
 			menuStartResetError();
-			LOG(PRINT_DEBUG, "No error\n\r");
+			LOG(PRINT_DEBUG, "No error");
 		}
-		LOG(PRINT_DEBUG, "Get silos %d \n\r", menuGetValue(MENU_LOW_LEVEL_SILOS));
+		LOG(PRINT_DEBUG, "Get silos %d ", menuGetValue(MENU_LOW_LEVEL_SILOS));
 	}
 	ctx.get_data_cnt++;
 
@@ -220,7 +220,7 @@ static void backend_emergency_disable_state(void)
 	_send_emergency_msg();
 	if (!ctx.emergensy_req)
 	{
-		LOG(PRINT_INFO, "%s exit\n\r", __func__);
+		LOG(PRINT_INFO, "%s exit", __func__);
 		menuDrvExitEmergencyDisable();
 		change_state(STATE_EMERGENCY_DISABLE_EXIT);
 	}
@@ -232,7 +232,7 @@ static void backend_emergency_disable_exit(void)
 	if (!ctx.emergency_exit_msg_sended)
 	{
 		int ret = cmdClientSetValue(MENU_EMERGENCY_DISABLE, 0, 2000);
-		LOG(PRINT_INFO, "%s %d\n\r", __func__, ret);
+		LOG(PRINT_INFO, "%s %d", __func__, ret);
 		if (ret > 0)
 		{
 			ctx.emergency_exit_msg_sended = true;
