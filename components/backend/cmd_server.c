@@ -358,7 +358,7 @@ void cmd_server_task(void *arg)
     }
 }
 
-void cmd_server_ctx_init(void)
+static void cmd_server_ctx_init(void)
 {
     ctx.state = CMD_SERVER_IDLE;
     ctx.error = false;

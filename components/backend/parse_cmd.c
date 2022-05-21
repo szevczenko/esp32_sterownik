@@ -6,180 +6,22 @@
 #include "menu_param.h"
 #include "error_siewnik.h"
 
-#define MODULE_NAME    "[PARSE] "
-#define DEBUG_LVL      PRINT_INFO
+#define MODULE_NAME     "[PARSE] "
+#define DEBUG_LVL       PRINT_INFO
 
 #if CONFIG_DEBUG_PARSE_CMD
-#define LOG(_lvl, ...)                          \
+#define LOG(_lvl, ...) \
     debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
 #endif
 
-#define PAYLOAD_SIZE 256
+#define PAYLOAD_SIZE    256
 
 static uint8_t sendBuff[PAYLOAD_SIZE];
-static uint32_t frameLenClient;
-
-void parse_client_buffer(uint8_t *buff, uint32_t len)
-{
-    uint32_t parsed_len = 0;
-
-    do
-    {
-        frameLenClient = buff[parsed_len];
-
-        if (frameLenClient > len)
-        {
-            LOG(PRINT_ERROR, "Bad lenth", frameLenClient, len, parsed_len, buff);
-            break;
-        }
-
-        if (frameLenClient == 0)
-        {
-            LOG(PRINT_ERROR, "Lenth is 0", frameLenClient, len, parsed_len, buff);
-            break;
-        }
-
-        LOG(PRINT_DEBUG, "frameLenClient %d len %d parsed_len %d %p", frameLenClient, len, parsed_len, buff);
-
-        parse_client(&buff[parsed_len], frameLenClient);
-        len -= frameLenClient;
-        parsed_len += frameLenClient;
-    } while (len > 0);
-}
-
-void parse_client(uint8_t *buff, uint32_t len)
-{
-    uint32_t value;
-
-    LOG(PRINT_DEBUG, "Parse: %d %d", buff[1], buff[2]);
-    if ((buff[1] == CMD_REQEST) || (buff[1] == CMD_DATA))
-    {
-        switch (buff[2])
-        {
-        case PC_KEEP_ALIVE:
-            sendBuff[0] = 3;
-            sendBuff[1] = CMD_ANSWER;
-            sendBuff[2] = PC_KEEP_ALIVE;
-            if (buff[1] != CMD_DATA)
-            {
-                cmdClientSend(sendBuff, 3);
-            }
-
-            break;
-
-        case PC_GET:
-            sendBuff[0] = 8;
-            sendBuff[1] = CMD_ANSWER;
-            sendBuff[2] = PC_GET;
-            sendBuff[3] = buff[3];
-            value = menuGetValue(buff[3]);
-            memcpy(&sendBuff[4], &value, 4);
-            cmdClientSend(sendBuff, 8);
-            break;
-
-        case PC_SET:
-            sendBuff[0] = 4;
-            sendBuff[1] = CMD_ANSWER;
-            sendBuff[2] = PC_SET;
-            memcpy(&value, &buff[4], 4);
-            if (menuSetValue(buff[3], value))
-            {
-                menuPrintParameter(buff[3]);
-                sendBuff[3] = POSITIVE_RESP;
-            }
-            else
-            {
-                sendBuff[3] = NEGATIVE_RESP;
-            }
-
-            if (buff[1] != CMD_DATA)
-            {
-                cmdClientSend(sendBuff, 4);
-            }
-
-            break;
-
-        case PC_SET_ALL:
-           {
-               sendBuff[0] = 4;
-               sendBuff[1] = CMD_ANSWER;
-               sendBuff[2] = PC_SET_ALL;
-
-               uint32_t *return_data = (uint32_t *)&buff[3];
-               for (int i = 0; i < (len - 3) / 4; i++)
-               {
-                   if (menuSetValue(i, return_data[i]) == FALSE)
-                   {
-                       LOG(PRINT_INFO, "Parse Error Set Value %d = %d", i, return_data[i]);
-                   }
-                   else
-                   {
-                       LOG(PRINT_INFO, "Parse Set Value %d = %d", i, return_data[i]);
-                   }
-               }
-
-               sendBuff[3] = POSITIVE_RESP;
-
-               if (buff[1] != CMD_DATA)
-               {
-                   cmdClientSend(sendBuff, 4);
-               }
-
-               //menuPrintParameters();
-           }
-           break;
-
-        case PC_GET_ALL:
-           {
-               void *data;
-               uint32_t data_size;
-
-               menuParamGetDataNSize(&data, &data_size);
-
-               if (sizeof(sendBuff) < 3 + data_size)
-               {
-                   LOG(PRINT_ERROR, "Buffer is to small");
-                   break;
-               }
-
-               sendBuff[0] = 3 + data_size;
-               sendBuff[1] = CMD_ANSWER;
-               sendBuff[2] = PC_GET_ALL;
-
-               memcpy(&sendBuff[3], data, data_size);
-               cmdClientSend(sendBuff, 3 + data_size);
-           }
-           break;
-        }
-    }
-    else if (buff[1] == CMD_ANSWER)
-    {
-        //LOG(PRINT_INFO, "Answer data %d", len);
-        switch (buff[2])
-        {
-        case PC_SET:
-        case PC_GET:
-        case PC_GET_ALL:
-        case PC_SET_ALL:
-        case PC_KEEP_ALIVE:
-            cmdClientAnswerData(buff, len);
-            break;
-        }
-    }
-    else if (buff[1] == CMD_COMMAND)
-    {
-        switch (buff[2])
-        {
-        case PC_CMD_RESET_ERROR:
-
-            break;
-        }
-    }
-}
-
 static uint32_t frameLenServer;
+
+static void _parse_server(uint8_t *buff, uint32_t len);
 
 void parse_server_buffer(uint8_t *buff, uint32_t len)
 {
@@ -191,155 +33,137 @@ void parse_server_buffer(uint8_t *buff, uint32_t len)
 
         if (frameLenServer > len)
         {
-            LOG(PRINT_ERROR, "Bad lenth", frameLenServer, len, parsed_len, buff);
+            LOG(PRINT_ERROR, "%s: Bad lenth", __func__);
             break;
         }
 
         if (frameLenServer == 0)
         {
-            LOG(PRINT_ERROR, "Lenth is 0", frameLenServer, len, parsed_len, buff);
+            LOG(PRINT_ERROR, "%s: Lenth is 0", __func__);
             break;
         }
 
-        parse_server(&buff[parsed_len], frameLenServer);
+        _parse_server(&buff[parsed_len], frameLenServer);
         len -= frameLenServer;
         parsed_len += frameLenServer;
     } while (len > 0);
 }
 
-void parse_server(uint8_t *buff, uint32_t len)
+void _parse_server(uint8_t *buff, uint32_t len)
 {
-    //uint32_t * val;
-    debug_function_name("parse_server");
-    //LOG(PRINT_INFO, "Parse: %d %d", buff[1], buff[2]);
-    uint32_t value;
+    uint32_t value = 0;
+    uint32_t request_number = 0;
 
-    if ((buff[1] == CMD_REQEST) || (buff[1] == CMD_DATA))
+    memcpy(&request_number, &buff[FRAME_REQ_NUMBER_POS], sizeof(request_number));
+
+    LOG(PRINT_DEBUG, "%s len %d, req %d, cmd %x, type %x", __func__, len, request_number, buff[FRAME_CMD_POS],
+        buff[FRAME_PARSE_TYPE_POS]);
+
+    if ((buff[FRAME_CMD_POS] == CMD_REQEST) || (buff[FRAME_CMD_POS] == CMD_DATA))
     {
-        switch (buff[2])
+        switch (buff[FRAME_PARSE_TYPE_POS])
         {
         case PC_KEEP_ALIVE:
-            sendBuff[0] = 3;
-            sendBuff[1] = CMD_ANSWER;
-            sendBuff[2] = PC_KEEP_ALIVE;
-            if (buff[1] != CMD_DATA)
-            {
-                cmdServerSendData(sendBuff, 3);
-            }
-
+            LOG(PRINT_DEBUG, "%s get keepAlive", __func__);
             break;
 
         case PC_GET:
-            sendBuff[0] = 8;
-            sendBuff[1] = CMD_ANSWER;
-            sendBuff[2] = PC_GET;
-            sendBuff[3] = buff[3];
-            value = menuGetValue(buff[3]);
-            memcpy(&sendBuff[4], &value, 4);
-            if (buff[1] != CMD_DATA)
-            {
-                cmdServerSendData(sendBuff, 8);
-            }
-
+            sendBuff[FRAME_LEN_POS] = 12;
+            memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
+            sendBuff[FRAME_CMD_POS] = CMD_ANSWER;
+            sendBuff[FRAME_PARSE_TYPE_POS] = PC_GET;
+            sendBuff[FRAME_VALUE_TYPE_POS] = buff[FRAME_VALUE_TYPE_POS];
+            value = menuGetValue(buff[FRAME_VALUE_TYPE_POS]);
+            memcpy(&sendBuff[FRAME_VALUE_POS], &value, sizeof(value));
+            cmdServerSendData(sendBuff, 12);
             break;
 
         case PC_SET:
-            sendBuff[0] = 4;
-            sendBuff[1] = CMD_ANSWER;
-            sendBuff[2] = PC_SET;
-            memcpy(&value, &buff[4], 4);
-            if (menuSetValue(buff[3], value))
+            sendBuff[FRAME_LEN_POS] = 9;
+            memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
+            sendBuff[FRAME_CMD_POS] = CMD_ANSWER;
+            sendBuff[FRAME_PARSE_TYPE_POS] = PC_SET;
+            memcpy(&value, &buff[FRAME_VALUE_POS], sizeof(value));
+            if (menuSetValue(buff[FRAME_VALUE_TYPE_POS], value))
             {
-                sendBuff[3] = POSITIVE_RESP;
+                sendBuff[FRAME_VALUE_POS] = POSITIVE_RESP;
             }
             else
             {
-                sendBuff[3] = NEGATIVE_RESP;
+                sendBuff[FRAME_VALUE_POS] = NEGATIVE_RESP;
             }
 
             if (buff[1] != CMD_DATA)
             {
-                cmdServerSendData(sendBuff, 4);
+                cmdServerSendData(sendBuff, 9);
             }
 
-            menuPrintParameter(buff[3]);
+            menuPrintParameter(buff[FRAME_VALUE_TYPE_POS]);
             break;
 
         case PC_SET_ALL:
-           {
-               sendBuff[0] = 4;
-               sendBuff[1] = CMD_ANSWER;
-               sendBuff[2] = PC_SET_ALL;
+            // sendBuff[FRAME_LEN_POS] = 9;
+            // memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
+            // sendBuff[FRAME_CMD_POS] = CMD_ANSWER;
+            // sendBuff[FRAME_PARSE_TYPE_POS] = PC_SET;
 
-               uint32_t return_data;
-               for (int i = 0; i < (len - 3) / 4; i++)
-               {
-                   return_data = (uint32_t)buff[3 + i * 4];
-                   //LOG(PRINT_INFO, "VALUE: %d, %d", i, return_data);
-                   if (menuSetValue(i, return_data) == FALSE)
-                   {
-                       LOG(PRINT_INFO, "Parse Error Set Value %d = %d", i, return_data);
-                   }
-               }
+            // for (int i = 0; i < (len - 3) / 4; i++)
+            // {
+            //     value = (uint32_t)buff[3 + i * 4];
+            //     LOG(PRINT_DEBUG, "VALUE: %d, %d", i, value);
+            //     if (menuSetValue(i, value) == FALSE)
+            //     {
+            //         LOG(PRINT_WARNING, "Parse Error Set Value %d = %d", i, value);
+            //     }
+            // }
 
-               sendBuff[3] = POSITIVE_RESP;
+            // sendBuff[3] = POSITIVE_RESP;
 
-               if (buff[1] != CMD_DATA)
-               {
-                   cmdServerSendData(sendBuff, 4);
-               }
+            // if (buff[1] != CMD_DATA)
+            // {
+            //     cmdServerSendData(sendBuff, 4);
+            // }
 
-               //menuPrintParameters();
-           }
-           break;
+            //menuPrintParameters();
+            LOG(PRINT_ERROR, "%s Not ready PC_SET_ALL", __func__);
+            break;
 
         case PC_GET_ALL:
            {
-               void *data;
-               uint32_t data_size;
+               void *data = NULL;
+               uint32_t data_size = 0;
 
                menuParamGetDataNSize(&data, &data_size);
                LOG(PRINT_DEBUG, "GET_ALL data %p, size %d", data, data_size);
 
-               if (sizeof(sendBuff) < 3 + data_size)
+               if (sizeof(sendBuff) < FRAME_VALUE_POS + data_size)
                {
                    LOG(PRINT_ERROR, "Buffer is to small");
                    break;
                }
 
-               sendBuff[0] = 3 + data_size;
-               sendBuff[1] = CMD_ANSWER;
-               sendBuff[2] = PC_GET_ALL;
-
-               memcpy(&sendBuff[3], data, data_size);
-               cmdServerSendData(sendBuff, 3 + data_size);
+               sendBuff[FRAME_LEN_POS] = FRAME_VALUE_POS + data_size;
+               memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
+               sendBuff[FRAME_CMD_POS] = CMD_ANSWER;
+               sendBuff[FRAME_PARSE_TYPE_POS] = PC_GET_ALL;
+               sendBuff[FRAME_VALUE_TYPE_POS] = buff[FRAME_VALUE_TYPE_POS];
+               value = menuGetValue(buff[FRAME_VALUE_TYPE_POS]);
+               memcpy(&sendBuff[FRAME_VALUE_POS], data, data_size);
+               cmdServerSendData(sendBuff, FRAME_VALUE_POS + data_size);
            }
            break;
         }
     }
-    else if (buff[1] == CMD_ANSWER)
+    else if (buff[FRAME_CMD_POS] == CMD_ANSWER)
     {
-        switch (buff[2])
-        {
-        case PC_KEEP_ALIVE:
-        case PC_SET:
-        case PC_GET:
-        case PC_GET_ALL:
-        case PC_SET_ALL:
-            cmdServerAnswerData(buff, len);
-            break;
-        }
+        LOG(PRINT_ERROR, "%s: CMD_ANSWER unsupported", __func__);
     }
-    else if (buff[1] == CMD_COMMAND)
+    else if (buff[FRAME_CMD_POS] == CMD_COMMAND)
     {
-        switch (buff[2])
-        {
-        case PC_CMD_RESET_ERROR:
-#if CONFIG_DEVICE_SIEWNIK
-            //errorReset();
-            LOG(PRINT_INFO, "error reset");
-#endif
-            break;
-        }
+        LOG(PRINT_ERROR, "%s: CMD_COMMAND unsupported", __func__);
+    }
+    else
+    {
+        LOG(PRINT_ERROR, "%s: CMD_COMMAND unsupported", __func__);
     }
 }

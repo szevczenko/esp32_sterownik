@@ -20,6 +20,14 @@
 #define FALSE                                 0
 #endif
 
+#ifndef ERROR
+#define ERROR                                 -1
+#endif
+
+#ifndef TIMEOUT
+#define TIMEOUT                               -2
+#endif
+
 #define CONFIG_DEVICE_SIEWNIK                 TRUE
 #define CONFIG_DEVICE_SOLARKA                 FALSE
 

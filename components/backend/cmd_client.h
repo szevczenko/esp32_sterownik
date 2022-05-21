@@ -12,6 +12,7 @@
 #include <netinet/in.h> 
 #include <errno.h>
 #include "menu_param.h"
+#include "parse_cmd.h"
 
 #define PORT     8080 
 #define MAXLINE 1024 
@@ -31,7 +32,9 @@ typedef struct
 void cmdClientStartTask(void);
 void cmdClientStart(void);
 void cmdClientStop(void);
+
 int cmdClientSend(uint8_t * buffer, uint32_t len);
+int cmdClientRead(uint8_t *buffer, uint32_t len, uint32_t timeout_ms);
 
 void cmdClientDisconnect(void);
 int cmdClientTryConnect(uint32_t timeout);
