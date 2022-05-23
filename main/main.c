@@ -90,8 +90,8 @@ void app_main()
 
         // Inicjalizacja diod
         io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = GPIO_MODE_INPUT;
-        io_conf.pin_bit_mask = BIT64(MOTOR_LED_RED) | BIT64(MOTOR_LED_GREEN) | BIT64(SERVO_VIBRO_LED_RED) | BIT64(SERVO_VIBRO_LED_GREEN);
+        io_conf.mode = GPIO_MODE_OUTPUT;
+        io_conf.pin_bit_mask = (1 << MOTOR_LED_RED) | (1 << MOTOR_LED_GREEN) | (1 << SERVO_VIBRO_LED_RED) | (1 << SERVO_VIBRO_LED_GREEN);
         io_conf.pull_down_en = 0;
         io_conf.pull_up_en = 1;
         gpio_config(&io_conf);

@@ -803,8 +803,8 @@ static bool menu_exit_cb(void * arg)
 		NULL_ERROR_MSG();
 		return false;
 	}
-	MOTOR_LED_SET_RED(0);
-	SERVO_VIBRO_LED_SET_RED(0);
+	MOTOR_LED_SET_GREEN(0);
+	SERVO_VIBRO_LED_SET_GREEN(0);
 	return true;
 }
 
@@ -1283,23 +1283,9 @@ static bool menu_process(void * arg)
 			break;	
 	}
 
-	if (ctx.motor_on)
-	{
-		MOTOR_LED_SET_RED(1);
-	}
-	else
-	{
-		MOTOR_LED_SET_RED(0);
-	}
+	MOTOR_LED_SET_GREEN(ctx.motor_on);
+	SERVO_VIBRO_LED_SET_GREEN(ctx.servo_vibro_on);
 
-	if (ctx.servo_vibro_on)
-	{
-		SERVO_VIBRO_LED_SET_RED(1);
-	}
-	else
-	{
-		SERVO_VIBRO_LED_SET_RED(0);
-	}
 	return true;
 }
 

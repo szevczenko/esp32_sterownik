@@ -138,7 +138,7 @@ void _parse_server(uint8_t *buff, uint32_t len)
 
                if (sizeof(sendBuff) < FRAME_VALUE_POS + data_size)
                {
-                   LOG(PRINT_ERROR, "Buffer is to small");
+                   LOG(PRINT_ERROR, "%s Buffer is to small", __func__);
                    break;
                }
 

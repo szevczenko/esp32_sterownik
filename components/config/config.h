@@ -60,10 +60,15 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// LED
-#define MOTOR_LED_RED                         GPIO_NUM_25
-#define SERVO_VIBRO_LED_RED                   GPIO_NUM_26
-#define MOTOR_LED_GREEN                       GPIO_NUM_15
-#define SERVO_VIBRO_LED_GREEN                 GPIO_NUM_12
+// #define MOTOR_LED_RED                         GPIO_NUM_25
+// #define SERVO_VIBRO_LED_RED                   GPIO_NUM_26
+// #define MOTOR_LED_GREEN                       GPIO_NUM_15
+// #define SERVO_VIBRO_LED_GREEN                 GPIO_NUM_12
+
+#define MOTOR_LED_RED                         GPIO_NUM_15
+#define SERVO_VIBRO_LED_RED                   GPIO_NUM_12
+#define MOTOR_LED_GREEN                       GPIO_NUM_25
+#define SERVO_VIBRO_LED_GREEN                 GPIO_NUM_26
 
 #define MOTOR_LED_SET_RED(x)            gpio_set_level(MOTOR_LED_RED, x);
 #define SERVO_VIBRO_LED_SET_RED(x)      gpio_set_level(SERVO_VIBRO_LED_RED, x);
