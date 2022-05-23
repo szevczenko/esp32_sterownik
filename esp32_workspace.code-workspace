@@ -5,6 +5,9 @@
         },
         {
             "path": "..\\esp-idf"
+        },
+        {
+            "path": "..\\esp32-tools"
         }
     ],
     
