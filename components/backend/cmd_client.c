@@ -71,6 +71,8 @@ struct cmd_client_context
 
 static struct cmd_client_context ctx;
 
+extern void cmdClientReqStartTask(void);
+
 static void _change_state(enum cmd_client_app_state new_state)
 {
     if (new_state < CMD_CLIENT_TOP)
@@ -197,7 +199,7 @@ static void _check_errors_state(void)
 
 //--------------------------------------------------------------------------------
 
-void cmd_client_task(void *arg)
+static void cmd_client_task(void *arg)
 {
     while (1)
     {
@@ -358,6 +360,7 @@ void cmdClientStartTask(void)
     xSemaphoreGive(ctx.mutexSemaphore);
     ctx.socket = -1;
     xTaskCreate(cmd_client_task, "cmd_client_task", 8192, NULL, NORMALPRIO, NULL);
+    cmdClientReqStartTask();
 }
 
 void cmdClientStart(void)

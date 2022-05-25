@@ -18,7 +18,7 @@
 #include "parse_cmd.h"
 
 #define MODULE_NAME     "[CMD Cl Req] "
-#define DEBUG_LVL       PRINT_INFO
+#define DEBUG_LVL       PRINT_DEBUG
 
 #if CONFIG_DEBUG_CMD_CLIENT
 #define LOG(_lvl, ...) \
@@ -64,7 +64,7 @@ static int _request_msg_process(struct cmd_client_request_data *msg)
 
     if (ret != msg->send_data_size)
     {
-        LOG(PRINT_ERROR, "Bad sent size %d %d", __func__, ret, msg->send_data_size);
+        LOG(PRINT_ERROR, "%s Bad sent size %d %d", __func__, ret, msg->send_data_size);
         return ERROR;
     }
 
@@ -73,30 +73,36 @@ static int _request_msg_process(struct cmd_client_request_data *msg)
         return TRUE;
     }
 
-    while (bytes_read < msg->rx_data_size && timeout > xTaskGetTickCount())
+    do 
     {
         int ret =
-            cmdClientRead(&msg->rx_data[bytes_read], msg->rx_data_size - bytes_read, ST2MS(
+            cmdClientRead((uint8_t *)(&msg->rx_data)[bytes_read], msg->rx_data_size - bytes_read, ST2MS(
                 timeout - xTaskGetTickCount()));
         if (ret < 0)
         {
-            LOG(PRINT_ERROR, "Error read", __func__);
-            return FALSE;
+            LOG(PRINT_ERROR, "%s Error read %d", __func__, ret);
+            return ERROR;
         }
 
         bytes_read += ret;
-    }
+
+        if (timeout < xTaskGetTickCount())
+        {
+            LOG(PRINT_DEBUG, "%s Timeout", __func__);
+            //break;
+        }
+    } while (bytes_read < msg->rx_data_size);
 
     if (bytes_read == msg->rx_data_size)
     {
         return TRUE;
     }
 
-    LOG(PRINT_ERROR, "Bad read size %d %d", __func__, bytes_read, msg->rx_data_size);
+    LOG(PRINT_ERROR, "%s Bad read size %d %d", __func__, bytes_read, msg->rx_data_size);
     return ERROR;
 }
 
-static void _requests_process(void)
+static void _requests_process(void *arg)
 {
     ctx.msg_queue = xQueueCreate(QUEUE_SIZE, sizeof(struct cmd_client_request_data *));
     struct cmd_client_request_data *msg = NULL;
@@ -105,6 +111,7 @@ static void _requests_process(void)
     {
         if (xQueueReceive(ctx.msg_queue, &msg, portMAX_DELAY) == pdTRUE)
         {
+            LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
             msg->result = _request_msg_process(msg);
             if (msg->sem != NULL)
             {
@@ -151,6 +158,9 @@ int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value)
     msg->request_number = request_number;
     msg->send_data = (void *)sendBuff;
     msg->send_data_size = sizeof(sendBuff);
+    msg->timeout_ms = 0;
+
+    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -220,6 +230,9 @@ int cmdClientGetValue(menuValue_t val, uint32_t *value, uint32_t timeout)
     msg->send_data = (void *)sendBuff;
     msg->send_data_size = sizeof(sendBuff);
     msg->request_number = request_number;
+    msg->timeout_ms = timeout;
+
+    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -295,7 +308,7 @@ int cmdClientSendCmd(parseCmd_t cmd)
     return ERROR;
 }
 
-int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout_ms)
+int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout)
 {
     LOG(PRINT_DEBUG, "%s %d", __func__, val);
     if (val >= MENU_LAST_VALUE)
@@ -340,6 +353,9 @@ int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout_ms)
     msg->send_data = (void *)sendBuff;
     msg->send_data_size = sizeof(sendBuff);
     msg->request_number = request_number;
+    msg->timeout_ms = timeout;
+
+    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -454,6 +470,9 @@ int cmdClientGetAllValue(uint32_t timeout)
     msg->send_data = (void *)sendBuff;
     msg->send_data_size = sizeof(sendBuff);
     msg->request_number = request_number;
+    msg->timeout_ms = timeout;
+
+    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -517,4 +536,9 @@ int cmdClientGetAllValue(uint32_t timeout)
     }
 
     return TRUE;
+}
+
+void cmdClientReqStartTask(void)
+{
+    xTaskCreate(_requests_process, "_requests_process", 8192, NULL, NORMALPRIO, NULL);
 }

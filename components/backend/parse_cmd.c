@@ -7,7 +7,7 @@
 #include "error_siewnik.h"
 
 #define MODULE_NAME     "[PARSE] "
-#define DEBUG_LVL       PRINT_INFO
+#define DEBUG_LVL       PRINT_DEBUG
 
 #if CONFIG_DEBUG_PARSE_CMD
 #define LOG(_lvl, ...) \
