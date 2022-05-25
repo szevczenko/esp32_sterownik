@@ -18,6 +18,8 @@
 #define FRAME_VALUE_TYPE_POS 7
 #define FRAME_VALUE_POS 8
 
+#define PACKET_SIZE 16
+
 typedef enum
 {
     PC_KEEP_ALIVE,

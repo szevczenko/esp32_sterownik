@@ -28,7 +28,7 @@
 #endif
 
 #define PAYLOAD_SIZE    256
-#define QUEUE_SIZE      10
+#define QUEUE_SIZE      16
 
 struct cmd_client_request_data
 {
@@ -46,9 +46,36 @@ struct cmd_client_req_context
 {
     uint32_t request_number;
     QueueHandle_t msg_queue;
+    uint8_t buffer[PAYLOAD_SIZE];
 };
 
 static struct cmd_client_req_context ctx;
+
+static int _receive_packet(TickType_t timeout)
+{
+    uint32_t bytes_read = 0;
+    do 
+    {
+        int ret =
+            cmdClientRead(&ctx.buffer[bytes_read], PACKET_SIZE - bytes_read, ST2MS(
+                timeout - xTaskGetTickCount()));
+        if (ret < 0)
+        {
+            LOG(PRINT_ERROR, "%s Error read %d", __func__, ret);
+            return ERROR;
+        }
+
+        bytes_read += ret;
+
+        if (timeout < xTaskGetTickCount())
+        {
+            LOG(PRINT_DEBUG, "%s Timeout", __func__);
+            return TIMEOUT;
+        }
+    } while (bytes_read < PACKET_SIZE);
+
+    return bytes_read;
+}
 
 static int _request_msg_process(struct cmd_client_request_data *msg)
 {
@@ -58,9 +85,9 @@ static int _request_msg_process(struct cmd_client_request_data *msg)
         return ERROR;
     }
 
-    uint32_t bytes_read = 0;
     TickType_t timeout = MS2ST(msg->timeout_ms) + xTaskGetTickCount();
     int ret = cmdClientSend(msg->send_data, msg->send_data_size);
+    uint32_t packet_number = 0;
 
     if (ret != msg->send_data_size)
     {
@@ -75,30 +102,32 @@ static int _request_msg_process(struct cmd_client_request_data *msg)
 
     do 
     {
-        int ret =
-            cmdClientRead((uint8_t *)(&msg->rx_data)[bytes_read], msg->rx_data_size - bytes_read, ST2MS(
-                timeout - xTaskGetTickCount()));
-        if (ret < 0)
+        ret = _receive_packet(timeout);
+        
+        if (ret < 0 || ret != PACKET_SIZE)
         {
-            LOG(PRINT_ERROR, "%s Error read %d", __func__, ret);
-            return ERROR;
+            return ret < 0 ? ret : ERROR;
         }
 
-        bytes_read += ret;
+        memcpy(&packet_number, &ctx.buffer[FRAME_REQ_NUMBER_POS], sizeof(packet_number));
+
+        if (packet_number == msg->request_number)
+        {
+            memcpy(msg->rx_data, ctx.buffer, msg->rx_data_size);
+            return TRUE;
+        }
+        else
+        {
+            LOG(PRINT_DEBUG, "%s Bad packet number %d wait %d", __func__, packet_number, msg->request_number);
+        }
 
         if (timeout < xTaskGetTickCount())
         {
             LOG(PRINT_DEBUG, "%s Timeout", __func__);
-            //break;
+            break;
         }
-    } while (bytes_read < msg->rx_data_size);
+    } while (true);
 
-    if (bytes_read == msg->rx_data_size)
-    {
-        return TRUE;
-    }
-
-    LOG(PRINT_ERROR, "%s Bad read size %d %d", __func__, bytes_read, msg->rx_data_size);
     return ERROR;
 }
 
@@ -111,7 +140,6 @@ static void _requests_process(void *arg)
     {
         if (xQueueReceive(ctx.msg_queue, &msg, portMAX_DELAY) == pdTRUE)
         {
-            LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
             msg->result = _request_msg_process(msg);
             if (msg->sem != NULL)
             {
@@ -135,7 +163,7 @@ int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value)
     }
 
     uint32_t request_number = ctx.request_number++;
-    uint8_t sendBuff[12] = {0};
+    uint8_t sendBuff[PACKET_SIZE] = {0};
     int result = 0;
     struct cmd_client_request_data *msg = malloc(sizeof(struct cmd_client_request_data));
 
@@ -159,8 +187,6 @@ int cmdClientSetValueWithoutResp(menuValue_t val, uint32_t value)
     msg->send_data = (void *)sendBuff;
     msg->send_data_size = sizeof(sendBuff);
     msg->timeout_ms = 0;
-
-    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -215,8 +241,8 @@ int cmdClientGetValue(menuValue_t val, uint32_t *value, uint32_t timeout)
     uint32_t return_value = 0;
     uint32_t request_number = ctx.request_number++;
     uint32_t rx_req_number = 0;
-    uint8_t rxBuff[12] = {0};
-    uint8_t sendBuff[8] = {0};
+    uint8_t rxBuff[PACKET_SIZE] = {0};
+    uint8_t sendBuff[PACKET_SIZE] = {0};
     int result = 0;
 
     sendBuff[FRAME_LEN_POS] = sizeof(sendBuff);
@@ -231,8 +257,6 @@ int cmdClientGetValue(menuValue_t val, uint32_t *value, uint32_t timeout)
     msg->send_data_size = sizeof(sendBuff);
     msg->request_number = request_number;
     msg->timeout_ms = timeout;
-
-    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -337,8 +361,8 @@ int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout)
 
     uint32_t request_number = ctx.request_number++;
     uint32_t rx_req_number = 0;
-    uint8_t rxBuff[9] = {0};
-    uint8_t sendBuff[12] = {0};
+    uint8_t rxBuff[PACKET_SIZE] = {0};
+    uint8_t sendBuff[PACKET_SIZE] = {0};
     int result = 0;
 
     sendBuff[FRAME_LEN_POS] = sizeof(sendBuff);
@@ -354,8 +378,6 @@ int cmdClientSetValue(menuValue_t val, uint32_t value, uint32_t timeout)
     msg->send_data_size = sizeof(sendBuff);
     msg->request_number = request_number;
     msg->timeout_ms = timeout;
-
-    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
     if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
     {
@@ -437,103 +459,103 @@ int cmdClientGetAllValue(uint32_t timeout)
 {
     LOG(PRINT_DEBUG, "%s", __func__);
 
-    struct cmd_client_request_data *msg = malloc(sizeof(struct cmd_client_request_data));
+    // struct cmd_client_request_data *msg = malloc(sizeof(struct cmd_client_request_data));
 
-    memset(msg, 0, sizeof(struct cmd_client_request_data));
+    // memset(msg, 0, sizeof(struct cmd_client_request_data));
 
-    msg->sem = xSemaphoreCreateBinary();
+    // msg->sem = xSemaphoreCreateBinary();
 
-    if (msg->sem == NULL)
-    {
-        LOG(PRINT_ERROR, "%s: cannot create semaphore", __func__);
-        return ERROR;
-    }
+    // if (msg->sem == NULL)
+    // {
+    //     LOG(PRINT_ERROR, "%s: cannot create semaphore", __func__);
+    //     return ERROR;
+    // }
 
-    void *data = NULL;
-    uint32_t data_size = 0;
+    // void *data = NULL;
+    // uint32_t data_size = 0;
 
-    menuParamGetDataNSize(&data, &data_size);
-    uint32_t return_value = 0;
-    uint32_t request_number = ctx.request_number++;
-    uint32_t rx_req_number = 0;
-    uint8_t rxBuff[FRAME_VALUE_POS + MENU_LAST_VALUE * sizeof(uint32_t)] = {0};
-    uint8_t sendBuff[7] = {0};
-    int result = 0;
+    // menuParamGetDataNSize(&data, &data_size);
+    // uint32_t return_value = 0;
+    // uint32_t request_number = ctx.request_number++;
+    // uint32_t rx_req_number = 0;
+    // uint8_t rxBuff[FRAME_VALUE_POS + MENU_LAST_VALUE * sizeof(uint32_t)] = {0};
+    // uint8_t sendBuff[7] = {0};
+    // int result = 0;
 
-    sendBuff[FRAME_LEN_POS] = sizeof(sendBuff);
-    memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
-    sendBuff[FRAME_CMD_POS] = CMD_REQEST;
-    sendBuff[FRAME_PARSE_TYPE_POS] = PC_GET_ALL;
+    // sendBuff[FRAME_LEN_POS] = sizeof(sendBuff);
+    // memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
+    // sendBuff[FRAME_CMD_POS] = CMD_REQEST;
+    // sendBuff[FRAME_PARSE_TYPE_POS] = PC_GET_ALL;
 
-    msg->rx_data = (void *)rxBuff;
-    msg->rx_data_size = sizeof(rxBuff);
-    msg->send_data = (void *)sendBuff;
-    msg->send_data_size = sizeof(sendBuff);
-    msg->request_number = request_number;
-    msg->timeout_ms = timeout;
+    // msg->rx_data = (void *)rxBuff;
+    // msg->rx_data_size = sizeof(rxBuff);
+    // msg->send_data = (void *)sendBuff;
+    // msg->send_data_size = sizeof(sendBuff);
+    // msg->request_number = request_number;
+    // msg->timeout_ms = timeout;
 
-    LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
+    // LOG(PRINT_DEBUG, "%s msg %x", __func__, (uint32_t)msg);
 
-    if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
-    {
-        vSemaphoreDelete(msg->sem);
-        free(msg);
-        LOG(PRINT_ERROR, "%s: cannot add msg to queue", __func__);
-        return ERROR;
-    }
+    // if (xQueueSend(ctx.msg_queue, &msg, 0) != pdTRUE)
+    // {
+    //     vSemaphoreDelete(msg->sem);
+    //     free(msg);
+    //     LOG(PRINT_ERROR, "%s: cannot add msg to queue", __func__);
+    //     return ERROR;
+    // }
 
-    if (xSemaphoreTake(msg->sem, portMAX_DELAY) != pdTRUE)
-    {
-        vSemaphoreDelete(msg->sem);
-        free(msg);
-        LOG(PRINT_ERROR, "%s: cannot take semaphore", __func__);
-        return ERROR;
-    }
+    // if (xSemaphoreTake(msg->sem, portMAX_DELAY) != pdTRUE)
+    // {
+    //     vSemaphoreDelete(msg->sem);
+    //     free(msg);
+    //     LOG(PRINT_ERROR, "%s: cannot take semaphore", __func__);
+    //     return ERROR;
+    // }
 
-    vSemaphoreDelete(msg->sem);
-    result = msg->result;
-    free(msg);
+    // vSemaphoreDelete(msg->sem);
+    // result = msg->result;
+    // free(msg);
 
-    if (result < 0)
-    {
-        LOG(PRINT_ERROR, "%s: Bad result", __func__);
-        return result;
-    }
+    // if (result < 0)
+    // {
+    //     LOG(PRINT_ERROR, "%s: Bad result", __func__);
+    //     return result;
+    // }
 
-    memcpy(&rx_req_number, &rxBuff[FRAME_REQ_NUMBER_POS], sizeof(rx_req_number));
+    // memcpy(&rx_req_number, &rxBuff[FRAME_REQ_NUMBER_POS], sizeof(rx_req_number));
 
-    if (rx_req_number != request_number)
-    {
-        LOG(PRINT_ERROR, "%s Bad req number %d %d", __func__, request_number, rx_req_number);
-        return ERROR;
-    }
+    // if (rx_req_number != request_number)
+    // {
+    //     LOG(PRINT_ERROR, "%s Bad req number %d %d", __func__, request_number, rx_req_number);
+    //     return ERROR;
+    // }
 
-    if (CMD_ANSWER != rxBuff[FRAME_CMD_POS])
-    {
-        LOG(PRINT_ERROR, "%s bad cmd %x", __func__, rxBuff[FRAME_CMD_POS]);
-        return ERROR;
-    }
+    // if (CMD_ANSWER != rxBuff[FRAME_CMD_POS])
+    // {
+    //     LOG(PRINT_ERROR, "%s bad cmd %x", __func__, rxBuff[FRAME_CMD_POS]);
+    //     return ERROR;
+    // }
 
-    if (PC_GET != rxBuff[FRAME_PARSE_TYPE_POS])
-    {
-        LOG(PRINT_ERROR, "%s bad type %d", __func__, rxBuff[FRAME_PARSE_TYPE_POS]);
-        return ERROR;
-    }
+    // if (PC_GET != rxBuff[FRAME_PARSE_TYPE_POS])
+    // {
+    //     LOG(PRINT_ERROR, "%s bad type %d", __func__, rxBuff[FRAME_PARSE_TYPE_POS]);
+    //     return ERROR;
+    // }
 
-    for (int i = 0; i < (rxBuff[FRAME_LEN_POS] - FRAME_VALUE_POS) / 4; i++)
-    {
-        return_value = (uint32_t)rxBuff[FRAME_VALUE_POS + i * 4];
-        LOG(PRINT_DEBUG, "VALUE: %d, %d", i, return_value);
-        if ((i == MENU_BOOTUP_SYSTEM) || (i == MENU_BUZZER) || (i == MENU_EMERGENCY_DISABLE))
-        {
-            continue;
-        }
+    // for (int i = 0; i < (rxBuff[FRAME_LEN_POS] - FRAME_VALUE_POS) / 4; i++)
+    // {
+    //     return_value = (uint32_t)rxBuff[FRAME_VALUE_POS + i * 4];
+    //     LOG(PRINT_DEBUG, "VALUE: %d, %d", i, return_value);
+    //     if ((i == MENU_BOOTUP_SYSTEM) || (i == MENU_BUZZER) || (i == MENU_EMERGENCY_DISABLE))
+    //     {
+    //         continue;
+    //     }
 
-        if (menuSetValue(i, return_value) == FALSE)
-        {
-            LOG(PRINT_ERROR, "%s Error Set Value %d = %d", __func__, i, return_value);
-        }
-    }
+    //     if (menuSetValue(i, return_value) == FALSE)
+    //     {
+    //         LOG(PRINT_ERROR, "%s Error Set Value %d = %d", __func__, i, return_value);
+    //     }
+    // }
 
     return TRUE;
 }

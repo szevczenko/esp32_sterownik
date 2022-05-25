@@ -68,21 +68,22 @@ void _parse_server(uint8_t *buff, uint32_t len)
             break;
 
         case PC_GET:
-            sendBuff[FRAME_LEN_POS] = 12;
+            sendBuff[FRAME_LEN_POS] = PACKET_SIZE;
             memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
             sendBuff[FRAME_CMD_POS] = CMD_ANSWER;
             sendBuff[FRAME_PARSE_TYPE_POS] = PC_GET;
             sendBuff[FRAME_VALUE_TYPE_POS] = buff[FRAME_VALUE_TYPE_POS];
             value = menuGetValue(buff[FRAME_VALUE_TYPE_POS]);
             memcpy(&sendBuff[FRAME_VALUE_POS], &value, sizeof(value));
-            cmdServerSendData(sendBuff, 12);
+            cmdServerSendData(sendBuff, PACKET_SIZE);
             break;
 
         case PC_SET:
-            sendBuff[FRAME_LEN_POS] = 9;
+            sendBuff[FRAME_LEN_POS] = PACKET_SIZE;
             memcpy(&sendBuff[FRAME_REQ_NUMBER_POS], &request_number, sizeof(request_number));
             sendBuff[FRAME_CMD_POS] = CMD_ANSWER;
             sendBuff[FRAME_PARSE_TYPE_POS] = PC_SET;
+            sendBuff[FRAME_VALUE_TYPE_POS] = buff[FRAME_VALUE_TYPE_POS];
             memcpy(&value, &buff[FRAME_VALUE_POS], sizeof(value));
             if (menuSetValue(buff[FRAME_VALUE_TYPE_POS], value))
             {
@@ -93,9 +94,9 @@ void _parse_server(uint8_t *buff, uint32_t len)
                 sendBuff[FRAME_VALUE_POS] = NEGATIVE_RESP;
             }
 
-            if (buff[1] != CMD_DATA)
+            if (buff[FRAME_CMD_POS] != CMD_DATA)
             {
-                cmdServerSendData(sendBuff, 9);
+                cmdServerSendData(sendBuff, PACKET_SIZE);
             }
 
             menuPrintParameter(buff[FRAME_VALUE_TYPE_POS]);
@@ -149,7 +150,7 @@ void _parse_server(uint8_t *buff, uint32_t len)
                sendBuff[FRAME_VALUE_TYPE_POS] = buff[FRAME_VALUE_TYPE_POS];
                value = menuGetValue(buff[FRAME_VALUE_TYPE_POS]);
                memcpy(&sendBuff[FRAME_VALUE_POS], data, data_size);
-               cmdServerSendData(sendBuff, FRAME_VALUE_POS + data_size);
+               //cmdServerSendData(sendBuff, FRAME_VALUE_POS + data_size);
            }
            break;
         }

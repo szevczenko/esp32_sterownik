@@ -146,11 +146,16 @@ static void change_state(state_start_menu_t new_state)
 
 static void _reset_error(void)
 {
-	cmdClientSetValueWithoutResp(MENU_MOTOR_ERROR_OVERCURRENT, 0);
-	cmdClientSetValueWithoutResp(MENU_SERVO_ERROR_OVERCURRENT, 0);
-	cmdClientSetValueWithoutResp(MENU_TEMPERATURE_IS_ERROR_ON, 0);
-	cmdClientSetValueWithoutResp(MENU_MOTOR_ERROR_NOT_CONNECTED, 0);
-	cmdClientSetValueWithoutResp(MENU_SERVO_ERROR_NOT_CONNECTED, 0);
+	if (menuGetValue(MENU_MOTOR_ERROR_OVERCURRENT) || menuGetValue(MENU_SERVO_ERROR_OVERCURRENT) || 
+		menuGetValue(MENU_TEMPERATURE_IS_ERROR_ON) || menuGetValue(MENU_MOTOR_ERROR_NOT_CONNECTED) || 
+		menuGetValue(MENU_SERVO_ERROR_NOT_CONNECTED))
+	{
+		cmdClientSetValueWithoutResp(MENU_MOTOR_ERROR_OVERCURRENT, 0);
+		cmdClientSetValueWithoutResp(MENU_SERVO_ERROR_OVERCURRENT, 0);
+		cmdClientSetValueWithoutResp(MENU_TEMPERATURE_IS_ERROR_ON, 0);
+		cmdClientSetValueWithoutResp(MENU_MOTOR_ERROR_NOT_CONNECTED, 0);
+		cmdClientSetValueWithoutResp(MENU_SERVO_ERROR_NOT_CONNECTED, 0);
+	}
 }
 
 static void set_change_menu(edit_value_t val)
