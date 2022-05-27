@@ -7,4 +7,6 @@ void backendExitMenuParameters(void);
 void backendToggleEmergencyDisable(void);
 void backendEnterMenuStart(void);
 void backendExitMenuStart(void);
+bool backendIsConnected(void);
+bool backendIsEmergencyDisable(void);
 #endif

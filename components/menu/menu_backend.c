@@ -328,3 +328,26 @@ void menuBackendInit(void)
 {
 	xTaskCreate(menu_task, "menu_back", 4096, NULL, 5, NULL);
 }
+
+bool backendIsConnected(void)
+{
+	debug_function_name(__func__);
+	if (!wifiDrvIsConnected())
+	{
+		LOG(PRINT_INFO, "START_MENU: WiFi not connected");
+		return false;
+	}
+
+	if (!cmdClientIsConnected())
+	{
+		LOG(PRINT_INFO, "START_MENU: Client not connected");
+		return false;
+	}
+
+	return true;
+}
+
+bool backendIsEmergencyDisable(void)
+{
+	return ctx.state == STATE_EMERGENCY_DISABLE_EXIT;
+}

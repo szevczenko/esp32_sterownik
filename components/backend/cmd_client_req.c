@@ -18,7 +18,7 @@
 #include "parse_cmd.h"
 
 #define MODULE_NAME     "[CMD Cl Req] "
-#define DEBUG_LVL       PRINT_DEBUG
+#define DEBUG_LVL       PRINT_INFO
 
 #if CONFIG_DEBUG_CMD_CLIENT
 #define LOG(_lvl, ...) \
@@ -562,5 +562,5 @@ int cmdClientGetAllValue(uint32_t timeout)
 
 void cmdClientReqStartTask(void)
 {
-    xTaskCreate(_requests_process, "_requests_process", 8192, NULL, NORMALPRIO, NULL);
+    xTaskCreate(_requests_process, "_requests_process", 4096, NULL, NORMALPRIO, NULL);
 }

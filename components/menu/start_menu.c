@@ -125,8 +125,6 @@ static char *state_name[] =
 	[STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT"
 };
 
-static bool menu_is_connected(void);
-
 static void change_state(state_start_menu_t new_state)
 {
 	debug_function_name(__func__);
@@ -295,10 +293,9 @@ static void menu_button_exit_callback(void * arg)
 		NULL_ERROR_MSG();
 		return;
 	}
-	cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 0);
+	
 	menuExit(menu);
 	ctx.exit_wait_flag = true;
-	
 }
 
 static void menu_button_servo_callback(void * arg)
@@ -785,7 +782,7 @@ static bool menu_enter_cb(void * arg)
 	_exit_power_save();
 	_reset_power_save_timer();
 
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		change_state(STATE_INIT);
 	}
@@ -820,24 +817,6 @@ static void menu_set_error_msg(char *msg)
 	change_state(STATE_ERROR_CHECK);
 }
 
-static bool menu_is_connected(void)
-{
-	debug_function_name(__func__);
-	if (!wifiDrvIsConnected())
-	{
-		LOG(PRINT_INFO, "START_MENU: WiFi not connected");
-		return false;
-	}
-
-	if (!cmdClientIsConnected())
-	{
-		LOG(PRINT_INFO, "START_MENU: Client not connected");
-		return false;
-	}
-
-	return true;
-}
-
 static void menu_start_init(void)
 {
 	ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
@@ -848,7 +827,7 @@ static void menu_start_init(void)
 
 static void menu_check_connection(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		change_state(STATE_RECONNECT);
 		return;
@@ -860,15 +839,18 @@ static void menu_check_connection(void)
 	{
 		LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i);
 		osDelay(250);
-		ret = cmdClientGetAllValue(100);
-		if (ret)
+		if (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 1000) == TRUE 
+			&& cmdClientSetValue(MENU_SERVO_IS_ON, 0, 1000) == TRUE
+			&& cmdClientSetValue(MENU_MOTOR, menuGetValue(MENU_MOTOR), 1000) == TRUE 
+			&& cmdClientSetValue(MENU_SERVO, menuGetValue(MENU_SERVO), 1000) == TRUE)
 		{
-			ctx.motor_value = menuGetValue(MENU_MOTOR) == 0 ? 1 : menuGetValue(MENU_MOTOR);
+			ctx.motor_value = menuGetValue(MENU_MOTOR);
 			ctx.servo_value = menuGetValue(MENU_SERVO);
 			ctx.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
 			ctx.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
 
 			cmdClientSetValueWithoutResp(MENU_EMERGENCY_DISABLE, 0);
+			ret = true;
 			break;
 		}
 		else
@@ -892,7 +874,7 @@ static void menu_check_connection(void)
 
 static void menu_start_idle(void)
 {
-	if (menu_is_connected())
+	if (backendIsConnected())
 	{
 		cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
 		change_state(STATE_START);
@@ -905,7 +887,7 @@ static void menu_start_idle(void)
 
 static void menu_start_start(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		return;
 	}
@@ -916,7 +898,7 @@ static void menu_start_start(void)
 static void menu_start_ready(void)
 {
 	debug_function_name(__func__);
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1024,7 +1006,7 @@ static void menu_start_ready(void)
 
 static void menu_start_power_save(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1041,7 +1023,7 @@ static void menu_start_power_save(void)
 
 static void menu_start_low_silos(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1062,7 +1044,7 @@ static void menu_start_low_silos(void)
 
 static void menu_start_error(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1100,7 +1082,7 @@ static void menu_start_info(void)
 
 static void menu_start_motor_change(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1121,7 +1103,7 @@ static void menu_start_motor_change(void)
 static void menu_start_vibro_change(void)
 {
 	debug_function_name(__func__);
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1288,9 +1270,18 @@ static bool menu_process(void * arg)
 			break;	
 	}
 
-	MOTOR_LED_SET_GREEN(ctx.motor_on);
-	SERVO_VIBRO_LED_SET_GREEN(ctx.servo_vibro_on);
-
+	if (!backendIsEmergencyDisable())
+	{
+		MOTOR_LED_SET_GREEN(ctx.motor_on);
+		SERVO_VIBRO_LED_SET_GREEN(ctx.servo_vibro_on);
+	}
+	else
+	{
+		MOTOR_LED_SET_GREEN(0);
+		SERVO_VIBRO_LED_SET_GREEN(0);
+		xTimerStop(ctx.servo_timer, 0);
+	}
+	
 	return true;
 }
 

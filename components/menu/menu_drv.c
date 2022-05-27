@@ -33,6 +33,7 @@
 #define PROCESS_TASK_TIMEOUT    50
 #define MENU_TAB_SIZE			8
 #define POWER_OFF_TIMEOUT_MS	3500
+#define POWER_OFF_BLOCK_MS		5000
 
 typedef enum
 {
@@ -60,11 +61,14 @@ typedef struct
 	bool enter_req;
 	bool error_flag;
 	bool power_off_req;
+	bool emergency_led_status;
+	uint32_t led_cnt;
 	int error_code;
 	char * error_msg;
 	menu_token_t *new_menu;
 	SemaphoreHandle_t update_screen_req;
 	TickType_t power_off_timer;
+	TickType_t block_power_off_timer;
 } menu_drv_t;
 
 static menu_drv_t ctx;
@@ -173,6 +177,7 @@ static void menu_fall_turn_on_off_but_cb(void * arg)
 		button->fall_callback(button->arg);
 		update_screen();
 	}
+	power_on_reset_timer();
 	backendToggleEmergencyDisable();
 }
 
@@ -184,6 +189,12 @@ static void menu_timer_power_off_but_cb(void * arg)
 		button->fall_callback(button->arg);
 		update_screen();
 	}
+
+	if (ctx.block_power_off_timer > xTaskGetTickCount())
+	{
+		return;
+	}
+
 	ctx.power_off_req = true;
 	ctx.state = MENU_STATE_POWER_OFF_COUNT;
 	ctx.power_off_timer = xTaskGetTickCount() + MS2ST(POWER_OFF_TIMEOUT_MS);
@@ -191,6 +202,7 @@ static void menu_timer_power_off_but_cb(void * arg)
 
 static void menu_rise_power_off_but_cb(void * arg)
 {
+	power_on_reset_timer();
 	ctx.power_off_req = false;
 }
 
@@ -216,6 +228,7 @@ static void menu_fall_callback_but_cb(void * arg)
 		button->fall_callback(button->arg);
 		update_screen();
 	}
+	power_on_reset_timer();
 }
 
 static void menu_rise_callback_but_cb(void * arg)
@@ -226,6 +239,7 @@ static void menu_rise_callback_but_cb(void * arg)
 		button->rise_callback(button->arg);
 		update_screen();
 	}
+	power_on_reset_timer();
 }
 
 static void menu_timer_callback_but_cb(void * arg)
@@ -480,20 +494,19 @@ static void menu_state_process(menu_token_t * menu)
 
 static void menu_state_emergency_disable(void)
 {
-	static uint32_t led_cnt;
-	static bool led_status;
-
-	led_cnt++;
 	ssd1306_Fill(Black);
 	ssd1306_SetCursor(2, MENU_HEIGHT);
 	ssd1306_WriteString("  STOP", Font_16x26, White);
 	ssd1306_UpdateScreen();
-	if (led_cnt % 10 == 0)
+	if (ctx.led_cnt % 10 == 0)
 	{
-		MOTOR_LED_SET_RED(led_status);
-		SERVO_VIBRO_LED_SET_RED(led_status);
-		led_status = led_status ? false : true;
+		MOTOR_LED_SET_GREEN(0);
+		SERVO_VIBRO_LED_SET_GREEN(0);
+		MOTOR_LED_SET_RED(ctx.emergency_led_status);
+		SERVO_VIBRO_LED_SET_RED(ctx.emergency_led_status);
+		ctx.emergency_led_status = ctx.emergency_led_status ? false : true;
 	}
+	ctx.led_cnt++;
 	osDelay(100);
 }
 
@@ -723,6 +736,10 @@ void menuDrvEnterEmergencyDisable(void)
 {
 	ctx.last_state = ctx.state;
 	ctx.state = MENU_STATE_EMERGENCY_DISABLE;
+	ctx.emergency_led_status = true;
+	MOTOR_LED_SET_GREEN(0);
+	SERVO_VIBRO_LED_SET_GREEN(0);
+	ctx.led_cnt = 0;
 	menu_deactivate_but();
 }
 
@@ -730,15 +747,28 @@ void menuDrvExitEmergencyDisable(void)
 {
 	ctx.state = ctx.last_state;
 	menu_token_t *menu = last_tab_element();
+	MOTOR_LED_SET_RED(0);
+	SERVO_VIBRO_LED_SET_RED(0);
+
 	if (menu != NULL)
 	{
 		menu_activate_but(menu);
 	}
 }
 
+void menuDrvDisableSystemProcess(void)
+{
+	while(1)
+	{
+		ssd1306_Fill(Black);
+		ssd1306_UpdateScreen();
+	}
+}
+
 void init_menu(menu_drv_init_t init_type)
 {
 	ctx.update_screen_req = xSemaphoreCreateBinary();
+	ctx.block_power_off_timer = MS2ST(POWER_OFF_BLOCK_MS) + xTaskGetTickCount();
 	
 	if (init_type == MENU_DRV_LOW_BATTERY_INIT)
 	{
@@ -763,6 +793,4 @@ void init_menu(menu_drv_init_t init_type)
 	#endif
 	menuBackendInit();
 	update_screen();
-	
-	
 }

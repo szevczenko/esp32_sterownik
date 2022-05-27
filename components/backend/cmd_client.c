@@ -17,7 +17,7 @@
 #include "parse_cmd.h"
 
 #define MODULE_NAME     "[CMD Cl] "
-#define DEBUG_LVL       PRINT_INFO
+#define DEBUG_LVL       PRINT_DEBUG
 
 #if CONFIG_DEBUG_CMD_CLIENT
 #define LOG(_lvl, ...)                        \
@@ -266,6 +266,12 @@ int cmdClientSend(uint8_t *buffer, uint32_t len)
     {
         LOG(PRINT_ERROR, "%s error send msg", __func__);
     }
+
+    if (ret > 0)
+    {
+        keepAliveAccept(&ctx.keepAlive);
+    }
+
     LOG(PRINT_DEBUG, "%s: %d", __func__, ret);
     return ret;
 }
@@ -359,7 +365,7 @@ void cmdClientStartTask(void)
     cmd_client_ctx_init();
     xSemaphoreGive(ctx.mutexSemaphore);
     ctx.socket = -1;
-    xTaskCreate(cmd_client_task, "cmd_client_task", 8192, NULL, NORMALPRIO, NULL);
+    xTaskCreate(cmd_client_task, "cmd_client_task", 4096, NULL, NORMALPRIO, NULL);
     cmdClientReqStartTask();
 }
 

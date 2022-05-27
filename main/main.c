@@ -117,6 +117,7 @@ void app_main()
             keepAliveStartTask();
             menuParamInit();
             fastProcessStartTask();
+            power_on_start_task();
             // init_sleep();
         }
         else
