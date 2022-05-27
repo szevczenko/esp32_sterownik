@@ -55,7 +55,7 @@ struct server_network
 void cmdServerStartTask(void);
 void cmdServerStart(void);
 void cmdServerStop(void);
-void cmdServerSendData(void * arg, uint8_t * buff, uint8_t len);
+int cmdServerSendData(uint8_t *buff, uint8_t len);
 int cmdServerAnswerData(uint8_t * buff, uint32_t len);
 int cmdServerSendDataWaitResp(uint8_t * buff, uint32_t len, uint8_t * buff_rx, uint32_t * rx_len, uint32_t timeout);
 int cmdServerSetValueWithoutResp(menuValue_t val, uint32_t value);

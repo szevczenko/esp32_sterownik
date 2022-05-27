@@ -10,6 +10,16 @@
 #include "menu_settings.h"
 #include "menu_low_battery.h"
 
+#define MODULE_NAME                       "[MAIN_MENU] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 static menu_token_t setings = 
 {
 	.name = "SETINGS",

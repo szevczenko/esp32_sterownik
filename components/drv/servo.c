@@ -15,8 +15,8 @@
 #define LED_SERVO_ON 
 #define OFF_SERVO
 
-//#undef debug_msg
-//#define debug_msg(...)
+//#undef printf
+//#define printf(...)
 
 #if CONFIG_DEVICE_SIEWNIK
 
@@ -30,7 +30,7 @@ void servo_set_pwm_val(uint8_t value)
 	int min = 2000 + (50 - menuGetValue(MENU_CLOSE_SERVO_REGULATION))*10;
 	int max = 1275 + (50 - menuGetValue(MENU_OPEN_SERVO_REGULATION))*10;
 	uint16_t pwm = (uint16_t)((float)(max-min)*(float)value/(float)99 + (float)min);
-	//debug_msg("REG: close %d, open %d, pwm %d\n", min, max, pwm);
+	//printf("REG: close %d, open %d, pwm %d\n", min, max, pwm);
 	servoD.pwm_value = pwm;
 	
 	/*if (value == 0)
@@ -84,7 +84,7 @@ void servo_init(uint8_t prescaler)
 	//evTime_init(&servoD.timeout);
 	servoD.try_cnt = 0;
 	try_count = 0;
-	debug_msg("SERVO: init\n");
+	printf("SERVO: init\n");
 }
 
 int servo_is_open(void)
@@ -99,7 +99,7 @@ int servo_open(uint8_t value) // value - 0-100%
 		servoD.state = SERVO_OPEN;
 		servoD.value = value;
 		servo_set_pwm_val((uint16_t)value);
-		debug_msg("SERVO_OPPENED %d\n", value);
+		printf("SERVO_OPPENED %d\n", value);
 		LED_SERVO_ON;
 		//error_servo_timer();
 		return 1;
@@ -134,7 +134,7 @@ int servo_close(void)
 		servo_set_pwm_val((uint16_t)0);
 		servoD.state = SERVO_CLOSE;
 		servoD.value = 0;
-		debug_msg("SERVO_CLOSED %d\n", servoD.value);
+		printf("SERVO_CLOSED %d\n", servoD.value);
 		LED_SERVO_OFF;
 		//error_servo_timer();
 		return 1;
@@ -180,7 +180,7 @@ static void servo_try_process(void)
 		servoD.state = servoD.last_state;
 		servoD.try_cnt++;
 	}
-	debug_msg("SERVO_TRY %d\n", servoD.value + try_count);
+	printf("SERVO_TRY %d\n", servoD.value + try_count);
 
 }
 
@@ -243,7 +243,7 @@ uint16_t servo_process(uint8_t value)
 	{
 		servoD.try_cnt = 0;
 		servoD.timeout = 0;
-		debug_msg("SERVO: Zero try cnt\n");
+		printf("SERVO: Zero try cnt\n");
 	}
 	//#endif
 	return servoD.pwm_value;

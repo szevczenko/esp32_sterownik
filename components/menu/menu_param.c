@@ -4,11 +4,18 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 
+#define MODULE_NAME                       "[PARAM] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define STORAGE_NAMESPACE "MENU"
 #define PARAMETERS_TAB_SIZE MENU_LAST_VALUE
-
-// #undef debug_msg
-// #define debug_msg(...) //debug_msg( __VA_ARGS__)
 
 static menuPStruct_t menuParameters[] = 
 {
@@ -19,18 +26,22 @@ static menuPStruct_t menuParameters[] =
 	[MENU_VIBRO_WORKING_TIME] = {.max_value = 100, .default_value = 0},
 	[MENU_MOTOR_IS_ON] = {.max_value = 1, .default_value = 0},
 	[MENU_SERVO_IS_ON] = {.max_value = 1, .default_value = 0},
-	[MENU_MOTOR_ERROR_IS_ON] = {.max_value = 1, .default_value = 0},
-	[MENU_SERVO_ERROR_IS_ON] = {.max_value = 1, .default_value = 0},
 	[MENU_CURRENT_SERVO] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_CURRENT_MOTOR] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_VOLTAGE_ACCUM] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_TEMPERATURE] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_SILOS_LEVEL] = {.max_value = 100, .default_value = 0},
-	[MENU_ERRORS] = {.max_value = 0xFFFF, .default_value = 0},
 	[MENU_START_SYSTEM] = {.max_value = 1, .default_value = 0},
 	[MENU_BOOTUP_SYSTEM] = {.max_value = 1, .default_value = 1},
 	[MENU_EMERGENCY_DISABLE] = {.max_value = 1, .default_value = 0},
 	[MENU_LOW_LEVEL_SILOS] = {.max_value = 1, .default_value = 0},
+
+	[MENU_TEMPERATURE_IS_ERROR_ON] = {.max_value = 0xFFFF, .default_value = 0},
+	[MENU_MOTOR_ERROR_OVERCURRENT] = {.max_value = 1, .default_value = 0},
+	[MENU_SERVO_ERROR_OVERCURRENT] = {.max_value = 1, .default_value = 0},
+	[MENU_MOTOR_ERROR_NOT_CONNECTED] = {.max_value = 1, .default_value = 0},
+	[MENU_SERVO_ERROR_NOT_CONNECTED] = {.max_value = 1, .default_value = 0},
+	[MENU_SERVO_ERROR_CANOT_CLOSE] = {.max_value = 1, .default_value = 0},
 
 	[MENU_ERROR_SERVO] = {.max_value = 1, .default_value = 1},
 	[MENU_ERROR_MOTOR] = {.max_value = 1, .default_value = 1},
@@ -46,25 +57,29 @@ static menuPStruct_t menuParameters[] =
 
 static char *parameters_name[] = 
 {
-	[MENU_MOTOR] 				= "MENU_MOTOR",
-	[MENU_MOTOR2]				= "MENU_MOTOR2",
-	[MENU_SERVO] 				= "MENU_SERVO",
-	[MENU_VIBRO_PERIOD] 		= "MENU_VIBRO_PERIOD",
-	[MENU_VIBRO_WORKING_TIME] 	= "MENU_VIBRO_WORKING_TIME",
-	[MENU_MOTOR_IS_ON] 			= "MENU_MOTOR_IS_ON",
-	[MENU_SERVO_IS_ON] 			= "MENU_SERVO_IS_ON",
-	[MENU_MOTOR_ERROR_IS_ON] 	= "MENU_MOTOR_ERROR_IS_ON",
-	[MENU_SERVO_ERROR_IS_ON] 	= "MENU_SERVO_ERROR_IS_ON",
-	[MENU_CURRENT_SERVO] 		= "MENU_CURRENT_SERVO",
-	[MENU_CURRENT_MOTOR] 		= "MENU_CURRENT_MOTOR",
-	[MENU_VOLTAGE_ACCUM] 		= "MENU_VOLTAGE_ACCUM",
-	[MENU_TEMPERATURE] 			= "MENU_TEMPERATURE",
-	[MENU_SILOS_LEVEL]			= "MENU_SILOS_LEVEL",
-	[MENU_ERRORS] 				= "MENU_ERRORS",
-	[MENU_START_SYSTEM] 		= "MENU_START_SYSTEM",
-	[MENU_BOOTUP_SYSTEM] 		= "MENU_BOOTUP_SYSTEM",
-	[MENU_EMERGENCY_DISABLE] 	= "MENU_EMERGENCY_DISABLE",
-	[MENU_LOW_LEVEL_SILOS]		= "MENU_LOW_LEVEL_SILOS",
+	[MENU_MOTOR] 					= "MENU_MOTOR",
+	[MENU_MOTOR2]					= "MENU_MOTOR2",
+	[MENU_SERVO] 					= "MENU_SERVO",
+	[MENU_VIBRO_PERIOD] 			= "MENU_VIBRO_PERIOD",
+	[MENU_VIBRO_WORKING_TIME] 		= "MENU_VIBRO_WORKING_TIME",
+	[MENU_MOTOR_IS_ON] 				= "MENU_MOTOR_IS_ON",
+	[MENU_SERVO_IS_ON] 				= "MENU_SERVO_IS_ON",
+	[MENU_CURRENT_SERVO] 			= "MENU_CURRENT_SERVO",
+	[MENU_CURRENT_MOTOR] 			= "MENU_CURRENT_MOTOR",
+	[MENU_VOLTAGE_ACCUM] 			= "MENU_VOLTAGE_ACCUM",
+	[MENU_TEMPERATURE] 				= "MENU_TEMPERATURE",
+	[MENU_SILOS_LEVEL]				= "MENU_SILOS_LEVEL",
+	[MENU_START_SYSTEM] 			= "MENU_START_SYSTEM",
+	[MENU_BOOTUP_SYSTEM] 			= "MENU_BOOTUP_SYSTEM",
+	[MENU_EMERGENCY_DISABLE] 		= "MENU_EMERGENCY_DISABLE",
+	[MENU_LOW_LEVEL_SILOS]			= "MENU_LOW_LEVEL_SILOS",
+
+	[MENU_TEMPERATURE_IS_ERROR_ON]	= "MENU_TEMPERATURE_IS_ERROR_ON",
+	[MENU_MOTOR_ERROR_OVERCURRENT] 	= "MENU_MOTOR_ERROR_OVERCURRENT",
+	[MENU_SERVO_ERROR_OVERCURRENT] 	= "MENU_SERVO_ERROR_OVERCURRENT",
+	[MENU_MOTOR_ERROR_NOT_CONNECTED] = "MENU_MOTOR_ERROR_NOT_CONNECTED",
+	[MENU_SERVO_ERROR_NOT_CONNECTED] = "MENU_SERVO_ERROR_NOT_CONNECTED",
+	[MENU_SERVO_ERROR_CANOT_CLOSE] 	 = "MENU_SERVO_ERROR_CANOT_CLOSE",
 
 	/* calibration value */
 	[MENU_ERROR_SERVO] 				= "MENU_ERROR_SERVO",
@@ -84,7 +99,7 @@ RTC_NOINIT_ATTR uint32_t menuSaveParameters_data[MENU_LAST_VALUE];
 void menuPrintParameters(void)
 {
 	for (uint8_t i = 0; i < PARAMETERS_TAB_SIZE; i++) {
-		debug_msg("%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
+		LOG(PRINT_DEBUG, "%s : %d\n", parameters_name[i],  menuSaveParameters_data[i]);
 	}
 }
 
@@ -93,7 +108,7 @@ void menuPrintParameter(menuValue_t val)
 	if (val >= MENU_LAST_VALUE)
 		return;
 	
-	debug_msg("Param: %s : %d\n\r", parameters_name[val],  menuSaveParameters_data[val]);
+	LOG(PRINT_DEBUG, "Param: %s : %d", parameters_name[val],  menuSaveParameters_data[val]);
 }
 
 esp_err_t menuSaveParameters(void) {
@@ -103,7 +118,7 @@ esp_err_t menuSaveParameters(void) {
 	 // Open
     err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
     if (err != ESP_OK) {
-		debug_msg("nvs_open error %d\n\r", err);
+		LOG(PRINT_INFO, "nvs_open error %d", err);
 		nvs_close(my_handle);
 		return err;
 	}
@@ -111,7 +126,7 @@ esp_err_t menuSaveParameters(void) {
 	err = nvs_set_blob(my_handle, "menu", menuSaveParameters_data, sizeof(menuSaveParameters_data));
 
 	if (err != ESP_OK) {
-		debug_msg("nvs_set_blob error %d\n\r", err);
+		LOG(PRINT_INFO, "nvs_set_blob error %d", err);
 		nvs_close(my_handle);
 		return err;
 	}
@@ -119,13 +134,13 @@ esp_err_t menuSaveParameters(void) {
     // Commit
     err = nvs_commit(my_handle);
     if (err != ESP_OK) {
-		debug_msg("nvs_commit error %d\n\r", err);
+		LOG(PRINT_INFO, "nvs_commit error %d", err);
 		nvs_close(my_handle);
 		return err;
 	}
     // Close
     nvs_close(my_handle);
-	debug_msg("menuSaveParameters success\n\r");
+	LOG(PRINT_INFO, "menuSaveParameters success");
     return ESP_OK;
 }
 
@@ -154,11 +169,14 @@ esp_err_t menuReadParameters(void) {
 }
 
 static void menuSetDefaultForReadValue(void) {
-	menuSaveParameters_data[MENU_MOTOR_ERROR_IS_ON] = 0;
-	menuSaveParameters_data[MENU_SERVO_ERROR_IS_ON] = 0;
+	menuSaveParameters_data[MENU_MOTOR_ERROR_OVERCURRENT] = 0;
+	menuSaveParameters_data[MENU_SERVO_ERROR_OVERCURRENT] = 0;
+	menuSaveParameters_data[MENU_MOTOR_ERROR_NOT_CONNECTED] = 0,
+	menuSaveParameters_data[MENU_SERVO_ERROR_NOT_CONNECTED] = 0,
+	menuSaveParameters_data[MENU_SERVO_ERROR_CANOT_CLOSE] = 0,
 	menuSaveParameters_data[MENU_MOTOR_IS_ON] = 0;
 	menuSaveParameters_data[MENU_SERVO_IS_ON] = 0;
-	menuSaveParameters_data[MENU_ERRORS] = 0;
+	menuSaveParameters_data[MENU_TEMPERATURE_IS_ERROR_ON] = 0;
 	menuSaveParameters_data[MENU_START_SYSTEM] = 0;
 }
 
@@ -224,28 +242,33 @@ void menuParamGetDataNSize(void ** data, uint32_t * size) {
 void menuParamSetDataNSize(void * data, uint32_t size) {
 	if (data == NULL)
 		return;
-	debug_function_name("menuParamSetDataNSize");
+	
+	if (sizeof(menuSaveParameters_data) != size)
+	{
+		LOG(PRINT_ERROR, "%s Bad long", __func__);
+		return;
+	}
 	memcpy(menuSaveParameters_data, data, size);
 }
 
 void menuParamInit(void) {
 	int ret_val = 0;
 	if (menuCheckValues() == FALSE || menuGetValue(MENU_START_SYSTEM) == 0) {
-		debug_msg("menu_param: system not started\n\r");
+		LOG(PRINT_INFO, "menu_param: system not started");
 		ret_val = menuReadParameters();
 		if (ret_val != ESP_OK) {
-			debug_msg("menu_param: menuReadParameters error %d\n\r", ret_val);
+			LOG(PRINT_INFO, "menu_param: menuReadParameters error %d", ret_val);
 			menuSetDefaultValue();
 		}
 		else {
-			debug_msg("menu_param: menuReadParameters succes\n\r");
+			LOG(PRINT_INFO, "menu_param: menuReadParameters succes");
 			menuPrintParameters();
 			menuSetDefaultForReadValue();
 		}
 	}
 	else {
-		debug_msg("menu_param: system started\n\r");
-		menuPrintParameters();
+		LOG(PRINT_INFO, "menu_param: system started");
+		//menuPrintParameters();
 	}
 	
 	menuSetValue(MENU_MOTOR_IS_ON, 0);

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "server_controller.h"
 #include "menu_param.h"
 #include "parse_cmd.h"
@@ -7,6 +8,18 @@
 
 #include "driver/mcpwm.h"
 #include "soc/mcpwm_periph.h"
+#include "error_siewnik.h"
+#include "measure.h"
+
+#define MODULE_NAME                       "[Srvr Ctrl] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_SERVER_CONTROLLER
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 #define MOTOR_PWM_PIN 27
 #define SERVO_PWM_PIN 26
@@ -20,6 +33,7 @@ typedef enum
 	STATE_SERVO_REGULATION,
 	STATE_MOTOR_REGULATION,
 	STATE_EMERGENCY_DISABLE,
+	STATE_ERROR,
 	STATE_LAST
 }state_t;
 
@@ -41,6 +55,7 @@ typedef struct
 	float motor_pwm2;
 	bool system_on;
 	bool emergency_disable;
+	bool errors;
 
 	bool working_state_req;
 	bool motor_calibration_req;
@@ -55,7 +70,8 @@ static char * state_name[] =
 	[STATE_WORKING] = "STATE_WORKING",
 	[STATE_SERVO_REGULATION] = "STATE_SERVO_REGULATION",
 	[STATE_MOTOR_REGULATION] = "STATE_MOTOR_REGULATION",
-	[STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE"
+	[STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
+	[STATE_ERROR] = "STATE_ERROR"
 };
 
 static void change_state(state_t state)
@@ -67,7 +83,7 @@ static void change_state(state_t state)
 	
 	if (state != ctx.state)
 	{
-		debug_msg("Change state -> %s\n\r", state_name[state])
+		LOG(PRINT_DEBUG, "Change state -> %s", state_name[state]);
 		ctx.state = state;
 	}
 }
@@ -112,11 +128,11 @@ static void set_working_data(void)
 		gpio_set_level(15, 0);
 	}
 
-	//printf("motor %d %f %d\n\r", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
+	LOG(PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
 	if (ctx.motor_on)
 	{
 		float duty = (float)ctx.motor_pwm;
-		//printf("duty motor %f\n\r", duty);
+		LOG(PRINT_DEBUG, "duty motor %f", duty);
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
 		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
 
@@ -131,7 +147,7 @@ static void set_working_data(void)
 	}
 
 	float duty = (float)ctx.servo_pwm * 100 / 19999.0;
-	//printf("duty servo %f %d %d\n\r", duty, ctx.servo_value, ctx.servo_pwm);
+	LOG(PRINT_DEBUG, "duty servo %f %d %d", duty, ctx.servo_value, ctx.servo_pwm);
 	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
 	mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 }
@@ -192,6 +208,10 @@ static void state_idle(void)
 
 	if (ctx.working_state_req && cmdServerIsWorking())
 	{
+		measure_meas_calibration_value();
+		count_working_data();
+		set_working_data();
+		osDelay(1000);
 		change_state(STATE_WORKING);
 		return;
 	}
@@ -260,6 +280,24 @@ static void state_emergency_disable(void)
 	osDelay(100);
 }
 
+static void state_error(void)
+{
+	ctx.errors = (bool)menuGetValue(MENU_MOTOR_ERROR_OVERCURRENT) || (bool)menuGetValue(MENU_SERVO_ERROR_OVERCURRENT) || 
+					(bool)menuGetValue(MENU_TEMPERATURE_IS_ERROR_ON) || (bool)menuGetValue(MENU_MOTOR_ERROR_NOT_CONNECTED) || (bool)menuGetValue(MENU_SERVO_ERROR_NOT_CONNECTED);
+	ctx.servo_value = 0;
+	ctx.motor_value = 0;
+	ctx.motor_on = false;
+	ctx.servo_on = false;
+
+	if (!ctx.errors)
+	{
+		errorSiewnikErrorReset();
+		change_state(STATE_IDLE);
+		return;
+	}
+	osDelay(100);
+}
+
 static void _task(void * arg)
 {
 	while(1)
@@ -288,6 +326,10 @@ static void _task(void * arg)
 
 			case STATE_EMERGENCY_DISABLE:
 				state_emergency_disable();
+				break;
+
+			case STATE_ERROR:
+				state_error();
 				break;
 		
 			default:
@@ -332,4 +374,26 @@ void srvrControllStart(void)
 	servo_init(0);
 
 	xTaskCreate(_task, "srvrController", 4096, NULL, 10, NULL);
+}
+
+bool srvrConrollerSetError(menuValue_t error_reason)
+{
+	if (ctx.state == STATE_WORKING)
+	{
+		change_state(STATE_ERROR);
+		menuSetValue(error_reason, 1);
+		return true;
+	}
+	return false;
+}
+
+bool srvrControllerErrorReset(void)
+{
+	if (ctx.state == STATE_ERROR)
+	{
+		errorSiewnikErrorReset();
+		change_state(STATE_IDLE);
+		return true;
+	}
+	return false;
 }

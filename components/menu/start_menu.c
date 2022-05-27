@@ -12,6 +12,17 @@
 #include "fast_add.h"
 #include "battery.h"
 #include "buzzer.h"
+#include "start_menu.h"
+
+#define MODULE_NAME                       "[SETTING] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 #define DEVICE_LIST_SIZE 16
 #define CHANGE_MENU_TIMEOUT_MS 1500
@@ -46,17 +57,6 @@ typedef enum
 	EDIT_PERIOD,
 	EDIT_TOP
 } edit_value_t;
-
-typedef enum
-{
-	ERROR_NO_ERROR,
-	ERROR_MOTOR_OVER_CURRENT,
-	ERROR_MOTOR_OVER_TEMPERATURE,
-	ERROR_SERVO_CANNOT_CLOSE,
-	ERROR_SERVO_OVER_CURRENT,
-	ERROR_OVER_TEMPERATURE,
-	ERROR_TOP
-} error_type_t;
 
 typedef struct 
 {
@@ -125,8 +125,6 @@ static char *state_name[] =
 	[STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT"
 };
 
-static bool menu_is_connected(void);
-
 static void change_state(state_start_menu_t new_state)
 {
 	debug_function_name(__func__);
@@ -134,26 +132,28 @@ static void change_state(state_start_menu_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			debug_msg("Start menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Start menu %s", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
 	else
 	{
-		debug_msg("ERROR: change state %d\n\r", new_state);
+		LOG(PRINT_INFO, "change state %d", new_state);
 	}
-}
-
-static void menu_error(error_type_t error)
-{
-	ctx.error_dev = error;
-	change_state(STATE_ERROR);
 }
 
 static void _reset_error(void)
 {
-	ctx.error_dev = ERROR_NO_ERROR;
-	change_state(STATE_READY);
+	if (menuGetValue(MENU_MOTOR_ERROR_OVERCURRENT) || menuGetValue(MENU_SERVO_ERROR_OVERCURRENT) || 
+		menuGetValue(MENU_TEMPERATURE_IS_ERROR_ON) || menuGetValue(MENU_MOTOR_ERROR_NOT_CONNECTED) || 
+		menuGetValue(MENU_SERVO_ERROR_NOT_CONNECTED))
+	{
+		cmdClientSetValueWithoutResp(MENU_MOTOR_ERROR_OVERCURRENT, 0);
+		cmdClientSetValueWithoutResp(MENU_SERVO_ERROR_OVERCURRENT, 0);
+		cmdClientSetValueWithoutResp(MENU_TEMPERATURE_IS_ERROR_ON, 0);
+		cmdClientSetValueWithoutResp(MENU_MOTOR_ERROR_NOT_CONNECTED, 0);
+		cmdClientSetValueWithoutResp(MENU_SERVO_ERROR_NOT_CONNECTED, 0);
+	}
 }
 
 static void set_change_menu(edit_value_t val)
@@ -216,7 +216,7 @@ static void _reset_power_save_timer(void)
 static bool _check_low_silos_flag(void)
 {
 	uint32_t flag = menuGetValue(MENU_LOW_LEVEL_SILOS);
-	//printf("------SILOS FLAG %d---------\n\r", flag);
+	//LOG(PRINT_INFO, "------SILOS FLAG %d---------", flag);
 	if (flag > 0)
 	{
 		if (ctx.low_silos_ckeck_timeout < xTaskGetTickCount())
@@ -282,8 +282,6 @@ static void menu_button_down_callback(void * arg)
 		return;
 	}
 	ctx.edit_value = EDIT_PERIOD;
-	/*Test Error */
-	menu_error(ERROR_MOTOR_OVER_CURRENT);
 }
 
 static void menu_button_exit_callback(void * arg)
@@ -295,10 +293,9 @@ static void menu_button_exit_callback(void * arg)
 		NULL_ERROR_MSG();
 		return;
 	}
-	cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 0);
+	
 	menuExit(menu);
 	ctx.exit_wait_flag = true;
-	
 }
 
 static void menu_button_servo_callback(void * arg)
@@ -785,7 +782,7 @@ static bool menu_enter_cb(void * arg)
 	_exit_power_save();
 	_reset_power_save_timer();
 
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		change_state(STATE_INIT);
 	}
@@ -808,8 +805,8 @@ static bool menu_exit_cb(void * arg)
 		NULL_ERROR_MSG();
 		return false;
 	}
-	MOTOR_LED_SET_RED(0);
-	SERVO_VIBRO_LED_SET_RED(0);
+	MOTOR_LED_SET_GREEN(0);
+	SERVO_VIBRO_LED_SET_GREEN(0);
 	return true;
 }
 
@@ -818,24 +815,6 @@ static void menu_set_error_msg(char *msg)
 	ctx.error_msg = msg;
 	ctx.error_flag = 1;
 	change_state(STATE_ERROR_CHECK);
-}
-
-static bool menu_is_connected(void)
-{
-	debug_function_name(__func__);
-	if (!wifiDrvIsConnected())
-	{
-		printf("START_MENU: WiFi not connected\n\r");
-		return false;
-	}
-
-	if (!cmdClientIsConnected())
-	{
-		printf("START_MENU: Client not connected\n\r");
-		return false;
-	}
-
-	return true;
 }
 
 static void menu_start_init(void)
@@ -848,7 +827,7 @@ static void menu_start_init(void)
 
 static void menu_check_connection(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		change_state(STATE_RECONNECT);
 		return;
@@ -858,17 +837,20 @@ static void menu_check_connection(void)
 
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		printf("START_MENU: cmdClientGetAllValue try %d\n\r", i);
+		LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i);
 		osDelay(250);
-		ret = cmdClientGetAllValue(100);
-		if (ret)
+		if (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 1000) == TRUE 
+			&& cmdClientSetValue(MENU_SERVO_IS_ON, 0, 1000) == TRUE
+			&& cmdClientSetValue(MENU_MOTOR, menuGetValue(MENU_MOTOR), 1000) == TRUE 
+			&& cmdClientSetValue(MENU_SERVO, menuGetValue(MENU_SERVO), 1000) == TRUE)
 		{
-			ctx.motor_value = menuGetValue(MENU_MOTOR) == 0 ? 1 : menuGetValue(MENU_MOTOR);
+			ctx.motor_value = menuGetValue(MENU_MOTOR);
 			ctx.servo_value = menuGetValue(MENU_SERVO);
 			ctx.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
 			ctx.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
 
 			cmdClientSetValueWithoutResp(MENU_EMERGENCY_DISABLE, 0);
+			ret = true;
 			break;
 		}
 		else
@@ -882,7 +864,7 @@ static void menu_check_connection(void)
 
 	if (ret != TRUE)
 	{
-		debug_msg("%s: error get parameters\n\r", __func__);
+		LOG(PRINT_INFO, "%s: error get parameters", __func__);
 		cmdClientSetValueWithoutResp(MENU_MOTOR_IS_ON, 0);
 		cmdClientSetValueWithoutResp(MENU_SERVO_IS_ON, 0);
 		change_state(STATE_IDLE);
@@ -892,7 +874,7 @@ static void menu_check_connection(void)
 
 static void menu_start_idle(void)
 {
-	if (menu_is_connected())
+	if (backendIsConnected())
 	{
 		cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
 		change_state(STATE_START);
@@ -905,7 +887,7 @@ static void menu_start_idle(void)
 
 static void menu_start_start(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		return;
 	}
@@ -916,7 +898,7 @@ static void menu_start_start(void)
 static void menu_start_ready(void)
 {
 	debug_function_name(__func__);
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1024,7 +1006,7 @@ static void menu_start_ready(void)
 
 static void menu_start_power_save(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1035,13 +1017,13 @@ static void menu_start_power_save(void)
 		return;
 	}
 
-	menuPrintfInfo("Power save\n\r");
+	menuPrintfInfo("Power save");
 	backendEnterMenuStart();
 }
 
 static void menu_start_low_silos(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1062,7 +1044,33 @@ static void menu_start_low_silos(void)
 
 static void menu_start_error(void)
 {
-	menuPrintfInfo("Error ocurred.\nClick any button\nto reset error");
+	if (!backendIsConnected())
+	{
+		menu_set_error_msg("Lost connection with server");
+		return;
+	}
+
+	switch(ctx.error_dev)
+	{
+		case ERROR_MOTOR_NOT_CONNECTED:
+			menuPrintfInfo("Motor not\nconnected.\nClick any button\nto reset error");
+			break;
+		case ERROR_SERVO_NOT_CONNECTED:
+			menuPrintfInfo("Servo not\nconnected.\nClick any button\nto reset error");
+			break;
+		case ERROR_MOTOR_OVER_CURRENT:
+			menuPrintfInfo("Motor overcurrent.\nClick any button\nto reset error");
+			break;
+		case ERROR_SERVO_OVER_CURRENT:
+			menuPrintfInfo("Servo overcurrent.\nClick any button\nto reset error");
+			break;
+		case ERROR_OVER_TEMPERATURE:
+			menuPrintfInfo("Temperature is\nhigh.\nClick any button\nto reset error");
+			break;
+		default:
+			menuPrintfInfo("Unknown error.\nClick any button\nto reset error");
+			break;
+	}
 }
 
 static void menu_start_info(void)
@@ -1074,7 +1082,7 @@ static void menu_start_info(void)
 
 static void menu_start_motor_change(void)
 {
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1095,7 +1103,7 @@ static void menu_start_motor_change(void)
 static void menu_start_vibro_change(void)
 {
 	debug_function_name(__func__);
-	if (!menu_is_connected())
+	if (!backendIsConnected())
 	{
 		menu_set_error_msg("Lost connection with server");
 		return;
@@ -1262,23 +1270,18 @@ static bool menu_process(void * arg)
 			break;	
 	}
 
-	if (ctx.motor_on)
+	if (!backendIsEmergencyDisable())
 	{
-		MOTOR_LED_SET_RED(1);
+		MOTOR_LED_SET_GREEN(ctx.motor_on);
+		SERVO_VIBRO_LED_SET_GREEN(ctx.servo_vibro_on);
 	}
 	else
 	{
-		MOTOR_LED_SET_RED(0);
+		MOTOR_LED_SET_GREEN(0);
+		SERVO_VIBRO_LED_SET_GREEN(0);
+		xTimerStop(ctx.servo_timer, 0);
 	}
-
-	if (ctx.servo_vibro_on)
-	{
-		SERVO_VIBRO_LED_SET_RED(1);
-	}
-	else
-	{
-		SERVO_VIBRO_LED_SET_RED(0);
-	}
+	
 	return true;
 }
 
@@ -1302,4 +1305,19 @@ void menuInitStartMenu(menu_token_t *menu)
 	menu->menu_cb.exit = menu_exit_cb;
 	menu->menu_cb.process = menu_process;
 	ctx.servo_timer = xTimerCreate("servoTimer", MS2ST(2000), pdFALSE, ( void * ) 0, timerCallback);
+}
+
+void menuStartSetError(error_type_t error)
+{
+	ctx.error_dev = error;
+	change_state(STATE_ERROR);
+}
+
+void menuStartResetError(void)
+{
+	if (ctx.state == STATE_ERROR)
+	{
+		ctx.error_dev = ERROR_TOP;
+		change_state(STATE_READY);
+	}
 }

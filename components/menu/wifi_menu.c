@@ -8,6 +8,16 @@
 #include "wifidrv.h"
 #include "cmd_client.h"
 
+#define MODULE_NAME                       "[SETTING] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 #define DEVICE_LIST_SIZE 32
 
 typedef enum
@@ -64,7 +74,7 @@ static scrollBar_t scrollBar = {
 static void change_state(stateWifiMenu_t new_state)
 {
 	ctx.state = new_state;
-	debug_msg("WiFi menu %s\n\r", state_name[new_state]);
+	LOG(PRINT_INFO, "WiFi menu %s", state_name[new_state]);
 }
 
 static void menu_button_up_callback(void * arg)
@@ -186,7 +196,7 @@ static bool menu_exit_cb(void * arg)
 
 static bool connectToDevice(char *dev)
 {
-	printf("Try connect %s \n\r", dev);
+	LOG(PRINT_INFO, "Try connect %s ", dev);
 	if (memcmp(WIFI_AP_NAME, dev, strlen(WIFI_AP_NAME) - 1) == 0)
 	{
 		/* Disconnect if connected */
@@ -267,8 +277,8 @@ static void menu_wifi_find_devices(void)
 			wifiDrvGetNameFromScannedList(i, dev_name);
 			if (memcmp(dev_name, WIFI_AP_NAME, strlen(WIFI_AP_NAME) - 1) == 0)
 			{
-				debug_msg("%s\n", dev_name);
-				strcpy(ctx.devices_list[ctx.devices_count++], dev_name);
+				LOG(PRINT_INFO, "%s\n", dev_name);
+				strncpy(ctx.devices_list[ctx.devices_count++], dev_name, 33);
 			}
 		}
 		change_state(ST_WIFI_DEVICE_LIST);
@@ -333,7 +343,7 @@ static void menu_wifi_show_list(menu_token_t *menu)
 			menu->line.start = menu->line.end - MAX_LINE + 1;
 		}
 	}
-	//debug_msg("position %d, ctx.devices_count %d menu->line.start %d\n", menu->position, ctx.devices_count, menu->line.start);
+	//LOG(PRINT_INFO, "position %d, ctx.devices_count %d menu->line.start %d\n", menu->position, ctx.devices_count, menu->line.start);
 	int line = 0;
 	do
 	{
@@ -435,7 +445,7 @@ static void menu_wifi_error_check(void)
 		{
 			sprintf(error_buff, "%s:%d", ctx.error_msg, ctx.error_code);
 			ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-			debug_msg("Wifi error [%d] %s\n\r", ctx.error_code, ctx.error_msg);
+			LOG(PRINT_INFO, "Wifi error [%d] %s", ctx.error_code, ctx.error_msg);
 		}
 		wifiDrvDisconnect();
 		if (ctx.scan_req)

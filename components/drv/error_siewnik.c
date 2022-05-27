@@ -8,6 +8,17 @@
 #include "menu_param.h"
 
 #include "cmd_server.h"
+#include "server_controller.h"
+
+#define MODULE_NAME                       "[Err_siew] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_ERROR_SIEWNIK
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 typedef enum
 {
@@ -16,6 +27,7 @@ typedef enum
 	STATE_WORKING,
 	STATE_ERROR_TEMPERATURE,
 	STATE_ERROR_MOTOR_CURRENT,
+	STATE_ERROR_MOTOR_NOT_CONNECTED,
 	STATE_ERROR_SERVO,
 	STATE_WAIT_RESET_ERROR,
 	STATE_TOP
@@ -27,6 +39,10 @@ struct error_siewnik_ctx
 	TickType_t motor_error_timer;
 	bool motor_find_overcurrent;
 
+	TickType_t motor_not_connected_timer;
+	bool motor_find_not_connected;
+
+	bool is_error_reset;
 };
 
 static struct error_siewnik_ctx ctx;
@@ -38,6 +54,7 @@ static char *state_name[] =
 	[STATE_WORKING] = "STATE_WORKING",
 	[STATE_ERROR_TEMPERATURE] = "STATE_ERROR_TEMPERATURE",
 	[STATE_ERROR_MOTOR_CURRENT] = "STATE_ERROR_MOTOR_CURRENT",
+	[STATE_ERROR_MOTOR_NOT_CONNECTED] = "STATE_ERROR_MOTOR_NOT_CONNECTED",
 	[STATE_ERROR_SERVO] = "STATE_ERROR_SERVO",
 	[STATE_WAIT_RESET_ERROR] = "STATE_WAIT_RESET_ERROR",
 };
@@ -48,10 +65,17 @@ static void _change_state(state_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			debug_msg("[Error] state %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "state %s", state_name[new_state]);
 		}
 		ctx.state = new_state;
 	}
+}
+
+static void _reset_error(void)
+{
+	ctx.is_error_reset = false;
+	ctx.motor_error_timer = 0;
+	ctx.motor_find_overcurrent = false;
 }
 
 static void _state_init(void)
@@ -75,35 +99,59 @@ static void _state_working(void)
 		_change_state(STATE_IDLE);
 	}
 
-	/*Motor error */
+	/* Motor error overcurrent */
 	uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
-	printf("[Error] Motor current %d\n\r", motor_current);
-	if (motor_current > 4)
-	{
-		if (!ctx.motor_find_overcurrent)
-		{
-			debug_msg("[Error] find motor overcurrent\n\r");
-			ctx.motor_find_overcurrent = true;
-			ctx.motor_error_timer = MS2ST(5000) + xTaskGetTickCount();
-		}
-		else
-		{
-			if (ctx.motor_error_timer < xTaskGetTickCount())
-			{
-				_change_state(STATE_ERROR_MOTOR_CURRENT);
-			}
-		}
-	}
-	else
-	{
-		if (ctx.motor_find_overcurrent)
-		{
-			debug_msg("[Error] reset motor overcurrent\n\r");
-		}
-		ctx.motor_find_overcurrent = false;
-		
-	}
+	// LOG(PRINT_INFO, "Motor current %d", motor_current);
+	// if (motor_current > 15000)
+	// {
+	// 	if (!ctx.motor_find_overcurrent)
+	// 	{
+	// 		LOG(PRINT_INFO, "find motor overcurrent");
+	// 		ctx.motor_find_overcurrent = true;
+	// 		ctx.motor_error_timer = MS2ST(5000) + xTaskGetTickCount();
+	// 	}
+	// 	else
+	// 	{
+	// 		if (ctx.motor_error_timer < xTaskGetTickCount())
+	// 		{
+	// 			_change_state(STATE_ERROR_MOTOR_CURRENT);
+	// 		}
+	// 	}
+	// }
+	// else
+	// {
+	// 	if (ctx.motor_find_overcurrent)
+	// 	{
+	// 		LOG(PRINT_INFO, "reset motor overcurrent");
+	// 	}
+	// 	ctx.motor_find_overcurrent = false;
+	// }
 
+	// /* Motor error not connected */
+	// if (menuGetValue(MENU_MOTOR_IS_ON) && menuGetValue(MENU_MOTOR) > 0 && motor_current < 100)
+	// {
+	// 	if (!ctx.motor_find_not_connected)
+	// 	{
+	// 		LOG(PRINT_INFO, "find motor not connected");
+	// 		ctx.motor_find_not_connected = true;
+	// 		ctx.motor_not_connected_timer = MS2ST(250) + xTaskGetTickCount();
+	// 	}
+	// 	else
+	// 	{
+	// 		if (ctx.motor_not_connected_timer < xTaskGetTickCount())
+	// 		{
+	// 			_change_state(STATE_ERROR_MOTOR_NOT_CONNECTED);
+	// 		}
+	// 	}
+	// }
+	// else
+	// {
+	// 	if (ctx.motor_find_not_connected)
+	// 	{
+	// 		LOG(PRINT_INFO, "reset motor not connected");
+	// 	}
+	// 	ctx.motor_find_not_connected = false;
+	// }
 }
 
 static void _state_error_temperature(void)
@@ -113,9 +161,28 @@ static void _state_error_temperature(void)
 
 static void _state_error_mototr_current(void)
 {
-	/* ToDo zatrzymanie silnika */
-	cmdServerSetValueWithoutResp(MENU_MOTOR_ERROR_IS_ON, 1);
-	_change_state(STATE_WAIT_RESET_ERROR);
+	if (srvrConrollerSetError(MENU_MOTOR_ERROR_OVERCURRENT))
+	{
+		_change_state(STATE_WAIT_RESET_ERROR);
+	}
+	else
+	{
+		_reset_error();
+		_change_state(STATE_IDLE);
+	}
+}
+
+static void _state_error_motor_not_connected(void)
+{
+	if (srvrConrollerSetError(MENU_MOTOR_ERROR_NOT_CONNECTED))
+	{
+		_change_state(STATE_WAIT_RESET_ERROR);
+	}
+	else
+	{
+		_reset_error();
+		_change_state(STATE_IDLE);
+	}
 }
 
 static void _state_error_servo(void)
@@ -125,10 +192,9 @@ static void _state_error_servo(void)
 
 static void _state_wait_reset_error(void)
 {
-	bool errors = ((menuGetValue(MENU_MOTOR_ERROR_IS_ON) > 0) || (menuGetValue(MENU_SERVO_ERROR_IS_ON)));
-	if (!errors)
+	if (ctx.is_error_reset)
 	{
-		/* ToDo uruchomic system z powrotem */
+		_reset_error();
 		_change_state(STATE_IDLE);
 	}
 }
@@ -161,6 +227,10 @@ static void _error_task(void * arg)
 			_state_error_mototr_current();
 			break;
 
+		case STATE_ERROR_MOTOR_NOT_CONNECTED:
+			_state_error_motor_not_connected();
+			break;
+
 		case STATE_ERROR_SERVO:
 			_state_error_servo();
 			break;
@@ -181,9 +251,9 @@ static void _error_task(void * arg)
 static void set_error_state(error_reason_ reason)
 {
 	if (reason == ERR_REASON_SERVO)
-		cmdServerSetValueWithoutResp(MENU_SERVO_ERROR_IS_ON, 1);
+		cmdServerSetValueWithoutResp(MENU_SERVO_ERROR_OVERCURRENT, 1);
 	else {
-		cmdServerSetValueWithoutResp(MENU_MOTOR_ERROR_IS_ON, 1);
+		cmdServerSetValueWithoutResp(MENU_MOTOR_ERROR_OVERCURRENT, 1);
 		servo_error(1);
 	}
 	error_events = 1;
@@ -204,7 +274,7 @@ static float count_motor_error_value(uint16_t x, float volt_accum)
 	#if DARK_MENU
 	temp += (float)(dark_menu_get_value(MENU_ERROR_MOTOR_CALIBRATION) - 50) * x/400;
 	#endif
-	/* Jak chcesz dobrac parametry mozesz dla testu odkomentowac linijke nizej debug_msg()
+	/* Jak chcesz dobrac parametry mozesz dla testu odkomentowac linijke nizej LOG(PRINT_INFO, )
 		Funkcja zwraca prad maksymalny
 		x						- wartosc na wyswietlaczu PWM
 		volt					- napiecie akumulatora
@@ -213,21 +283,21 @@ static float count_motor_error_value(uint16_t x, float volt_accum)
 		volt_in_motor_nominal	- napiecie przy ktorym wykonane pomiary (14,2 V) przeskalowane wedlug PWM
 		*/
 	
-	//debug_msg("CURRENT volt_in: %d, volt_nominal: %f, out_value: %f\n", volt_in_motor, volt_in_motor_nominal, temp);
+	//LOG(PRINT_INFO, "CURRENT volt_in: %d, volt_nominal: %f, out_value: %f\n", volt_in_motor, volt_in_motor_nominal, temp);
 	return temp;
 }
 
 static uint16_t count_motor_timeout_wait(uint16_t x)
 {
 	uint16_t timeout = 5000 - x*30;
-	debug_msg("count_motor_timeout_wait: %d\n\r", timeout);
+	LOG(PRINT_INFO, "count_motor_timeout_wait: %d", timeout);
 	return timeout; //5000[ms] - pwm*30
 }
 
 static uint16_t count_motor_timeout_axelerate(uint16_t x)
 {
 	uint16_t timeout = 5000 - x*30;
-	debug_msg("count_motor_timeout_axelerate: %d\n\r", timeout);
+	LOG(PRINT_INFO, "count_motor_timeout_axelerate: %d", timeout);
 	return timeout; //5000[ms] - pwm*30
 }
 
@@ -250,4 +320,9 @@ static uint16_t count_servo_error_value(void)
 void errorSiewnikStart(void)
 {
 	xTaskCreate(_error_task, "_error_task", 4096, NULL, NORMALPRIO, NULL);
+}
+
+void errorSiewnikErrorReset(void)
+{
+	ctx.is_error_reset = true;
 }

@@ -3,8 +3,8 @@
 
 #include "math.h"
 
-//#undef debug_msg
-//#define debug_msg(...) //debug_msg( __VA_ARGS__)
+//#undef LOG
+//#define LOG(...) //LOG( __VA_ARGS__)
 
 bool bitmap[] = 
 {
@@ -102,7 +102,7 @@ int ssdFigureDrawScrollBar(scrollBar_t * figure)
 	int width_px = width * (SSD1306_HEIGHT - figure->y_start);
 	int step = (SSD1306_HEIGHT - figure->y_start - width_px)/figure->all_line; 
 	int start_scroll_y = step * (figure->actual_line + 1) + figure->y_start;
-	//debug_msg("width_px %d, step %d, start_scroll_y %d\n", width_px, step, start_scroll_y);
+	//LOG("width_px %d, step %d, start_scroll_y %d\n", width_px, step, start_scroll_y);
 	for (int x = SSD1306_WIDTH - 4; x < SSD1306_WIDTH; x++)
 	{
 		for (int y = figure->y_start; y < SSD1306_HEIGHT; y++)
@@ -158,11 +158,11 @@ void drawServo(uint8_t x, uint8_t y, uint8_t open)
 			if (circle[j*22 + i])
 			{
 				if (start_flag == 0){
-					//debug_msg("find_start\n", x_open);
+					//LOG("find_start\n", x_open);
 					start_flag = 1;
 				}
 				else {
-					//debug_msg("find_end\n", x_open);
+					//LOG("find_end\n", x_open);
 					start_flag = 0;
 				}
 				ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
@@ -264,5 +264,5 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
 		_drawBattery(x, y, x_charge);
 		break;
 	}	
-	//debug_msg("x %d, cnt %d\n\r", x_charge, animation_cnt);
+	//LOG("x %d, cnt %d", x_charge, animation_cnt);
 }

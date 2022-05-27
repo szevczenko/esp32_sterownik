@@ -1,5 +1,6 @@
 #include "stdint.h"
 #include "stdarg.h"
+#include <stdbool.h>
 
 #include "config.h"
 #include "menu.h"
@@ -12,6 +13,16 @@
 #include "wifidrv.h"
 #include "cmd_client.h"
 #include "start_menu.h"
+
+#define MODULE_NAME                       "[M BACK] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 typedef enum
 {
@@ -59,7 +70,7 @@ static void change_state(state_backend_t new_state)
 	{
 		if (ctx.state != new_state)
 		{
-			debug_msg("Backend menu %s\n\r", state_name[new_state]);
+			LOG(PRINT_INFO, "Backend menu %s", state_name[new_state]);
 			ctx.state = new_state;
 		}
 	}
@@ -69,7 +80,7 @@ static void _enter_emergency(void)
 {
 	if (ctx.state != STATE_EMERGENCY_DISABLE)
 	{
-		debug_msg("%s %s\n\r", __func__, state_name[ctx.state]);
+		LOG(PRINT_INFO, "%s %s", __func__, state_name[ctx.state]);
 		change_state(STATE_EMERGENCY_DISABLE);
 		ctx.emergency_msg_sended = false;
 		ctx.emergency_exit_msg_sended = false;
@@ -86,7 +97,7 @@ static void _send_emergency_msg(void)
 	bool ret = (cmdClientSetValue(MENU_EMERGENCY_DISABLE, 1, 2000) > 0) 
 		&& (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 2000) > 0) 
 		&& (cmdClientSetValue(MENU_SERVO_IS_ON, 0, 2000) > 0);
-	debug_msg("%s %d\n\r", __func__, ret);
+	LOG(PRINT_INFO, "%s %d", __func__, ret);
 	if (ret)
 	{
 		ctx.emergency_msg_sended = true;
@@ -124,12 +135,50 @@ static void backend_idle(void)
 	osDelay(50);
 }
 
+typedef struct
+{
+	menuValue_t menuVal;
+} error_wrap_t;
+
+static error_wrap_t error_wraper[] = 
+{
+	[ERROR_MOTOR_NOT_CONNECTED] = {MENU_MOTOR_ERROR_NOT_CONNECTED},
+	[ERROR_SERVO_NOT_CONNECTED] = {MENU_SERVO_ERROR_NOT_CONNECTED},
+	[ERROR_MOTOR_OVER_CURRENT] = {MENU_MOTOR_ERROR_OVERCURRENT},
+	[ERROR_SERVO_OVER_CURRENT] = {MENU_SERVO_ERROR_OVERCURRENT},
+	[ERROR_OVER_TEMPERATURE] = {MENU_TEMPERATURE_IS_ERROR_ON},
+};
+
+static error_type_t _check_error(void)
+{
+	error_type_t error_reason = 0;
+	for (int i = 0; i < ERROR_TOP; i++)
+	{
+		cmdClientGetValue(error_wraper[i].menuVal, NULL, 2000);
+		if (menuGetValue(error_wraper[i].menuVal) > 0)
+		{
+			error_reason = error_wraper[i].menuVal;
+			menuStartSetError(i);
+		}
+	}
+	return error_reason;
+}
+
 static void backent_start(void)
 {
-	if (ctx.get_data_cnt % 300 == 0)
+	if (ctx.get_data_cnt % 20 == 0)
 	{
-		cmdClientGetValue(MENU_LOW_LEVEL_SILOS, NULL, 2000);
-		printf("Get new value %d \n\r", menuGetValue(MENU_LOW_LEVEL_SILOS));
+		bool errors = _check_error() > 0;
+		if (errors)
+		{
+			LOG(PRINT_INFO, "Error detected on machine");
+		}
+		else
+		{
+			menuStartResetError();
+			LOG(PRINT_DEBUG, "No error");
+		}
+		LOG(PRINT_DEBUG, "Get silos %d ", menuGetValue(MENU_LOW_LEVEL_SILOS));
 	}
 	ctx.get_data_cnt++;
 
@@ -171,7 +220,7 @@ static void backend_emergency_disable_state(void)
 	_send_emergency_msg();
 	if (!ctx.emergensy_req)
 	{
-		debug_msg("%s exit\n\r", __func__);
+		LOG(PRINT_INFO, "%s exit", __func__);
 		menuDrvExitEmergencyDisable();
 		change_state(STATE_EMERGENCY_DISABLE_EXIT);
 	}
@@ -183,7 +232,7 @@ static void backend_emergency_disable_exit(void)
 	if (!ctx.emergency_exit_msg_sended)
 	{
 		int ret = cmdClientSetValue(MENU_EMERGENCY_DISABLE, 0, 2000);
-		debug_msg("%s %d\n\r", __func__, ret);
+		LOG(PRINT_INFO, "%s %d", __func__, ret);
 		if (ret > 0)
 		{
 			ctx.emergency_exit_msg_sended = true;
@@ -208,7 +257,7 @@ void backendExitMenuParameters(void)
 
 void backendEnterMenuStart(void)
 {
-	ctx.menu_start_is_active= true;
+	ctx.menu_start_is_active = true;
 }
 
 void backendExitMenuStart(void)
@@ -278,4 +327,27 @@ static void menu_task(void *arg)
 void menuBackendInit(void)
 {
 	xTaskCreate(menu_task, "menu_back", 4096, NULL, 5, NULL);
+}
+
+bool backendIsConnected(void)
+{
+	debug_function_name(__func__);
+	if (!wifiDrvIsConnected())
+	{
+		LOG(PRINT_INFO, "START_MENU: WiFi not connected");
+		return false;
+	}
+
+	if (!cmdClientIsConnected())
+	{
+		LOG(PRINT_INFO, "START_MENU: Client not connected");
+		return false;
+	}
+
+	return true;
+}
+
+bool backendIsEmergencyDisable(void)
+{
+	return ctx.state == STATE_EMERGENCY_DISABLE_EXIT;
 }

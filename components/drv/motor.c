@@ -7,8 +7,8 @@
 #include "menu.h"
 #include "menu_param.h"
 
-#undef debug_msg
-#define debug_msg(...)
+#undef printf
+#define printf(...)
 
 #define LED_MOTOR_OFF
 #define LED_MOTOR_ON
@@ -20,7 +20,7 @@
  * init a motor
  */
 void motor_init(mDriver *motorD) {
-	debug_msg("dcmotor init\n");
+	printf("dcmotor init\n");
 	motorD->state = MOTOR_OFF;
 	LED_MOTOR_OFF;
 	CMD_MOTOR_OFF;
@@ -28,7 +28,7 @@ void motor_init(mDriver *motorD) {
 
 void motor_deinit(mDriver *motorD)
 {
-	//debug_msg("dcmotor deinit\n");
+	//printf("dcmotor deinit\n");
 	motorD->state = MOTOR_NO_INIT;
 	CMD_MOTOR_OFF;
 	LED_MOTOR_OFF;
@@ -42,7 +42,7 @@ int motor_stop(mDriver *motorD) {
 	//set orc
 	if (dcmotor_is_on(motorD))
 	{
-		debug_msg("dcmotor stop\n");
+		printf("dcmotor stop\n");
 		CMD_MOTOR_OFF;
 		LED_MOTOR_OFF;
 		motorD->last_state = motorD->state;
@@ -51,7 +51,7 @@ int motor_stop(mDriver *motorD) {
 	}
 	else
 	{
-		 //debug_msg("dcmotor cannot stop\n");
+		 //printf("dcmotor cannot stop\n");
 	}
 	return 0;
 }
@@ -69,7 +69,7 @@ int motor_start(mDriver *motorD)
 {
 	if (motorD->state == MOTOR_OFF)
 	{
-		//debug_msg("Motor Start\n");
+		//printf("Motor Start\n");
 		LED_MOTOR_ON;
 		CMD_MOTOR_ON;
 		motorD->last_state = motorD->state;
@@ -79,7 +79,7 @@ int motor_start(mDriver *motorD)
 	}
 	else 
 	{
-		//debug_msg("dcmotor canot start\n");
+		//printf("dcmotor canot start\n");
 		return 0;
 	}
 }
@@ -88,12 +88,12 @@ int dcmotor_set_pwm(mDriver *motorD, float pwm)
 {
 	float pwm_set = 0;
 	if (pwm > 100) {
-		debug_msg("dcmotor_set_pwm > 100 %f\n\r", pwm);
+		printf("dcmotor_set_pwm > 100 %f\n\r", pwm);
 		pwm = 100;
 	}
 
 	if (pwm < 0) {
-		debug_msg("dcmotor_set_pwm < 0 %f\n\r", pwm);
+		printf("dcmotor_set_pwm < 0 %f\n\r", pwm);
 		pwm = 0;
 	}
 
@@ -102,12 +102,12 @@ int dcmotor_set_pwm(mDriver *motorD, float pwm)
 		return 1;
 	}
 
-	debug_msg("dcmotor_set_pwm %f\n", pwm);
+	printf("dcmotor_set_pwm %f\n", pwm);
 	float min_value = (float)menuGetValue(MENU_MOTOR_MIN_CALIBRATION);
 	float max_value = (float)menuGetValue(MENU_MOTOR_MAX_CALIBRATION);
 	float range = 100.0;
 	if (min_value > max_value) {
-		debug_msg("dcmotor_set_pwm min_value > max_value\n\r");
+		printf("dcmotor_set_pwm min_value > max_value\n\r");
 		min_value = menuGetDefaultValue(MENU_MOTOR_MIN_CALIBRATION);
 		max_value = menuGetDefaultValue(MENU_MOTOR_MAX_CALIBRATION);
 	}
@@ -124,7 +124,7 @@ int dcmotor_get_pwm(mDriver *motorD)
 
 void dcmotor_set_error(mDriver *motorD)
 {
-	debug_msg("dcmotor error\n");
+	printf("dcmotor error\n");
 	motor_stop(motorD);
 	motorD->state = MOTOR_ERROR;
 }
@@ -159,17 +159,17 @@ float dcmotor_process(mDriver *motorD, uint8_t value)
 	switch(motorD->state)
 	{
 		case MOTOR_ON:
-		debug_msg("MOTOR_ON %d\n\r", value);
+		printf("MOTOR_ON %d\n\r", value);
 		dcmotor_set_pwm(motorD, (float)value);
 		break;
 
 		case MOTOR_OFF:
-		debug_msg("MOTOR_OFF %d\n\r", value);
+		printf("MOTOR_OFF %d\n\r", value);
 		motorD->pwm_value = 0;
 		break;
 
 		case MOTOR_TRY:
-		debug_msg("MOTOR_TRY %d\n\r", value);
+		printf("MOTOR_TRY %d\n\r", value);
 			if (value <= 50)
 			{
 				dcmotor_set_pwm(motorD, value + 20);
@@ -185,17 +185,17 @@ float dcmotor_process(mDriver *motorD, uint8_t value)
 		break;
 
 		case MOTOR_ERROR:
-			debug_msg("MOTOR_ERROR %d\n\r", value);
+			printf("MOTOR_ERROR %d\n\r", value);
 			CMD_MOTOR_OFF;
 		break;
 
 		case MOTOR_AXELERATE:
-			debug_msg("MOTOR_AXELERATE %d\n\r", value);
+			printf("MOTOR_AXELERATE %d\n\r", value);
 			motorD->state = MOTOR_ON; //!!
 			break;					 //!
 			dcmotor_set_pwm(motorD, 50);
 			
-			//debug_msg("MOTOR_AXELERATE %d\n", motorD->pwm_value);
+			//printf("MOTOR_AXELERATE %d\n", motorD->pwm_value);
 			if (motorD->timeout < xTaskGetTickCount()) {
 				motorD->state = MOTOR_ON;
 			}
@@ -203,12 +203,12 @@ float dcmotor_process(mDriver *motorD, uint8_t value)
 		break;
 			
 		case MOTOR_REGULATION:
-			debug_msg("MOTOR_REGULATION %d\n\r", value);
+			printf("MOTOR_REGULATION %d\n\r", value);
 			dcmotor_set_pwm(motorD, value);
 		break;
 
 		default:
-			debug_msg("MOTOR_ERROR_STATE %d\n\r", motorD->state);
+			printf("MOTOR_ERROR_STATE %d\n\r", motorD->state);
 		break;
 	}
 		

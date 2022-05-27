@@ -9,6 +9,16 @@
 #include "cmd_client.h"
 #include "menu_backend.h"
 
+#define MODULE_NAME                       "[SETTING] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MENU_BACKEND
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 typedef enum
 {
 	PARAM_CURRENT,
@@ -230,7 +240,7 @@ static bool menu_process(void * arg)
 			menu->line.end = menu->position;
 			menu->line.start = menu->line.end - MAX_LINE + 1;
 		}
-		debug_msg("menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n", menu->line.start, menu->line.end, menu->position, menu->last_button);
+		LOG(PRINT_INFO, "menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n", menu->line.start, menu->line.end, menu->position, menu->last_button);
 	}
 
 	int line = 0;

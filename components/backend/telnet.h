@@ -30,7 +30,6 @@
 #define TELNET_SEVER_BUFF_SIZE 128
 #endif
 
-#if (CONFIG_USE_TCPIP && CONFIG_USE_CONSOLE_TELNET)
 typedef struct
 {
 	int socket;
@@ -100,7 +99,5 @@ void telnetSendToAll(const char * data, size_t size);
 extern telnet_t *tnHandle[TELNET_MAX_CLIENT];
 extern telnet_server_p telnetServer;
 extern struct telnetUserData pTelnetUserData[TELNET_MAX_CLIENT];
-
-#endif
 
 #endif

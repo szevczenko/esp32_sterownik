@@ -5,6 +5,9 @@
         },
         {
             "path": "..\\esp-idf"
+        },
+        {
+            "path": "..\\esp32-tools"
         }
     ],
     
@@ -28,8 +31,6 @@
         },
 
         "terminal.integrated.defaultProfile.windows": "msys32",
-        "editor.insertSpaces": false,
-        "editor.tabCompletion": "on",
         "git.ignoreLimitWarning": true,
         "files.associations": {
             "cmd_server.h": "c",
@@ -70,7 +71,9 @@
             "esp_wifi_types.h": "c",
             "menu_settings.h": "c",
             "menu_param.h": "c",
-            "power_on.h": "c"
+            "power_on.h": "c",
+            "menu_state.h": "c",
+            "*.ipp": "c"
         },
         "files.exclude": {
             "**/.git": true,         // this is a default value

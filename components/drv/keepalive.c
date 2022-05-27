@@ -3,10 +3,20 @@
 #include "keepalive.h"
 #include "parse_cmd.h"
 
+#define MODULE_NAME                       "[Keep] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_KEEP_ALIVE
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
+
 static keepAlive_t * keepAliveTab[8];
 static uint8_t tabSize;
 
-static uint8_t keep_alive_frame[] = {3, CMD_REQEST, PC_KEEP_ALIVE};
+static uint8_t keep_alive_frame[PACKET_SIZE] = {PACKET_SIZE, 0xFF, 0xFF, 0xFF, 0xFF, CMD_REQEST, PC_KEEP_ALIVE};
 
 void keepAliveInit(keepAlive_t * keep, uint32_t timeout, int (*send)(uint8_t * data, uint32_t dataLen), void (*errorCb)(void)) {
 	if (keep == NULL) {
@@ -32,7 +42,7 @@ void keepAliveAccept(keepAlive_t * keep)
 	keep->keepAlive = ST2MS(xTaskGetTickCount()) + keep->timeout;
 	keep->keepAliveTry = 0;
 	keep->keepAliveErrorFlag = 0;
-	//debug_msg("keepalive accept %d timeout %d\n", keep->keepAlive, keep->timeout);
+	LOG(PRINT_DEBUG, "keepalive accept %d timeout %d\n", keep->keepAlive, keep->timeout);
 }
 
 int keepAliveCheckError(keepAlive_t * keep) {
@@ -41,7 +51,7 @@ int keepAliveCheckError(keepAlive_t * keep) {
 
 static void keepAliveProcess(void * pv)
 {
-	//debug_msg("KeepAliveTask\n");
+	//LOG(PRINT_INFO, "KeepAliveTask\n");
 	keepAlive_t * keep;
 	while(1) {
 
@@ -56,12 +66,12 @@ static void keepAliveProcess(void * pv)
 			if (keep->keepAliveErrorFlag || keep->keepAliveActiveFlag == 0) {
 				continue;
 			}
-			//debug_msg("keepALive time %d < %d\n", keep->keepAlive, ST2MS(xTaskGetTickCount()));
+			LOG(PRINT_DEBUG, "keepALive time %d < %d\n", keep->keepAlive, ST2MS(xTaskGetTickCount()));
 			if (keep->keepAlive < ST2MS(xTaskGetTickCount())) {
 				if (keep->keepAliveTry < KEEP_ALIVE_TRY)
 				{
 					if (keep->keepAliveSend != NULL) {
-						//debug_msg("keepAliveSend\n\r");
+						LOG(PRINT_DEBUG, "keepAliveSend");
 						keep->keepAliveSend(keep_alive_frame, sizeof(keep_alive_frame));
 					}
 					keep->keepAliveTry++;

@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include "measure.h"
 #include "config.h"
-#include "atmega_communication.h"
 #include "freertos/timers.h"
 #include "menu_param.h"
 #include "parse_cmd.h"
@@ -12,8 +11,15 @@
 #include "measure.h"
 #include "ultrasonar.h"
 
-//#undef debug_msg
-//#define debug_msg(...)
+#define MODULE_NAME                       "[Meas] "
+#define DEBUG_LVL                         PRINT_INFO
+
+#if CONFIG_DEBUG_MEASURE
+#define LOG(_lvl, ...)                          \
+    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#else
+#define LOG(PRINT_INFO, ...)
+#endif
 
 static adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static adc_atten_t atten = ADC_ATTEN_DB_11;
@@ -31,8 +37,7 @@ static adc_atten_t atten = ADC_ATTEN_DB_11;
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   64          //Multisampling
 
-//600
-#define SERVO_CALIBRATION_VALUE calibration_value 
+#define DEFAULT_MOTOR_CALIBRATION_VALUE 1830
 
 typedef struct 
 {
@@ -43,7 +48,7 @@ typedef struct
 	uint32_t filtered_adc;
 	uint32_t filter_table[FILTER_TABLE_SIZE];
 	float meas_voltage;
-}meas_data_t;
+} meas_data_t;
 
 static meas_data_t meas_data[MEAS_CH_LAST] = 
 {
@@ -56,17 +61,32 @@ static meas_data_t meas_data[MEAS_CH_LAST] =
 
 static uint32_t table_size;
 static uint32_t table_iter;
-
-static TimerHandle_t xTimers;
+uint32_t motor_calibration_meas;
+static TimerHandle_t servoCalibrationTimer;
+static TimerHandle_t motorCalibrationTimer;
 
 #if CONFIG_DEVICE_SIEWNIK
 static uint32_t calibration_value;
 static void measure_get_servo_calibration(TimerHandle_t xTimer)
 {
 	calibration_value = measure_get_filtered_value(MEAS_CH_SERVO);
-	debug_msg("MEASURE SERVO Calibration value = %d\n", calibration_value);
+	LOG(PRINT_INFO, "MEASURE SERVO Calibration value = %d", calibration_value);
 }
 #endif
+
+static void measure_get_motor_calibration(TimerHandle_t xTimer)
+{
+	if (!menuGetValue(MENU_MOTOR_IS_ON))
+	{
+		motor_calibration_meas = measure_get_filtered_value(MEAS_CH_MOTOR);
+		LOG(PRINT_INFO, "MEASURE MOTOR Calibration value = %d", calibration_value);
+	}
+	else
+	{
+		LOG(PRINT_INFO, "MEASURE MOTOR Fail get. Motor is on");
+	}
+	
+}
 
 static uint32_t filtered_value(uint32_t *tab, uint8_t size)
 {
@@ -80,7 +100,7 @@ static uint32_t filtered_value(uint32_t *tab, uint8_t size)
 
 void init_measure(void)
 {
-
+	motor_calibration_meas = DEFAULT_MOTOR_CALIBRATION_VALUE;
 }
 
 static void _read_adc_values(void)
@@ -105,7 +125,7 @@ static void _read_adc_values(void)
 		}
 		if (meas_data[ch].unit == ADC_UNIT_2)
 		{
-			//printf("Pomiar 2 %d\n\r", ret_v);
+			LOG(PRINT_DEBUG, "Pomiar 2 %d", ret_v);
 		}
 		
 		meas_data[ch].adc /= NO_OF_SAMPLES;
@@ -169,9 +189,19 @@ void measure_start(void)
 
 	xTaskCreate(measure_process, "measure_process", 4096, NULL, 10, NULL);
 	#if CONFIG_DEVICE_SIEWNIK
-	xTimers = xTimerCreate("at_com_tim", 2000 / portTICK_RATE_MS, pdFALSE, ( void * ) 0, measure_get_servo_calibration);
-	xTimerStart( xTimers, 0 );
+	servoCalibrationTimer = xTimerCreate("servoCalibrationTimer", 1000 / portTICK_RATE_MS, pdFALSE, ( void * ) 0, measure_get_servo_calibration);
 	#endif
+
+	motorCalibrationTimer = xTimerCreate("motorCalibrationTimer", 1000 / portTICK_RATE_MS, pdFALSE, ( void * ) 0, measure_get_motor_calibration);
+
+	init_measure();
+}
+
+void measure_meas_calibration_value(void)
+{
+	LOG(PRINT_INFO, "%s", __func__);
+	xTimerStart( servoCalibrationTimer, 0 );
+	xTimerStart( motorCalibrationTimer, 0 );
 }
 
 uint32_t measure_get_filtered_value(enum_meas_ch type)
@@ -186,15 +216,16 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 float measure_get_temperature(void)
 {
 	int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
-	//printf("Temperature %d %d\n\r", measure_get_filtered_value(MEAS_CH_TEMP), temp);
+	LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
 	return temp;
 }
 
 float measure_get_current(enum_meas_ch type, float resistor)
 {
-	uint32_t adc = measure_get_filtered_value(type) < 1900 ? 0 : measure_get_filtered_value(type) - 1900;
-	float volt = (float) adc / 23 /* Volt */;
-	return volt;
+	LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
+	uint32_t adc = measure_get_filtered_value(type) < motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
+	float current = (float) adc / 1.1 /* Amp */;
+	return current;
 }
 
 float accum_get_voltage(void)
