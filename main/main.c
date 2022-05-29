@@ -123,6 +123,7 @@ void app_main()
         else
         {
             init_menu(MENU_DRV_LOW_BATTERY_INIT);
+            power_on_disable_system();
         }
     }
     else {

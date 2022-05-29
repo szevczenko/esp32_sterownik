@@ -12,7 +12,7 @@
 #include "menu_backend.h"
 
 #define MODULE_NAME "[Power] "
-#define DEBUG_LVL PRINT_INFO
+#define DEBUG_LVL PRINT_WARNING
 
 #if CONFIG_DEBUG_CMD_CLIENT
 #define LOG(_lvl, ...) \

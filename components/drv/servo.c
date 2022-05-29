@@ -32,13 +32,6 @@ void servo_set_pwm_val(uint8_t value)
 	uint16_t pwm = (uint16_t)((float)(max-min)*(float)value/(float)99 + (float)min);
 	//printf("REG: close %d, open %d, pwm %d\n", min, max, pwm);
 	servoD.pwm_value = pwm;
-	
-	/*if (value == 0)
-	set_pwm(2000);
-	else if(value < 50)
-	set_pwm(1800 - (value - 10)*7);
-	else if(value <= 99)
-	set_pwm(1520 - (value - 50)*5);*/
 }
 
 void servo_regulation(uint8_t value)

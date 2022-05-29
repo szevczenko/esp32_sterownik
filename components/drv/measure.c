@@ -12,7 +12,7 @@
 #include "ultrasonar.h"
 
 #define MODULE_NAME                       "[Meas] "
-#define DEBUG_LVL                         PRINT_INFO
+#define DEBUG_LVL                         PRINT_WARNING
 
 #if CONFIG_DEBUG_MEASURE
 #define LOG(_lvl, ...)                          \
