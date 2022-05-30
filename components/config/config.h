@@ -34,7 +34,7 @@
 #define T_DEV_TYPE_SERVER                     1
 #define T_DEV_TYPE_CLIENT                     2
 
-#define LOGO_CLIENT_NAME                      "DEXVAL"
+#define LOGO_CLIENT_NAME                      "DEXWAL"
 
 ///////////////////// LOGS //////////////////////
 

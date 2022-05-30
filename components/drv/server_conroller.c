@@ -30,7 +30,8 @@ typedef enum
 	STATE_INIT,
 	STATE_IDLE,
 	STATE_WORKING,
-	STATE_SERVO_REGULATION,
+	STATE_SERVO_OPEN_REGULATION,
+	STATE_SERVO_CLOSE_REGULATION,
 	STATE_MOTOR_REGULATION,
 	STATE_EMERGENCY_DISABLE,
 	STATE_ERROR,
@@ -59,7 +60,8 @@ typedef struct
 
 	bool working_state_req;
 	bool motor_calibration_req;
-	bool servo_calibration_req;
+	bool servo_open_calibration_req;
+	bool servo_close_calibration_req;
 } server_conroller_ctx;
 
 static server_conroller_ctx ctx;
@@ -68,7 +70,8 @@ static char * state_name[] =
 	[STATE_INIT] = "STATE_INIT",
 	[STATE_IDLE] = "STATE_IDLE",
 	[STATE_WORKING] = "STATE_WORKING",
-	[STATE_SERVO_REGULATION] = "STATE_SERVO_REGULATION",
+	[STATE_SERVO_OPEN_REGULATION] = "STATE_SERVO_OPEN_REGULATION",
+	[STATE_SERVO_CLOSE_REGULATION] = "STATE_SERVO_CLOSE_REGULATION",
 	[STATE_MOTOR_REGULATION] = "STATE_MOTOR_REGULATION",
 	[STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
 	[STATE_ERROR] = "STATE_ERROR"
@@ -83,7 +86,7 @@ static void change_state(state_t state)
 	
 	if (state != ctx.state)
 	{
-		LOG(PRINT_DEBUG, "Change state -> %s", state_name[state]);
+		LOG(PRINT_INFO, "Change state -> %s", state_name[state]);
 		ctx.state = state;
 	}
 }
@@ -228,6 +231,8 @@ static void state_working(void)
 
 	ctx.working_state_req = (bool)menuGetValue(MENU_START_SYSTEM);
 	ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
+	ctx.servo_open_calibration_req = (bool)menuGetValue(MENU_OPEN_SERVO_REGULATION_FLAG);
+	ctx.servo_close_calibration_req = (bool)menuGetValue(MENU_CLOSE_SERVO_REGULATION_FLAG);
 
 	#if CONFIG_DEVICE_SOLARKA
 	vibro_config(menuGetValue(MENU_VIBRO_PERIOD) * 1000, menuGetValue(MENU_VIBRO_WORKING_TIME) * 1000);
@@ -251,12 +256,94 @@ static void state_working(void)
 		change_state(STATE_IDLE);
 		return;
 	}
+
+	if (ctx.servo_open_calibration_req)
+	{
+		change_state(STATE_SERVO_OPEN_REGULATION);
+		return;
+	}
+
+	if (ctx.servo_close_calibration_req)
+	{
+		change_state(STATE_SERVO_CLOSE_REGULATION);
+		return;
+	}
+
 	osDelay(100);
 }
 
-static void state_servo_regulation(void)
+static void state_servo_open_regulation(void)
 {
-	change_state(STATE_IDLE);
+	ctx.system_on = 1;
+	ctx.servo_value = 100;
+	ctx.motor_value = 0;
+	ctx.motor_on = 0;
+	ctx.servo_on = 1;
+
+	ctx.working_state_req = (bool)menuGetValue(MENU_START_SYSTEM);
+	ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
+	ctx.servo_open_calibration_req = (bool)menuGetValue(MENU_OPEN_SERVO_REGULATION_FLAG);
+
+	if (ctx.emergency_disable)
+	{
+		menuSaveParameters();
+		change_state(STATE_EMERGENCY_DISABLE);
+		return;
+	}
+
+	if (!ctx.servo_open_calibration_req)
+	{
+		menuSaveParameters();
+		change_state(STATE_IDLE);
+		return;
+	}
+
+	if (!ctx.working_state_req || !cmdServerIsWorking())
+	{
+		menuSaveParameters();
+		menuSetValue(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
+		change_state(STATE_IDLE);
+		return;
+	}
+
+	osDelay(100);
+}
+
+static void state_servo_close_regulation(void)
+{
+	ctx.system_on = 1;
+	ctx.servo_value = 0;
+	ctx.motor_value = 0;
+	ctx.motor_on = 0;
+	ctx.servo_on = 1;
+
+	ctx.working_state_req = (bool)menuGetValue(MENU_START_SYSTEM);
+	ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
+	ctx.servo_close_calibration_req = (bool)menuGetValue(MENU_CLOSE_SERVO_REGULATION_FLAG);
+
+	if (ctx.emergency_disable)
+	{
+		menuSaveParameters();
+		change_state(STATE_EMERGENCY_DISABLE);
+		return;
+	}
+
+	if (!ctx.servo_close_calibration_req)
+	{
+		menuSaveParameters();
+		change_state(STATE_IDLE);
+		return;
+	}
+
+	if (!ctx.working_state_req || !cmdServerIsWorking())
+	{
+		menuSaveParameters();
+		menuSetValue(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
+		change_state(STATE_IDLE);
+		return;
+	}
+
+	osDelay(100);
 }
 
 static void state_motor_regulation(void)
@@ -316,8 +403,12 @@ static void _task(void * arg)
 				state_working();
 				break;
 
-			case STATE_SERVO_REGULATION:
-				state_servo_regulation();
+			case STATE_SERVO_OPEN_REGULATION:
+				state_servo_open_regulation();
+				break;
+
+			case STATE_SERVO_CLOSE_REGULATION:
+				state_servo_close_regulation();
 				break;
 
 			case STATE_MOTOR_REGULATION:

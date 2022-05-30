@@ -12,7 +12,7 @@
 #include "menu_backend.h"
 
 #define MODULE_NAME "[Power] "
-#define DEBUG_LVL PRINT_INFO
+#define DEBUG_LVL PRINT_WARNING
 
 #if CONFIG_DEBUG_CMD_CLIENT
 #define LOG(_lvl, ...) \
@@ -144,6 +144,10 @@ void power_on_enable_system(void)
 
 void power_on_disable_system(void)
 {
+	MOTOR_LED_SET_RED(0);
+	SERVO_VIBRO_LED_SET_RED(0);
+	MOTOR_LED_SET_GREEN(0);
+	SERVO_VIBRO_LED_SET_GREEN(0);
 	gpio_set_level(POWER_HOLD_PIN, 0);
 }
 

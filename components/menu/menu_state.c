@@ -72,7 +72,7 @@ static scrollBar_t scrollBar = {
 
 static void get_current(uint32_t *value)
 {
-	*value = menuGetValue(MENU_CURRENT_MOTOR);
+	*value = menuGetValue(MENU_CURRENT_MOTOR) / 10;
 }
 
 static void get_voltage(uint32_t *value)

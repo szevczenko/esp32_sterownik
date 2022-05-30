@@ -572,6 +572,10 @@ static void menu_state_power_off_count(menu_token_t *menu)
 
 	if (!ctx.power_off_req)
 	{
+		MOTOR_LED_SET_RED(0);
+		SERVO_VIBRO_LED_SET_RED(0);
+		MOTOR_LED_SET_GREEN(0);
+		SERVO_VIBRO_LED_SET_GREEN(0);
 		ctx.state = MENU_STATE_PROCESS;
 		return;
 	}
@@ -590,9 +594,14 @@ static void menu_state_power_off_count(menu_token_t *menu)
 	}
 
 	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, MENU_HEIGHT);
-	sprintf(buff, "POWER OFF %d", time);
-	ssd1306_WriteString(buff, Font_7x10, White);
+
+	ssd1306_SetCursor(2, 10);
+	ssd1306_WriteString(" POWER OFF", Font_11x18, White);
+
+	ssd1306_SetCursor(2, 2*MENU_HEIGHT);
+	sprintf(buff, "     %d", time);
+	ssd1306_WriteString(buff, Font_11x18, White);
+
 	ssd1306_UpdateScreen();
 	osDelay(100);
 }

@@ -17,7 +17,7 @@
 #include "parse_cmd.h"
 
 #define MODULE_NAME     "[CMD Cl] "
-#define DEBUG_LVL       PRINT_DEBUG
+#define DEBUG_LVL       PRINT_WARNING
 
 #if CONFIG_DEBUG_CMD_CLIENT
 #define LOG(_lvl, ...)                        \

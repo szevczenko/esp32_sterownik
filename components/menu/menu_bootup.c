@@ -67,7 +67,7 @@ extern void enterMenuStart(void);
 
 menu_token_t bootup_menu = 
 {
-	.name = "STARTING...",
+	.name = LOGO_CLIENT_NAME,
 	.arg_type = T_ARG_TYPE_MENU,
 };
 

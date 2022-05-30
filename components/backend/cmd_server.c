@@ -18,7 +18,7 @@
 #include "menu_param.h"
 
 #define MODULE_NAME "[CMD Srv] "
-#define DEBUG_LVL PRINT_INFO
+#define DEBUG_LVL PRINT_WARNING
 
 #if CONFIG_DEBUG_CMD_SERVER
 #define LOG(_lvl, ...)                                      \

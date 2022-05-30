@@ -31,7 +31,8 @@ typedef enum
 {
 	PARAM_BOOTUP_MENU,
 	PARAM_BUZZER,
-	PARAM_SERVO_CALIBRATION,
+	PARAM_SERVO_CLOSE_CALIBRATION,
+	PARAM_SERVO_OPEN_CALIBRATION,
 	PARAM_TOP
 } parameters_type_t;
 
@@ -51,23 +52,33 @@ typedef struct
 	void (*get_value)(uint32_t *value);
 	void (*get_max_value)(uint32_t *value);
 	void (*set_value)(uint32_t value);
+	void (*enter)(void);
+	void (*exit)(void);
 } parameters_t;
 
 static void get_bootup(uint32_t *value);
 static void get_buzzer(uint32_t *value);
-static void get_servo_calibration(uint32_t *value);
+static void get_servo_close_calibration(uint32_t *value);
+static void get_servo_open_calibration(uint32_t *value);
 static void get_max_bootup(uint32_t *value);
 static void get_max_buzzer(uint32_t *value);
-static void get_max_servo_calibration(uint32_t *value);
+static void get_max_servo_close_calibration(uint32_t *value);
+static void get_max_servo_open_calibration(uint32_t *value);
 static void set_bootup(uint32_t value);
 static void set_buzzer(uint32_t value);
-static void set_servo_calibration(uint32_t value);
+static void set_servo_close_calibration(uint32_t value);
+static void set_servo_open_calibration(uint32_t value);
+static void enter_servo_close_calibration(void);
+static void exit_servo_close_calibration(void);
+static void enter_servo_open_calibration(void);
+static void exit_servo_open_calibration(void);
 
 static parameters_t parameters_list[] = 
 {
-	[PARAM_BOOTUP_MENU] 		= { .name = "Booting", .unit_type = UNIT_ON_OFF, .get_value = get_bootup, .set_value = set_bootup, .get_max_value = get_max_bootup},
-	[PARAM_BUZZER] 				= { .name = "Buzzer", .unit_type = UNIT_ON_OFF, .get_value = get_buzzer, .set_value = set_buzzer, .get_max_value = get_max_buzzer},
-	[PARAM_SERVO_CALIBRATION] 	= { .name = "Servo calibration", .unit_type = UNIT_INT, .get_value = get_servo_calibration, .set_value = set_servo_calibration, .get_max_value = get_max_servo_calibration},
+	[PARAM_BOOTUP_MENU] 			= { .name = "Booting", .unit_type = UNIT_ON_OFF, .get_value = get_bootup, .set_value = set_bootup, .get_max_value = get_max_bootup},
+	[PARAM_BUZZER] 					= { .name = "Buzzer", .unit_type = UNIT_ON_OFF, .get_value = get_buzzer, .set_value = set_buzzer, .get_max_value = get_max_buzzer},
+	[PARAM_SERVO_CLOSE_CALIBRATION] = { .name = "Servo close", .unit_type = UNIT_INT, .get_value = get_servo_close_calibration, .set_value = set_servo_close_calibration, .get_max_value = get_max_servo_close_calibration, .enter = enter_servo_close_calibration, .exit = exit_servo_close_calibration},
+	[PARAM_SERVO_OPEN_CALIBRATION] = { .name = "Servo open", .unit_type = UNIT_INT, .get_value = get_servo_open_calibration, .set_value = set_servo_open_calibration, .get_max_value = get_max_servo_open_calibration, .enter = enter_servo_open_calibration, .exit = exit_servo_open_calibration},
 };
 
 static scrollBar_t scrollBar = {
@@ -87,9 +98,14 @@ static void get_buzzer(uint32_t *value)
 	*value = menuGetValue(MENU_BUZZER);
 }
 
-static void get_servo_calibration(uint32_t *value)
+static void get_servo_close_calibration(uint32_t *value)
 {
 	*value = menuGetValue(MENU_CLOSE_SERVO_REGULATION);
+}
+
+static void get_servo_open_calibration(uint32_t *value)
+{
+	*value = menuGetValue(MENU_OPEN_SERVO_REGULATION);
 }
 
 static void get_max_bootup(uint32_t *value)
@@ -102,9 +118,14 @@ static void get_max_buzzer(uint32_t *value)
 	*value = menuGetMaxValue(MENU_BUZZER);
 }
 
-static void get_max_servo_calibration(uint32_t *value)
+static void get_max_servo_close_calibration(uint32_t *value)
 {
 	*value = menuGetMaxValue(MENU_CLOSE_SERVO_REGULATION);
+}
+
+static void get_max_servo_open_calibration(uint32_t *value)
+{
+	*value = menuGetMaxValue(MENU_OPEN_SERVO_REGULATION);
 }
 
 static void set_bootup(uint32_t value)
@@ -117,9 +138,40 @@ static void set_buzzer(uint32_t value)
 	menuSetValue(MENU_BUZZER, value);
 }
 
-static void set_servo_calibration(uint32_t value)
+static void set_servo_close_calibration(uint32_t value)
 {
-	menuSetValue(MENU_CLOSE_SERVO_REGULATION, value);
+	LOG(PRINT_DEBUG, "%s: %d", __func__, value);
+	cmdClientSetValueWithoutResp(MENU_CLOSE_SERVO_REGULATION, value);
+}
+
+static void set_servo_open_calibration(uint32_t value)
+{
+	LOG(PRINT_DEBUG, "%s: %d", __func__, value);
+	cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION, value);
+}
+
+static void enter_servo_close_calibration(void)
+{
+	LOG(PRINT_DEBUG, "%s", __func__);
+	cmdClientSetValueWithoutResp(MENU_CLOSE_SERVO_REGULATION_FLAG, 1);
+}
+
+static void exit_servo_close_calibration(void)
+{
+	LOG(PRINT_DEBUG, "%s", __func__);
+	cmdClientSetValueWithoutResp(MENU_CLOSE_SERVO_REGULATION_FLAG, 0);
+}
+
+static void enter_servo_open_calibration(void)
+{
+	LOG(PRINT_DEBUG, "%s", __func__);
+	cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION_FLAG, 1);
+}
+
+static void exit_servo_open_calibration(void)
+{
+	LOG(PRINT_DEBUG, "%s", __func__);
+	cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
 }
 
 static void menu_button_up_callback(void * arg)
@@ -136,6 +188,11 @@ static void menu_button_up_callback(void * arg)
 		if (parameters_list[menu->position].set_value != NULL)
 		{
 			parameters_list[menu->position].set_value(parameters_list[menu->position].value);
+		}
+
+		if (parameters_list[menu->position].exit != NULL)
+		{
+			parameters_list[menu->position].exit();
 		}
 	}
 
@@ -156,6 +213,11 @@ static void menu_button_up_callback(void * arg)
 		{
 			parameters_list[menu->position].get_max_value(&parameters_list[menu->position].max_value);
 		}
+
+		if (parameters_list[menu->position].enter != NULL)
+		{
+			parameters_list[menu->position].enter();
+		}
 	}
 }
 
@@ -173,6 +235,11 @@ static void menu_button_down_callback(void * arg)
 		if (parameters_list[menu->position].set_value != NULL)
 		{
 			parameters_list[menu->position].set_value(parameters_list[menu->position].value);
+		}
+
+		if (parameters_list[menu->position].exit != NULL)
+		{
+			parameters_list[menu->position].exit();
 		}
 	}
 	
@@ -192,6 +259,11 @@ static void menu_button_down_callback(void * arg)
 		if (parameters_list[menu->position].get_max_value != NULL)
 		{
 			parameters_list[menu->position].get_max_value(&parameters_list[menu->position].max_value);
+		}
+
+		if (parameters_list[menu->position].enter != NULL)
+		{
+			parameters_list[menu->position].enter();
 		}
 	}
 }
@@ -213,6 +285,10 @@ static void menu_button_plus_callback(void * arg)
 	if (parameters_list[menu->position].value < parameters_list[menu->position].max_value)
 	{
 		parameters_list[menu->position].value++;
+		if (parameters_list[menu->position].set_value != NULL)
+		{
+			parameters_list[menu->position].set_value(parameters_list[menu->position].value);
+		}
 	}
 }
 
@@ -233,6 +309,10 @@ static void menu_button_minus_callback(void * arg)
 	if (parameters_list[menu->position].value > 0)
 	{
 		parameters_list[menu->position].value--;
+		if (parameters_list[menu->position].set_value != NULL)
+		{
+			parameters_list[menu->position].set_value(parameters_list[menu->position].value);
+		}
 	}
 }
 
@@ -259,6 +339,11 @@ static void menu_button_enter_callback(void * arg)
 		{
 			parameters_list[menu->position].set_value(parameters_list[menu->position].value);
 		}
+
+		if (parameters_list[menu->position].enter != NULL)
+		{
+			parameters_list[menu->position].exit();
+		}
 	}
 	else
 	{
@@ -272,6 +357,11 @@ static void menu_button_enter_callback(void * arg)
 		{
 			parameters_list[menu->position].get_max_value(&parameters_list[menu->position].max_value);
 		}
+
+		if (parameters_list[menu->position].enter != NULL)
+		{
+			parameters_list[menu->position].enter();
+		}
 	}
 }
 
@@ -283,7 +373,17 @@ static void menu_button_exit_callback(void * arg)
 		NULL_ERROR_MSG();
 		return;
 	}
+
 	menuSaveParameters();
+	if (_state == MENU_EDIT_PARAMETERS)
+	{
+		if (parameters_list[menu->position].exit != NULL)
+		{
+			parameters_list[menu->position].exit();
+		}
+		_state = MENU_LIST_PARAMETERS;
+		return;
+	}
 	menuExit(menu);
 }
 
@@ -312,6 +412,9 @@ static bool menu_enter_cb(void * arg)
 		NULL_ERROR_MSG();
 		return false;
 	}
+
+	_state = MENU_LIST_PARAMETERS;
+
 	return true;
 }
 
