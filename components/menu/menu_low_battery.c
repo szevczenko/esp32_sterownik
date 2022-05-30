@@ -58,25 +58,13 @@ static bool menu_process(void * arg)
 		return false;
 	}
 
-	if (menu->menu_list == NULL || menu->menu_list[menu->position] == NULL) 
-	{
-		ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-		ssd1306_WriteString("menu->value == NULL", Font_7x10, White);
-		return FALSE;
-	}
-
 	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(LOGO_CLIENT_NAME, Font_11x18, White);
-
 	ssd1306_SetCursor(2, MENU_HEIGHT);
-	ssd1306_WriteString("Low battery lvl.", Font_7x10, Black);
-	ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-	ssd1306_WriteString("Connect charger", Font_7x10, Black);
-	ssd1306_UpdateScreen();
+	ssd1306_WriteString("LOW BATTERY", Font_11x18, White);
 
-	osDelay(5000);
-	power_on_enable_system();
+	ssd1306_SetCursor(2, 2*MENU_HEIGHT + 5);
+	ssd1306_WriteString(" Connect charger", Font_7x10, White);
+	ssd1306_UpdateScreen();
 
 	return true;
 }

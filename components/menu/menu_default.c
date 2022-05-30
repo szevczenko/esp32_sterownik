@@ -72,7 +72,8 @@ static void menu_button_exit_callback(void * arg)
 		NULL_ERROR_MSG();
 		return;
 	}
-	menuExit(menu);
+	// menuExit(menu);
+	menuEnter(menu->menu_list[0]);
 }
 
 static bool menu_button_init_cb(void * arg)

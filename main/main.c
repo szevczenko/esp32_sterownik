@@ -33,7 +33,7 @@
 
 uint16_t test_value;
 static gpio_config_t io_conf;
-static uint32_t blink_pin = GPIO_NUM_25;
+static uint32_t blink_pin = GPIO_NUM_23;
 
 portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
 extern void ultrasonar_start(void);
@@ -145,27 +145,27 @@ void app_main()
         //LED on
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
-        io_conf.pin_bit_mask = (1 << blink_pin) | (1 << 23);
+        io_conf.pin_bit_mask = (1 << blink_pin);
         io_conf.pull_down_en = 0;
         io_conf.pull_up_en = 0;
         gpio_config(&io_conf);
-        gpio_set_level(23, 1);
+        gpio_set_level(blink_pin, 1);
     }
 
     config_printf(PRINT_DEBUG, PRINT_DEBUG, "[MENU] ------------START SYSTEM-------------");
     while(1)
     {
-        vTaskDelay(MS2ST(975));
-        // if (config.dev_type == T_DEV_TYPE_SERVER)
-        // {
-        //    gpio_set_level(blink_pin, 0);
-        // }
+        vTaskDelay(MS2ST(250));
+        if (config.dev_type == T_DEV_TYPE_SERVER && !cmdServerIsWorking())
+        {
+           gpio_set_level(blink_pin, 0);
+        }
 
-        vTaskDelay(MS2ST(25));
+        vTaskDelay(MS2ST(750));
 
-        // if (config.dev_type == T_DEV_TYPE_SERVER)
-        // {
-        //    gpio_set_level(blink_pin, 1);
-        // }
+        if (config.dev_type == T_DEV_TYPE_SERVER)
+        {
+           gpio_set_level(blink_pin, 1);
+        }
     }
 }
