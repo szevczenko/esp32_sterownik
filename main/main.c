@@ -135,13 +135,21 @@ void app_main()
         #if CONFIG_DEVICE_SOLARKA
         vibro_init();
         #endif
-        #if CONFIG_DEVICE_SIEWNIK
+        //#if CONFIG_DEVICE_SIEWNIK
         measure_start();
-        #endif
+        //#endif
         srvrControllStart();
         ultrasonar_start();
         //WYLACZONE
+
+        #if CONFIG_DEVICE_SIEWNIK
         errorSiewnikStart();
+        #endif
+
+        #if CONFIG_DEVICE_SOLARKA
+
+        #endif
+        
         //LED on
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;

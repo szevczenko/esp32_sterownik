@@ -4,6 +4,7 @@
 #include "parse_cmd.h"
 #include "motor.h"
 #include "servo.h"
+#include "vibro.h"
 #include "cmd_server.h"
 
 #include "driver/mcpwm.h"
@@ -93,6 +94,7 @@ static void change_state(state_t state)
 
 static void count_working_data(void)
 {
+
 	ctx.motor_pwm = dcmotor_process(&ctx.motorD1, ctx.motor_value);
 	ctx.motor_pwm2 = dcmotor_process(&ctx.motorD2, ctx.motor_value);
 
@@ -102,12 +104,6 @@ static void count_working_data(void)
 		ctx.servo_set_timer = xTaskGetTickCount() + MS2ST(750);
 	}
 
-	if (ctx.servo_set_timer < xTaskGetTickCount())
-	{
-		ctx.servo_set_value = ctx.servo_new_value;
-	}
-
-	ctx.servo_pwm = servo_process(ctx.servo_on ? ctx.servo_set_value : 0);
 	if (ctx.motor_on) {
 		motor_start(&ctx.motorD1);
 		motor_start(&ctx.motorD2);
@@ -116,6 +112,15 @@ static void count_working_data(void)
 		motor_stop(&ctx.motorD1);
 		motor_stop(&ctx.motorD2);
 	}
+
+	#if CONFIG_DEVICE_SIEWNIK
+	if (ctx.servo_set_timer < xTaskGetTickCount())
+	{
+		ctx.servo_set_value = ctx.servo_new_value;
+	}
+
+	ctx.servo_pwm = servo_process(ctx.servo_on ? ctx.servo_set_value : 0);
+	#endif
 }
 
 static void set_working_data(void)
@@ -149,10 +154,12 @@ static void set_working_data(void)
 		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A);
 	}
 
+	#if CONFIG_DEVICE_SIEWNIK
 	float duty = (float)ctx.servo_pwm * 100 / 19999.0;
 	LOG(PRINT_DEBUG, "duty servo %f %d %d", duty, ctx.servo_value, ctx.servo_pwm);
 	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
 	mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
+	#endif
 }
 
 static void state_init(void)
@@ -242,7 +249,6 @@ static void state_working(void)
 	else {
 		vibro_stop();
 	}
-	data_write[AT_W_SERVO_IS_ON] = (uint16_t)vibro_is_on();
 	#endif
 
 	if (ctx.emergency_disable)
@@ -369,8 +375,7 @@ static void state_emergency_disable(void)
 
 static void state_error(void)
 {
-	ctx.errors = (bool)menuGetValue(MENU_MOTOR_ERROR_OVERCURRENT) || (bool)menuGetValue(MENU_SERVO_ERROR_OVERCURRENT) || 
-					(bool)menuGetValue(MENU_TEMPERATURE_IS_ERROR_ON) || (bool)menuGetValue(MENU_MOTOR_ERROR_NOT_CONNECTED) || (bool)menuGetValue(MENU_SERVO_ERROR_NOT_CONNECTED);
+	ctx.errors = (bool)menuGetValue(MENU_MACHINE_ERRORS);
 	ctx.servo_value = 0;
 	ctx.motor_value = 0;
 	ctx.motor_on = false;
@@ -378,7 +383,9 @@ static void state_error(void)
 
 	if (!ctx.errors)
 	{
+		#if CONFIG_DEVICE_SIEWNIK
 		errorSiewnikErrorReset();
+		#endif
 		change_state(STATE_IDLE);
 		return;
 	}
@@ -462,7 +469,13 @@ void srvrControllStart(void)
 {
 	motor_init(&ctx.motorD1);
 	motor_init(&ctx.motorD2);
+	#if CONFIG_DEVICE_SIEWNIK
 	servo_init(0);
+	#endif
+
+	#if CONFIG_DEVICE_SOLARKA
+	vibro_init();
+	#endif
 
 	xTaskCreate(_task, "srvrController", 4096, NULL, 10, NULL);
 }
@@ -482,7 +495,9 @@ bool srvrControllerErrorReset(void)
 {
 	if (ctx.state == STATE_ERROR)
 	{
+		#if CONFIG_DEVICE_SIEWNIK
 		errorSiewnikErrorReset();
+		#endif
 		change_state(STATE_IDLE);
 		return true;
 	}

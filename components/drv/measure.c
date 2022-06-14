@@ -79,7 +79,7 @@ static void measure_get_motor_calibration(TimerHandle_t xTimer)
 	if (!menuGetValue(MENU_MOTOR_IS_ON))
 	{
 		motor_calibration_meas = measure_get_filtered_value(MEAS_CH_MOTOR);
-		LOG(PRINT_INFO, "MEASURE MOTOR Calibration value = %d", calibration_value);
+		LOG(PRINT_INFO, "MEASURE MOTOR Calibration value = %d", motor_calibration_meas);
 	}
 	else
 	{
@@ -200,7 +200,9 @@ void measure_start(void)
 void measure_meas_calibration_value(void)
 {
 	LOG(PRINT_INFO, "%s", __func__);
+	#if CONFIG_DEVICE_SIEWNIK
 	xTimerStart( servoCalibrationTimer, 0 );
+	#endif
 	xTimerStart( motorCalibrationTimer, 0 );
 }
 

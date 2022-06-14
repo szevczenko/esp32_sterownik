@@ -2,6 +2,7 @@
 #define START_MENU_H_
 #include "config.h"
 #include "error_siewnik.h"
+#include "error_solarka.h"
 
 void menuInitStartMenu(menu_token_t *menu);
 void menuStartReset(void);

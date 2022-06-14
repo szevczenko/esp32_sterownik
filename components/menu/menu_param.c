@@ -36,12 +36,7 @@ static menuPStruct_t menuParameters[] =
 	[MENU_EMERGENCY_DISABLE] = {.max_value = 1, .default_value = 0},
 	[MENU_LOW_LEVEL_SILOS] = {.max_value = 1, .default_value = 0},
 
-	[MENU_TEMPERATURE_IS_ERROR_ON] = {.max_value = 0xFFFF, .default_value = 0},
-	[MENU_MOTOR_ERROR_OVERCURRENT] = {.max_value = 1, .default_value = 0},
-	[MENU_SERVO_ERROR_OVERCURRENT] = {.max_value = 1, .default_value = 0},
-	[MENU_MOTOR_ERROR_NOT_CONNECTED] = {.max_value = 1, .default_value = 0},
-	[MENU_SERVO_ERROR_NOT_CONNECTED] = {.max_value = 1, .default_value = 0},
-	[MENU_SERVO_ERROR_CANOT_CLOSE] = {.max_value = 1, .default_value = 0},
+	[MENU_MACHINE_ERRORS] = {.max_value = 0xFFFF, .default_value = 0},
 
 	[MENU_ERROR_SERVO] = {.max_value = 1, .default_value = 1},
 	[MENU_ERROR_MOTOR] = {.max_value = 1, .default_value = 1},
@@ -76,12 +71,7 @@ static char *parameters_name[] =
 	[MENU_EMERGENCY_DISABLE] 		= "MENU_EMERGENCY_DISABLE",
 	[MENU_LOW_LEVEL_SILOS]			= "MENU_LOW_LEVEL_SILOS",
 
-	[MENU_TEMPERATURE_IS_ERROR_ON]	= "MENU_TEMPERATURE_IS_ERROR_ON",
-	[MENU_MOTOR_ERROR_OVERCURRENT] 	= "MENU_MOTOR_ERROR_OVERCURRENT",
-	[MENU_SERVO_ERROR_OVERCURRENT] 	= "MENU_SERVO_ERROR_OVERCURRENT",
-	[MENU_MOTOR_ERROR_NOT_CONNECTED] = "MENU_MOTOR_ERROR_NOT_CONNECTED",
-	[MENU_SERVO_ERROR_NOT_CONNECTED] = "MENU_SERVO_ERROR_NOT_CONNECTED",
-	[MENU_SERVO_ERROR_CANOT_CLOSE] 	 = "MENU_SERVO_ERROR_CANOT_CLOSE",
+	[MENU_MACHINE_ERRORS]			= "MENU_MACHINE_ERRORS",
 
 	/* calibration value */
 	[MENU_ERROR_SERVO] 					= "MENU_ERROR_SERVO",
@@ -173,14 +163,9 @@ esp_err_t menuReadParameters(void) {
 }
 
 static void menuSetDefaultForReadValue(void) {
-	menuSaveParameters_data[MENU_MOTOR_ERROR_OVERCURRENT] = 0;
-	menuSaveParameters_data[MENU_SERVO_ERROR_OVERCURRENT] = 0;
-	menuSaveParameters_data[MENU_MOTOR_ERROR_NOT_CONNECTED] = 0,
-	menuSaveParameters_data[MENU_SERVO_ERROR_NOT_CONNECTED] = 0,
-	menuSaveParameters_data[MENU_SERVO_ERROR_CANOT_CLOSE] = 0,
+	menuSaveParameters_data[MENU_MACHINE_ERRORS] = 0;
 	menuSaveParameters_data[MENU_MOTOR_IS_ON] = 0;
 	menuSaveParameters_data[MENU_SERVO_IS_ON] = 0;
-	menuSaveParameters_data[MENU_TEMPERATURE_IS_ERROR_ON] = 0;
 	menuSaveParameters_data[MENU_START_SYSTEM] = 0;
 	menuSaveParameters_data[MENU_CLOSE_SERVO_REGULATION_FLAG] = 0;
 }

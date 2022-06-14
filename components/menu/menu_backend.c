@@ -135,33 +135,22 @@ static void backend_idle(void)
 	osDelay(50);
 }
 
-typedef struct
+static bool _check_error(void)
 {
-	menuValue_t menuVal;
-} error_wrap_t;
-
-static error_wrap_t error_wraper[] = 
-{
-	[ERROR_MOTOR_NOT_CONNECTED] = {MENU_MOTOR_ERROR_NOT_CONNECTED},
-	[ERROR_SERVO_NOT_CONNECTED] = {MENU_SERVO_ERROR_NOT_CONNECTED},
-	[ERROR_MOTOR_OVER_CURRENT] = {MENU_MOTOR_ERROR_OVERCURRENT},
-	[ERROR_SERVO_OVER_CURRENT] = {MENU_SERVO_ERROR_OVERCURRENT},
-	[ERROR_OVER_TEMPERATURE] = {MENU_TEMPERATURE_IS_ERROR_ON},
-};
-
-static error_type_t _check_error(void)
-{
-	error_type_t error_reason = 0;
-	for (int i = 0; i < ERROR_TOP; i++)
+	cmdClientGetValue(MENU_MACHINE_ERRORS, NULL, 2000);
+	uint32_t errors = menuGetValue(MENU_MACHINE_ERRORS);
+	if (errors > 0)
 	{
-		cmdClientGetValue(error_wraper[i].menuVal, NULL, 2000);
-		if (menuGetValue(error_wraper[i].menuVal) > 0)
+		for (uint8_t i = 0; i < ERROR_TOP; i++)
 		{
-			error_reason = error_wraper[i].menuVal;
-			menuStartSetError(i);
+			if (errors & (1 << i))
+			{
+				menuStartSetError(i);
+			}
 		}
+		return true;
 	}
-	return error_reason;
+	return false;
 }
 
 static void backent_start(void)

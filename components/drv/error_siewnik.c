@@ -10,6 +10,7 @@
 #include "cmd_server.h"
 #include "server_controller.h"
 
+#if CONFIG_DEVICE_SIEWNIK
 #define MODULE_NAME                       "[Err_siew] "
 #define DEBUG_LVL                         PRINT_INFO
 
@@ -161,7 +162,7 @@ static void _state_error_temperature(void)
 
 static void _state_error_mototr_current(void)
 {
-	if (srvrConrollerSetError(MENU_MOTOR_ERROR_OVERCURRENT))
+	if (srvrConrollerSetError(ERROR_MOTOR_OVER_CURRENT))
 	{
 		_change_state(STATE_WAIT_RESET_ERROR);
 	}
@@ -174,7 +175,7 @@ static void _state_error_mototr_current(void)
 
 static void _state_error_motor_not_connected(void)
 {
-	if (srvrConrollerSetError(MENU_MOTOR_ERROR_NOT_CONNECTED))
+	if (srvrConrollerSetError(ERROR_MOTOR_NOT_CONNECTED))
 	{
 		_change_state(STATE_WAIT_RESET_ERROR);
 	}
@@ -326,3 +327,4 @@ void errorSiewnikErrorReset(void)
 {
 	ctx.is_error_reset = true;
 }
+#endif
