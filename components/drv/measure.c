@@ -12,7 +12,7 @@
 #include "ultrasonar.h"
 
 #define MODULE_NAME                       "[Meas] "
-#define DEBUG_LVL                         PRINT_WARNING
+#define DEBUG_LVL                         PRINT_INFO
 
 #if CONFIG_DEBUG_MEASURE
 #define LOG(_lvl, ...)                          \
@@ -227,6 +227,7 @@ float measure_get_current(enum_meas_ch type, float resistor)
 	LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
 	uint32_t adc = measure_get_filtered_value(type) < motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
 	float current = (float) adc / 1.1 /* Amp */;
+	LOG(PRINT_INFO, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
 	return current;
 }
 

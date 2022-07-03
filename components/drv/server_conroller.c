@@ -22,6 +22,8 @@
 #define LOG(PRINT_INFO, ...)
 #endif
 
+#define SYSTEM_ON_PIN 15
+
 #define MOTOR_PWM_PIN 27
 #define SERVO_PWM_PIN 26
 #define MOTOR_PWM_PIN2 25
@@ -129,11 +131,11 @@ static void set_working_data(void)
 
 	if (ctx.system_on)
 	{
-		gpio_set_level(15, 1);
+		gpio_set_level(SYSTEM_ON_PIN, 1);
 	}
 	else
 	{
-		gpio_set_level(15, 0);
+		gpio_set_level(SYSTEM_ON_PIN, 0);
 	}
 
 	LOG(PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
@@ -141,18 +143,39 @@ static void set_working_data(void)
 	{
 		float duty = (float)ctx.motor_pwm;
 		LOG(PRINT_DEBUG, "duty motor %f", duty);
+		if (duty >= 99.99)
+		{
+			duty = 99.99;
+		}
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
-		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
+		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 
 		mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_GEN_A, duty);
-		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
+		mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 	}
 	else
 	{
+		#if CONFIG_DEVICE_SIEWNIK
 		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
-
 		mcpwm_set_signal_high(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A);
+		#endif
+
+		#if CONFIG_DEVICE_SOLARKA
+		mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
+		mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A);
+		#endif
 	}
+
+	#if CONFIG_DEVICE_SOLARKA
+	if (vibro_is_on())
+	{
+		gpio_set_level(SERVO_PWM_PIN, 1);
+	}
+	else
+	{
+		gpio_set_level(SERVO_PWM_PIN, 0);
+	}
+	#endif
 
 	#if CONFIG_DEVICE_SIEWNIK
 	float duty = (float)ctx.servo_pwm * 100 / 19999.0;
@@ -169,33 +192,56 @@ static void state_init(void)
     pwm_config.frequency = 18000;    //frequency = 1000Hz
     pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 60.0%
     pwm_config.cmpr_b = 0;       	//duty cycle of PWMxb = 50.0%
-    pwm_config.counter_mode = MCPWM_UP_COUNTER;
+	pwm_config.counter_mode = MCPWM_DOWN_COUNTER;
+
+	#if CONFIG_DEVICE_SOLARKA
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+	#endif
+
+	#if CONFIG_DEVICE_SIEWNIK
+	pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+	#endif
+
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);   //Configure PWM0A & PWM0B with above settings
 
-	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, MOTOR_PWM_PIN2);
-    pwm_config.frequency = 18000;    //frequency = 1000Hz
-    pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 60.0%
-    pwm_config.cmpr_b = 0;       	//duty cycle of PWMxb = 50.0%
-    pwm_config.counter_mode = MCPWM_UP_COUNTER;
-    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
-    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_2, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+	// mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, MOTOR_PWM_PIN2);
+    // pwm_config.frequency = 18000;    //frequency = 1000Hz
+    // pwm_config.cmpr_a = 0;       //duty cycle of PWMxA = 60.0%
+    // pwm_config.cmpr_b = 0;       	//duty cycle of PWMxb = 50.0%
+    // pwm_config.counter_mode = MCPWM_DOWN_COUNTER;
 
-	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, SERVO_PWM_PIN);
-	pwm_config.frequency = 50;
-    pwm_config.cmpr_a = 0;
-    pwm_config.cmpr_b = 0;
-    pwm_config.counter_mode = MCPWM_UP_COUNTER;
-    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
-	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+    // #if CONFIG_DEVICE_SOLARKA
+    // pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+	// #endif
+
+	// #if CONFIG_DEVICE_SIEWNIK
+	// pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+	// #endif
+	
+    // mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_2, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+
+	// #if CONFIG_DEVICE_SIEWNIK
+	// mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, SERVO_PWM_PIN);
+	// pwm_config.frequency = 50;
+    // pwm_config.cmpr_a = 0;
+    // pwm_config.cmpr_b = 0;
+    // pwm_config.counter_mode = MCPWM_UP_COUNTER;
+    // pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+	// mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+	// #endif
 
 	gpio_config_t io_conf;
 	io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = (1 << 15);
+    io_conf.pin_bit_mask = (1 << SYSTEM_ON_PIN) | (1 << SERVO_PWM_PIN);
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
+
+	#if CONFIG_DEVICE_SOLARKA
+	mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
+	mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_OPR_A);
+	#endif
 
 	change_state(STATE_IDLE);
 }

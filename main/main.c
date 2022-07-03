@@ -132,9 +132,6 @@ void app_main()
         keepAliveStartTask();
         menuParamInit();
 
-        #if CONFIG_DEVICE_SOLARKA
-        vibro_init();
-        #endif
         //#if CONFIG_DEVICE_SIEWNIK
         measure_start();
         //#endif
