@@ -9,8 +9,7 @@
 #include "cmd_server.h"
 #include "but.h"
 #include "fast_add.h"
-#include "ssd1306.h"
-#include "ssd1306_tests.h"
+// #include "ssd1306.h"
 #include "menu.h"
 #include "keepalive.h"
 #include "menu_param.h"
@@ -72,8 +71,7 @@ static void checkDevType(void)
     i2cInit();
     pcf8574_init();
     int read_i2c_value = -1;
-
-    read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
+    // read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
     if (read_i2c_value == ESP_OK)
     {
         config.dev_type = T_DEV_TYPE_CLIENT;
@@ -114,7 +112,7 @@ void app_main()
 
         float voltage = battery_get_voltage();
 
-        ssd1306_Init();
+        // ssd1306_Init();
         power_on_enable_system();
         init_buttons();
 
