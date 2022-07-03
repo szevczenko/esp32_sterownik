@@ -1,5 +1,5 @@
 #include "ssdFigure.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 
 #include "math.h"
 
@@ -82,10 +82,10 @@ int ssdFigureDrawLoadBar(loadBar_t * figure)
 		for (int y = figure->y; y < figure->height + figure->y; y++)
 		{
 			if (x <= scaling_fill_x || x == figure->width + figure->x - 1) {
-				ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
 			}
 			else if (y == figure->y || y == figure->height + figure->y - 1) {
-				ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
 			}
 		}
 	}
@@ -108,14 +108,14 @@ int ssdFigureDrawScrollBar(scrollBar_t * figure)
 		for (int y = figure->y_start; y < SSD1306_HEIGHT; y++)
 		{
 			if (x <= SSD1306_WIDTH - 4 || x == SSD1306_WIDTH - 1) {
-				ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
 				continue;
 			}
 			else if (y == figure->y_start || (y >= start_scroll_y && y <=start_scroll_y + width_px) || y == SSD1306_HEIGHT)  {
-				ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
 				continue;
 			}
-			ssd1306_DrawPixel(x, y, (SSD1306_COLOR) Black);
+			// ssd1306_DrawPixel(x, y, (SSD1306_COLOR) Black);
 		}
 	}
 	return TRUE;
@@ -127,7 +127,7 @@ int ssdFigureFillLine(int y_start, int height)
 	{
 		for (int x = 0; x < SSD1306_WIDTH; x++)
 		{
-			ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
+			// ssd1306_DrawPixel(x, y, (SSD1306_COLOR) White);
 		}
 	}
 	return TRUE;
@@ -140,7 +140,9 @@ void drawMotor(uint8_t x, uint8_t y)
 		for (int j = 0; j < 23; j++)
 		{
 			if (bitmap[j*30 + i])
-				ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
+			{
+				// ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
+			}
 		}
 	}
 }
@@ -165,11 +167,12 @@ void drawServo(uint8_t x, uint8_t y, uint8_t open)
 					//LOG("find_end\n", x_open);
 					start_flag = 0;
 				}
-				ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
 			}
 			if (start_flag == 1 && i + x > x_open)
-				ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
-				
+			{
+				// ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
+			}
 		}
 	}
 }
@@ -204,11 +207,11 @@ static void _drawBattery(uint8_t x, uint8_t y, uint8_t chrg)
 		{
 			if (battery[j*11 + i])
 			{
-				ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
 			}
 
 			if (j > 1 && j < 6 && i > 1 && i < 1 + chrg) {
-				ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
+				// ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR) White);
 			}	
 		}
 	}

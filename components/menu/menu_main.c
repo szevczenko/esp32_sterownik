@@ -1,8 +1,6 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
-#include "ssdFigure.h"
 #include "menu_default.h"
 #include "wifi_menu.h"
 #include "start_menu.h"

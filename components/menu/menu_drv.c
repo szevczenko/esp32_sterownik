@@ -6,7 +6,7 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "but.h"
 #include "freertos/semphr.h"
@@ -214,8 +214,8 @@ static void menu_timer_long_power_off_but_cb(void * arg)
 
 		while(1)
 		{
-			ssd1306_Fill(Black);
-			ssd1306_UpdateScreen();
+			// ssd1306_Fill(Black);
+			// ssd1306_UpdateScreen();
 		}
 	}
 }
@@ -404,9 +404,9 @@ void menu_deactivate_but(void)
 
 static void menu_state_init(void)
 {
-	ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-	ssd1306_WriteString("Wait to init...", Font_7x10, White);
-	ssd1306_UpdateScreen();
+	// ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+	// ssd1306_WriteString("Wait to init...", Font_7x10, White);
+	// ssd1306_UpdateScreen();
 	menu_init_buttons();
 	ctx.state = MENU_STATE_IDLE;
 }
@@ -431,9 +431,9 @@ static void menu_state_idle(menu_token_t * menu)
 
 	if (menu == NULL)
 	{
-		ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-		ssd1306_WriteString("Menu idle state...", Font_7x10, White);
-		ssd1306_UpdateScreen();
+		// ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+		// ssd1306_WriteString("Menu idle state...", Font_7x10, White);
+		// ssd1306_UpdateScreen();
 		osDelay(100);
 	}
 	else
@@ -466,7 +466,7 @@ static void menu_state_process(menu_token_t * menu)
 	// debug_function_name(__func__);
 
 	xSemaphoreTake(ctx.update_screen_req, ( TickType_t ) MS2ST(300));
-	ssd1306_Fill(Black);
+	// ssd1306_Fill(Black);
 
 	if (menu->menu_cb.process != NULL)
 	{
@@ -481,7 +481,7 @@ static void menu_state_process(menu_token_t * menu)
 
 	drawBattery(115, 1, battery_get_voltage(), battery_get_charging_status());
 
-	if (ssd1306_UpdateScreen())
+	// if (ssd1306_UpdateScreen())
 	{
 		osDelay(5);
 	}
@@ -494,10 +494,10 @@ static void menu_state_process(menu_token_t * menu)
 
 static void menu_state_emergency_disable(void)
 {
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, MENU_HEIGHT);
-	ssd1306_WriteString("  STOP", Font_16x26, White);
-	ssd1306_UpdateScreen();
+	// ssd1306_Fill(Black);
+	// ssd1306_SetCursor(2, MENU_HEIGHT);
+	// ssd1306_WriteString("  STOP", Font_16x26, White);
+	// ssd1306_UpdateScreen();
 	if (ctx.led_cnt % 10 == 0)
 	{
 		MOTOR_LED_SET_GREEN(0);
@@ -533,30 +533,30 @@ static void menu_state_error_check(menu_token_t *menu)
 	static char buff[128];
 	if (ctx.error_flag)
 	{
-		ssd1306_Fill(Black);
-		if (menu != NULL)
-		{
-			ssd1306_SetCursor(2, 0);
-			ssd1306_WriteString(menu->name, Font_11x18, White);
-		}
-		ssd1306_SetCursor(2, MENU_HEIGHT);
-		ssd1306_WriteString("Error menu_drv", Font_7x10, White);
-		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-		sprintf(buff, "Error %d...", ctx.error_code);
-		ssd1306_WriteString(buff, Font_7x10, White);
-		ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+		// ssd1306_Fill(Black);
+		// if (menu != NULL)
+		// {
+		// 	ssd1306_SetCursor(2, 0);
+		// 	ssd1306_WriteString(menu->name, Font_11x18, White);
+		// }
+		// ssd1306_SetCursor(2, MENU_HEIGHT);
+		// ssd1306_WriteString("Error menu_drv", Font_7x10, White);
+		// ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+		// sprintf(buff, "Error %d...", ctx.error_code);
+		// ssd1306_WriteString(buff, Font_7x10, White);
+		// ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
 
 		if (ctx.error_msg != NULL)
 		{
 			sprintf(buff, "Msg: %s", ctx.error_msg);
-			ssd1306_WriteString(buff, Font_7x10, White);
+			// ssd1306_WriteString(buff, Font_7x10, White);
 		}
 		else
 		{
-			ssd1306_WriteString("Undeff", Font_7x10, White);
+			// ssd1306_WriteString("Undeff", Font_7x10, White);
 		}
 		
-		ssd1306_UpdateScreen();
+		// ssd1306_UpdateScreen();
 		ctx.error_flag = false;
 		ctx.error_code = 0;
 		ctx.error_msg = NULL;
@@ -593,16 +593,16 @@ static void menu_state_power_off_count(menu_token_t *menu)
 		return;
 	}
 
-	ssd1306_Fill(Black);
+	// ssd1306_Fill(Black);
 
-	ssd1306_SetCursor(2, 10);
-	ssd1306_WriteString(" POWER OFF", Font_11x18, White);
+	// ssd1306_SetCursor(2, 10);
+	// ssd1306_WriteString(" POWER OFF", Font_11x18, White);
 
-	ssd1306_SetCursor(2, 2*MENU_HEIGHT);
-	sprintf(buff, "     %d", time);
-	ssd1306_WriteString(buff, Font_11x18, White);
+	// ssd1306_SetCursor(2, 2*MENU_HEIGHT);
+	// sprintf(buff, "     %d", time);
+	// ssd1306_WriteString(buff, Font_11x18, White);
 
-	ssd1306_UpdateScreen();
+	// ssd1306_UpdateScreen();
 	osDelay(100);
 }
 
@@ -610,8 +610,8 @@ static void menu_state_power_off(menu_token_t *menu)
 {
 	power_on_disable_system();
 
-	ssd1306_Fill(Black);
-	ssd1306_UpdateScreen();
+	// ssd1306_Fill(Black);
+	// ssd1306_UpdateScreen();
 	osDelay(100);
 }
 
@@ -722,23 +722,22 @@ void menuPrintfInfo(const char *format, ...)
 	vsnprintf(infoBuff, sizeof(infoBuff), format, ap);
 	va_end(ap);
 	int line = 0;
-	ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
-	for (int i = 0; i < strlen(infoBuff); i++)
-	{
-		if (i * 7 >= line * SSD1306_WIDTH + SSD1306_WIDTH)
-		{
-			line++;
-			ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
-		}
-		if (infoBuff[i] == '\n')
-		{
-			line++;
-			ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
-			continue;
-		}
-		ssd1306_WriteChar(infoBuff[i], Font_7x10, White);
-	}
-	//ssd1306_UpdateScreen();
+	// ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
+	// for (int i = 0; i < strlen(infoBuff); i++)
+	// {
+	// 	if (i * 7 >= line * SSD1306_WIDTH + SSD1306_WIDTH)
+	// 	{
+	// 		line++;
+	// 		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
+	// 	}
+	// 	if (infoBuff[i] == '\n')
+	// 	{
+	// 		line++;
+	// 		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
+	// 		continue;
+	// 	}
+	// 	ssd1306_WriteChar(infoBuff[i], Font_7x10, White);
+	// }
 }
 
 void menuDrvEnterEmergencyDisable(void)
@@ -769,8 +768,8 @@ void menuDrvDisableSystemProcess(void)
 {
 	while(1)
 	{
-		ssd1306_Fill(Black);
-		ssd1306_UpdateScreen();
+		// ssd1306_Fill(Black);
+		// ssd1306_UpdateScreen();
 	}
 }
 

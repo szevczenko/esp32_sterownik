@@ -1,7 +1,7 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "menu_default.h"
 
@@ -124,14 +124,14 @@ static bool menu_process(void * arg)
 
 	if (menu->menu_list == NULL || menu->menu_list[menu->position] == NULL) 
 	{
-		ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-		ssd1306_WriteString("menu->value == NULL", Font_7x10, White);
+		// ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+		// ssd1306_WriteString("menu->value == NULL", Font_7x10, White);
 		return FALSE;
 	}
 
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(menu->name, Font_11x18, White);
+	// ssd1306_Fill(Black);
+	// ssd1306_SetCursor(2, 0);
+	// ssd1306_WriteString(menu->name, Font_11x18, White);
 
 	if (menu->line.end - menu->line.start != MAX_LINE - 1)
 	{
@@ -156,16 +156,16 @@ static bool menu_process(void * arg)
 	int line = 0;
 	do
 	{
-		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
-		if (line + menu->line.start == menu->position)
-		{
-			ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT*line, LINE_HEIGHT);
-			ssd1306_WriteString(menu->menu_list[line + menu->line.start]->name, Font_7x10, Black);
-		}
-		else
-		{
-			ssd1306_WriteString(menu->menu_list[line + menu->line.start]->name, Font_7x10, White);
-		}
+		// ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
+		// if (line + menu->line.start == menu->position)
+		// {
+		// 	ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT*line, LINE_HEIGHT);
+		// 	ssd1306_WriteString(menu->menu_list[line + menu->line.start]->name, Font_7x10, Black);
+		// }
+		// else
+		// {
+		// 	ssd1306_WriteString(menu->menu_list[line + menu->line.start]->name, Font_7x10, White);
+		// }
 		line++;
 	} while (menu->menu_list[line + menu->line.start] != NULL && line < MAX_LINE);
 	scrollBar.actual_line = menu->position;

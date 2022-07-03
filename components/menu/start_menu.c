@@ -1,7 +1,7 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "menu_default.h"
 #include "menu_backend.h"
@@ -836,9 +836,9 @@ static void menu_set_error_msg(char *msg)
 
 static void menu_start_init(void)
 {
-	ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-	ssd1306_WriteString("Check connection", Font_7x10, White);
-	ssd1306_UpdateScreen();
+	// ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+	// ssd1306_WriteString("Check connection", Font_7x10, White);
+	// ssd1306_UpdateScreen();
 	change_state(STATE_CHECK_WIFI);
 }
 
@@ -870,9 +870,9 @@ static void menu_check_connection(void)
 		else
 		{
 			sprintf(ctx.buff, "Check connection %s%s%s", ".", i > 0 ? "." : " ", i > 1 ? "." : " ");
-			ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-			ssd1306_WriteString(ctx.buff, Font_7x10, White);
-			ssd1306_UpdateScreen();
+			// ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+			// ssd1306_WriteString(ctx.buff, Font_7x10, White);
+			// ssd1306_UpdateScreen();
 		}
 	}
 
@@ -942,10 +942,10 @@ static void menu_start_ready(void)
 
 	motor_bar.fill = ctx.motor_value;
 	sprintf(str, "%d%%", motor_bar.fill);
-	ssd1306_Fill(Black);
-	ssdFigureDrawLoadBar(&motor_bar);
-	ssd1306_SetCursor(80, 25);
-	ssd1306_WriteString(str, Font_7x10, White);
+	// ssd1306_Fill(Black);
+	// ssdFigureDrawLoadBar(&motor_bar);
+	// ssd1306_SetCursor(80, 25);
+	// ssd1306_WriteString(str, Font_7x10, White);
 	uint8_t cnt = 0;
 
 	if (ctx.motor_on)
@@ -978,37 +978,37 @@ static void menu_start_ready(void)
 	/* PERIOD CURSOR */
 	char menu_buff[32];
 
-	ssd1306_SetCursor(2, MENU_START_OFFSET);
+	// ssd1306_SetCursor(2, MENU_START_OFFSET);
 	sprintf(menu_buff, "Period: %d [s]", ctx.vibro_period_value);
 
 	if (ctx.edit_value == EDIT_PERIOD)
 	{
-		ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
-		ssd1306_WriteString(menu_buff, Font_7x10, Black);
+		// ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
+		// ssd1306_WriteString(menu_buff, Font_7x10, Black);
 	}
 	else
 	{
-		ssd1306_WriteString(menu_buff, Font_7x10, White);
+		// ssd1306_WriteString(menu_buff, Font_7x10, White);
 	}
 
 	/* WORKING TIME CURSOR */
 	sprintf(menu_buff, "Working time: %d [s]", ctx.vibro_wt_value);
-	ssd1306_SetCursor(2, MENU_START_OFFSET + LINE_HEIGHT);
+	// ssd1306_SetCursor(2, MENU_START_OFFSET + LINE_HEIGHT);
 	if (ctx.edit_value == EDIT_WORKING_TIME)
 	{
 		ssdFigureFillLine(MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT);
-		ssd1306_WriteString(menu_buff, Font_7x10, Black);
+		// ssd1306_WriteString(menu_buff, Font_7x10, Black);
 	}
 	else
 	{
-		ssd1306_WriteString(menu_buff, Font_7x10, White);
+		// ssd1306_WriteString(menu_buff, Font_7x10, White);
 	}
 #elif CONFIG_DEVICE_SIEWNIK
 	servo_bar.fill = ctx.servo_value;
 	sprintf(str, "%d", servo_bar.fill);
 	ssdFigureDrawLoadBar(&servo_bar);
-	ssd1306_SetCursor(80, 55);
-	ssd1306_WriteString(str, Font_7x10, White);
+	// ssd1306_SetCursor(80, 55);
+	// ssd1306_WriteString(str, Font_7x10, White);
 	if (ctx.servo_vibro_on)
 	{
 		drawServo(10, 35, ctx.servo_value);
@@ -1052,11 +1052,11 @@ static void menu_start_low_silos(void)
 		return;
 	}
 
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 2);
-	ssd1306_WriteString("Low", Font_16x26, White);
-	ssd1306_SetCursor(2, 2 + 28);
-	ssd1306_WriteString("silos", Font_16x26, White);
+	// ssd1306_Fill(Black);
+	// ssd1306_SetCursor(2, 2);
+	// ssd1306_WriteString("Low", Font_16x26, White);
+	// ssd1306_SetCursor(2, 2 + 28);
+	// ssd1306_WriteString("silos", Font_16x26, White);
 }
 
 static void menu_start_error(void)
@@ -1111,11 +1111,11 @@ static void menu_start_motor_change(void)
 		return;
 	}
 
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString("   MOTOR", Font_11x18, White);
-	ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
-	sprintf(ctx.buff, "%d%%", ctx.motor_value);
-	ssd1306_WriteString(ctx.buff, Font_16x26, White);
+	// ssd1306_SetCursor(2, 0);
+	// ssd1306_WriteString("   MOTOR", Font_11x18, White);
+	// ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+	// sprintf(ctx.buff, "%d%%", ctx.motor_value);
+	// ssd1306_WriteString(ctx.buff, Font_16x26, White);
 
 	if (ctx.change_menu_timeout < xTaskGetTickCount())
 	{
@@ -1133,19 +1133,19 @@ static void menu_start_vibro_change(void)
 	}
 
 	#if CONFIG_DEVICE_SIEWNIK
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString("   SERVO", Font_11x18, White);
-	ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
-	sprintf(ctx.buff, "%d%%", ctx.servo_value);
-	ssd1306_WriteString(ctx.buff, Font_16x26, White);
+	// ssd1306_SetCursor(2, 0);
+	// ssd1306_WriteString("   SERVO", Font_11x18, White);
+	// ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+	// sprintf(ctx.buff, "%d%%", ctx.servo_value);
+	// ssd1306_WriteString(ctx.buff, Font_16x26, White);
 	#endif
 
 	#if CONFIG_DEVICE_SOLARKA
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(ctx.edit_value == EDIT_WORKING_TIME ? "Working time" : "Period", Font_11x18, White);
-	ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
-	sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_WORKING_TIME ? ctx.vibro_wt_value : ctx.vibro_period_value);
-	ssd1306_WriteString(ctx.buff, Font_16x26, White);
+	// ssd1306_SetCursor(2, 0);
+	// ssd1306_WriteString(ctx.edit_value == EDIT_WORKING_TIME ? "Working time" : "Period", Font_11x18, White);
+	// ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+	// sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_WORKING_TIME ? ctx.vibro_wt_value : ctx.vibro_period_value);
+	// ssd1306_WriteString(ctx.buff, Font_16x26, White);
 	#endif
 
 	if (ctx.change_menu_timeout < xTaskGetTickCount())
@@ -1189,9 +1189,9 @@ static void _show_wait_connection(void)
 	sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ",
 			xTaskGetTickCount() % 400 > 200 ? "." : " ",
 			xTaskGetTickCount() % 400 > 300 ? "." : " ");
-	ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-	ssd1306_WriteString(ctx.buff, Font_7x10, White);
-	ssd1306_UpdateScreen();
+	// ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+	// ssd1306_WriteString(ctx.buff, Font_7x10, White);
+	// ssd1306_UpdateScreen();
 }
 
 static void menu_wait_connect(void)

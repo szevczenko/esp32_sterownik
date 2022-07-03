@@ -2,7 +2,7 @@
 #include "freertos/timers.h"
 #include "menu.h"
 #include "but.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 
 #include "freertos/semphr.h"
@@ -88,8 +88,8 @@ static void sleep_task(void * arg)
 				esp_sleep_enable_gpio_wakeup();
 				gpio_wakeup_enable(WAKE_UP_PIN, GPIO_INTR_LOW_LEVEL);
 				esp_wifi_stop();
-				ssd1306_Fill(Black);
-				ssd1306_UpdateScreen();
+				// ssd1306_Fill(Black);
+				// ssd1306_UpdateScreen();
 				BUZZER_OFF();
 				esp_light_sleep_start();
 				vTaskDelay(MS2ST(3000));

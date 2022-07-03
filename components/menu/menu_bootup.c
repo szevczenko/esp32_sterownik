@@ -4,7 +4,7 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "but.h"
 #include "freertos/semphr.h"
@@ -131,9 +131,9 @@ static void _show_wait_connection(void)
 	sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ", 
 														xTaskGetTickCount() % 400 > 200 ? "." : " ",
 														xTaskGetTickCount() % 400 > 300 ? "." : " ");
-	ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
-	ssd1306_WriteString(ctx.buff, Font_7x10, White);
-	ssd1306_UpdateScreen();
+	// ssd1306_SetCursor(2, MENU_HEIGHT + 2*LINE_HEIGHT);
+	// ssd1306_WriteString(ctx.buff, Font_7x10, White);
+	// ssd1306_UpdateScreen();
 }
 
 static void bootup_wait_connect(void)
@@ -230,9 +230,9 @@ static bool menu_process(void * arg)
 		return false;
 	}
 
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(menu->name, Font_11x18, White);
+	// ssd1306_Fill(Black);
+	// ssd1306_SetCursor(2, 0);
+	// ssd1306_WriteString(menu->name, Font_11x18, White);
 	
 	switch(ctx.state)
 	{

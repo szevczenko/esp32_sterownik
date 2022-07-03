@@ -1,7 +1,7 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "menu_default.h"
 #include "power_on.h"
@@ -58,13 +58,13 @@ static bool menu_process(void * arg)
 		return false;
 	}
 
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, MENU_HEIGHT);
-	ssd1306_WriteString("LOW BATTERY", Font_11x18, White);
+	// ssd1306_Fill(Black);
+	// ssd1306_SetCursor(2, MENU_HEIGHT);
+	// ssd1306_WriteString("LOW BATTERY", Font_11x18, White);
 
-	ssd1306_SetCursor(2, 2*MENU_HEIGHT + 5);
-	ssd1306_WriteString(" Connect charger", Font_7x10, White);
-	ssd1306_UpdateScreen();
+	// ssd1306_SetCursor(2, 2*MENU_HEIGHT + 5);
+	// ssd1306_WriteString(" Connect charger", Font_7x10, White);
+	// ssd1306_UpdateScreen();
 
 	return true;
 }
