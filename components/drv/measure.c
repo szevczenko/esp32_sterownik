@@ -54,9 +54,17 @@ static meas_data_t meas_data[MEAS_CH_LAST] =
 {
 	[MEAS_CH_IN] 	= {.unit = 1, .channel = ADC_IN_CH, .ch_name = "MEAS_CH_IN"},
 	[MEAS_CH_MOTOR] = {.unit = 1, .channel = ADC_MOTOR_CH, .ch_name = "MEAS_CH_MOTOR"},
-	[MEAS_CH_SERVO] = {.unit = 1, .channel = ADC_SERVO_CH, .ch_name = "MEAS_CH_SERVO"},
 	[MEAS_CH_12V] 	= {.unit = 1, .channel = ADC_12V_CH, .ch_name = "MEAS_CH_12V"},
+	#if CONFIG_DEVICE_SIEWNIK
+	[MEAS_CH_SERVO] = {.unit = 1, .channel = ADC_SERVO_CH, .ch_name = "MEAS_CH_SERVO"},
 	[MEAS_CH_TEMP] 	= {.unit = 1, .channel = ADC_CE_CH, .ch_name = "MEAS_CH_TEMP"},
+	#endif
+
+	#if CONFIG_DEVICE_SOLARKA
+	[MEAS_CH_TEMP] 	= {.unit = 1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_TEMP"},
+	[MEAS_CH_CHECK_VIBRO] 	= {.unit = 1, .channel = ADC_CHANNEL_0, .ch_name = "MEAS_CH_CHECK_VIBRO"},
+	[MEAS_CH_CHECK_MOTOR] 	= {.unit = 1, .channel = ADC_CHANNEL_3, .ch_name = "MEAS_CH_CHECK_MOTOR"},
+	#endif
 };
 
 static uint32_t table_size;
@@ -123,10 +131,6 @@ static void _read_adc_values(void)
                 meas_data[ch].adc += raw;
 			}
 		}
-		if (meas_data[ch].unit == ADC_UNIT_2)
-		{
-			LOG(PRINT_DEBUG, "Pomiar 2 %d", ret_v);
-		}
 		
 		meas_data[ch].adc /= NO_OF_SAMPLES;
 		meas_data[ch].filter_table[table_iter%FILTER_TABLE_SIZE] = meas_data[ch].adc;
@@ -149,6 +153,9 @@ static void measure_process(void * arg)
 		vTaskDelay(100 / portTICK_RATE_MS);
 
 		_read_adc_values();
+
+		LOG(PRINT_INFO, "%s %d", meas_data[MEAS_CH_CHECK_VIBRO].ch_name, meas_data[MEAS_CH_CHECK_VIBRO].filtered_adc);
+		LOG(PRINT_INFO, "%s %d", meas_data[MEAS_CH_CHECK_MOTOR].ch_name, meas_data[MEAS_CH_CHECK_MOTOR].filtered_adc);
 
 		// #if CONFIG_DEVICE_SOLARKA
 		// #endif
@@ -217,17 +224,35 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 
 float measure_get_temperature(void)
 {
+	#if CONFIG_DEVICE_SIEWNIK
 	int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
 	LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
 	return temp;
+	#endif
+
+	#if CONFIG_DEVICE_SOLARKA
+	int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 32 + 130;
+	LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
+	return temp;
+	#endif
 }
 
 float measure_get_current(enum_meas_ch type, float resistor)
 {
+	#if CONFIG_DEVICE_SIEWNIK
 	LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
 	uint32_t adc = measure_get_filtered_value(type) < motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
 	float current = (float) adc / 1.1 /* Amp */;
-	LOG(PRINT_INFO, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
+	LOG(PRINT_DEBUG, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
+	#endif
+
+	#if CONFIG_DEVICE_SOLARKA
+	LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
+	uint32_t adc = measure_get_filtered_value(type) < motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
+	float current = (float) adc * 7.2 /* Amp */;
+	LOG(PRINT_DEBUG, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
+	#endif
+
 	return current;
 }
 
@@ -235,7 +260,7 @@ float accum_get_voltage(void)
 {
 	float voltage = 0;
 	#if CONFIG_DEVICE_SOLARKA
-    voltage = measure_get_filtered_value(MEAS_CH_12V)*5*5.7/1024 + 0.7;
+    voltage = (float)measure_get_filtered_value(MEAS_CH_12V) / 4096.0 / 2.5;
 	#else
 	voltage = (float)measure_get_filtered_value(MEAS_CH_12V) / 4096.0 / 2.6;
 	#endif

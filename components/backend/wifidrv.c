@@ -443,7 +443,9 @@ static void wifi_app_ready(void)
         LOG(PRINT_INFO, "WiFi STOP reason disconnect_req %d connect %d conect_req %d", ctx.disconect_req, !ctx.connected, ctx.connect_req);
         _change_state(WIFI_APP_STOP);
     }
-
+    wifi_ap_record_t ap_info = {0};
+    esp_wifi_sta_get_ap_info(&ap_info);
+    ctx.rssi = ap_info.rssi;
     vTaskDelay(MS2ST(200));
 }
 
@@ -732,7 +734,6 @@ static void wifi_event_task(void *pv)
 static void wifi_read_info_cb(void *arg, wifi_vendor_ie_type_t type, const uint8_t sa[6],
     const vendor_ie_data_t *vnd_ie, int rssi)
 {
-    ctx.rssi = rssi;
 }
 
 bool wifiDrvIsReadedData(void)
