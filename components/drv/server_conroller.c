@@ -289,7 +289,7 @@ static void state_working(void)
     ctx.servo_close_calibration_req = (bool)menuGetValue(MENU_CLOSE_SERVO_REGULATION_FLAG);
 
 #if CONFIG_DEVICE_SOLARKA
-    vibro_config(menuGetValue(MENU_VIBRO_PERIOD) * 1000, menuGetValue(MENU_VIBRO_WORKING_TIME) * 1000);
+    vibro_config(menuGetValue(MENU_VIBRO_ON_S) * 1000, menuGetValue(MENU_VIBRO_OFF_S) * 1000);
     if (menuGetValue(MENU_SERVO_IS_ON))
     {
         vibro_start();

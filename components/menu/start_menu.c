@@ -54,8 +54,8 @@ typedef enum
 {
     EDIT_MOTOR,
     EDIT_SERVO,
-    EDIT_WORKING_TIME,
-    EDIT_PERIOD,
+    EDIT_VIBRO_OFF_S,
+    EDIT_VIBRO_ON_S,
     EDIT_TOP,
 } edit_value_t;
 
@@ -77,8 +77,8 @@ typedef struct
     edit_value_t edit_value;
     uint32_t motor_value;
     uint32_t servo_value;
-    uint32_t vibro_wt_value;
-    uint32_t vibro_period_value;
+    uint32_t vibro_off_s;
+    uint32_t vibro_on_s;
     bool motor_on;
     bool servo_vibro_on;
 
@@ -165,9 +165,9 @@ static void set_change_menu(edit_value_t val)
             change_state(STATE_MOTOR_CHANGE);
             break;
 
-        case EDIT_PERIOD:
+        case EDIT_VIBRO_ON_S:
         case EDIT_SERVO:
-        case EDIT_WORKING_TIME:
+        case EDIT_VIBRO_OFF_S:
             change_state(STATE_SERVO_VIBRO_CHANGE);
             break;
 
@@ -265,7 +265,7 @@ static void menu_button_up_callback(void *arg)
         return;
     }
 
-    ctx.edit_value = EDIT_PERIOD;
+    ctx.edit_value = EDIT_VIBRO_ON_S;
 }
 
 static void menu_button_down_callback(void *arg)
@@ -293,7 +293,7 @@ static void menu_button_down_callback(void *arg)
         return;
     }
 
-    ctx.edit_value = EDIT_WORKING_TIME;
+    ctx.edit_value = EDIT_VIBRO_OFF_S;
 }
 
 static void menu_button_exit_callback(void *arg)
@@ -552,13 +552,13 @@ static void servo_fast_add_cb(uint32_t value)
     debug_function_name(__func__);
     (void)value;
 #if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_WORKING_TIME)
+    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
-        cmdClientSetValueWithoutResp(MENU_VIBRO_WORKING_TIME, ctx.vibro_wt_value);
+        cmdClientSetValueWithoutResp(MENU_VIBRO_OFF_S, ctx.vibro_off_s);
     }
     else
     {
-        cmdClientSetValueWithoutResp(MENU_VIBRO_PERIOD, ctx.vibro_period_value);
+        cmdClientSetValueWithoutResp(MENU_VIBRO_ON_S, ctx.vibro_on_s);
     }
 #elif CONFIG_DEVICE_SIEWNIK
     cmdClientSetValueWithoutResp(MENU_SERVO, ctx.servo_value);
@@ -592,22 +592,22 @@ static void menu_button_servo_plus_push_cb(void *arg)
     }
 
 #if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_WORKING_TIME)
+    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
-        if (ctx.vibro_wt_value < 100)
+        if (ctx.vibro_off_s < 100)
         {
-            ctx.vibro_wt_value++;
+            ctx.vibro_off_s++;
             /* vibro value change */
-            cmdClientSetValueWithoutResp(MENU_VIBRO_WORKING_TIME, ctx.vibro_wt_value);
+            cmdClientSetValueWithoutResp(MENU_VIBRO_OFF_S, ctx.vibro_off_s);
         }
     }
     else
     {
-        if (ctx.vibro_period_value < 100)
+        if (ctx.vibro_on_s < 100)
         {
-            ctx.vibro_period_value++;
+            ctx.vibro_on_s++;
             /* vibro value change */
-            cmdClientSetValueWithoutResp(MENU_VIBRO_PERIOD, ctx.vibro_period_value);
+            cmdClientSetValueWithoutResp(MENU_VIBRO_ON_S, ctx.vibro_on_s);
         }
     }
 #elif CONFIG_DEVICE_SIEWNIK
@@ -645,13 +645,13 @@ static void menu_button_servo_plus_time_cb(void *arg)
     }
 
 #if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_WORKING_TIME)
+    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
-        fastProcessStart(&ctx.vibro_wt_value, 100, 0, FP_PLUS, servo_fast_add_cb);
+        fastProcessStart(&ctx.vibro_off_s, 100, 0, FP_PLUS, servo_fast_add_cb);
     }
     else
     {
-        fastProcessStart(&ctx.vibro_period_value, 100, 0, FP_PLUS, servo_fast_add_cb);
+        fastProcessStart(&ctx.vibro_on_s, 100, 0, FP_PLUS, servo_fast_add_cb);
     }
 #elif CONFIG_DEVICE_SIEWNIK
     fastProcessStart(&ctx.servo_value, 100, 0, FP_PLUS, servo_fast_add_cb);
@@ -684,22 +684,22 @@ static void menu_button_servo_minus_push_cb(void *arg)
     }
 
 #if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_WORKING_TIME)
+    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
-        if (ctx.vibro_wt_value > 0)
+        if (ctx.vibro_off_s > 0)
         {
-            ctx.vibro_wt_value--;
+            ctx.vibro_off_s--;
             /* vibro value change */
-            cmdClientSetValueWithoutResp(MENU_VIBRO_WORKING_TIME, ctx.vibro_wt_value);
+            cmdClientSetValueWithoutResp(MENU_VIBRO_OFF_S, ctx.vibro_off_s);
         }
     }
     else
     {
-        if (ctx.vibro_period_value > 0)
+        if (ctx.vibro_on_s > 0)
         {
-            ctx.vibro_period_value--;
+            ctx.vibro_on_s--;
             /* vibro value change */
-            cmdClientSetValueWithoutResp(MENU_VIBRO_PERIOD, ctx.vibro_period_value);
+            cmdClientSetValueWithoutResp(MENU_VIBRO_ON_S, ctx.vibro_on_s);
         }
     }
 #elif CONFIG_DEVICE_SIEWNIK
@@ -737,13 +737,13 @@ static void menu_button_servo_minus_time_cb(void *arg)
     }
 
 #if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_WORKING_TIME)
+    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
-        fastProcessStart(&ctx.vibro_wt_value, 100, 0, FP_MINUS, servo_fast_add_cb);
+        fastProcessStart(&ctx.vibro_off_s, 100, 0, FP_MINUS, servo_fast_add_cb);
     }
     else
     {
-        fastProcessStart(&ctx.vibro_period_value, 100, 0, FP_MINUS, servo_fast_add_cb);
+        fastProcessStart(&ctx.vibro_on_s, 100, 0, FP_MINUS, servo_fast_add_cb);
     }
 #elif CONFIG_DEVICE_SIEWNIK
     fastProcessStart(&ctx.servo_value, 100, 0, FP_MINUS, servo_fast_add_cb);
@@ -762,8 +762,8 @@ static void menu_button_servo_p_m_pull_cb(void *arg)
     }
 
 #if CONFIG_DEVICE_SOLARKA
-    fastProcessStop(&ctx.vibro_wt_value);
-    fastProcessStop(&ctx.vibro_period_value);
+    fastProcessStop(&ctx.vibro_off_s);
+    fastProcessStop(&ctx.vibro_on_s);
 #elif CONFIG_DEVICE_SIEWNIK
     fastProcessStop(&ctx.servo_value);
 #endif
@@ -1023,9 +1023,9 @@ static void menu_start_ready(void)
     char menu_buff[32];
 
     ssd1306_SetCursor(2, MENU_START_OFFSET);
-    sprintf(menu_buff, "Period: %d [s]", ctx.vibro_period_value);
+    sprintf(menu_buff, "Vibro ON: %d [s]", ctx.vibro_on_s);
 
-    if (ctx.edit_value == EDIT_PERIOD)
+    if (ctx.edit_value == EDIT_VIBRO_ON_S)
     {
         ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
         ssd1306_WriteString(menu_buff, Font_7x10, Black);
@@ -1036,9 +1036,9 @@ static void menu_start_ready(void)
     }
 
     /* WORKING TIME CURSOR */
-    sprintf(menu_buff, "Working time: %d [s]", ctx.vibro_wt_value);
+    sprintf(menu_buff, "Vibro OFF: %d [s]", ctx.vibro_off_s);
     ssd1306_SetCursor(2, MENU_START_OFFSET + LINE_HEIGHT);
-    if (ctx.edit_value == EDIT_WORKING_TIME)
+    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
         ssdFigureFillLine(MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT);
         ssd1306_WriteString(menu_buff, Font_7x10, Black);
@@ -1186,9 +1186,9 @@ static void menu_start_vibro_change(void)
 
 #if CONFIG_DEVICE_SOLARKA
     ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString(ctx.edit_value == EDIT_WORKING_TIME ? "Working time" : "Period", Font_11x18, White);
+    ssd1306_WriteString(ctx.edit_value == EDIT_VIBRO_OFF_S ? "Vibro OFF" : "Vibro ON", Font_11x18, White);
     ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
-    sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_WORKING_TIME ? ctx.vibro_wt_value : ctx.vibro_period_value);
+    sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.vibro_off_s : ctx.vibro_on_s);
     ssd1306_WriteString(ctx.buff, Font_16x26, White);
 #endif
 
@@ -1378,7 +1378,7 @@ void menuStartReset(void)
 void menuInitStartMenu(menu_token_t *menu)
 {
     memset(&ctx, 0, sizeof(ctx));
-    ctx.edit_value = EDIT_PERIOD;
+    ctx.edit_value = EDIT_VIBRO_ON_S;
     menu->menu_cb.enter = menu_enter_cb;
     menu->menu_cb.button_init_cb = menu_button_init_cb;
     menu->menu_cb.exit = menu_exit_cb;

@@ -5,15 +5,10 @@
 
 vibro_t vibroD;
 
-void vibro_config(uint32_t period, uint32_t working_time)
+void vibro_config(uint32_t vibro_on_ms, uint32_t vibro_off_ms)
 {
-    if (period < working_time)
-    {
-        working_time = period;
-    }
-
-    vibroD.period = period;
-    vibroD.working_time = working_time;
+    vibroD.vibro_on_ms = vibro_on_ms;
+    vibroD.vibro_off_ms = vibro_off_ms;
     if (vibroD.state < VIBRO_STATE_CONFIGURED)
     {
         vibroD.state = VIBRO_STATE_CONFIGURED;
@@ -56,30 +51,16 @@ static void vibro_process(void *pv)
     {
         if (vibroD.state == VIBRO_STATE_START)
         {
-            if (vibroD.period <= vibroD.working_time)
-            {
-                vibroD.type = VIBRO_TYPE_ON;
-                vTaskDelay(MS2ST(100));
-            }
-            else if (vibroD.type == VIBRO_TYPE_OFF)
-            {
-                vibroD.type = VIBRO_TYPE_ON;
-                vTaskDelay(MS2ST(vibroD.working_time));
-            }
-            else if (vibroD.type == VIBRO_TYPE_ON)
-            {
-                uint32_t diff = vibroD.period - vibroD.working_time;
-                vibroD.type = VIBRO_TYPE_OFF;
-                vTaskDelay(MS2ST(diff));
-            }
+            vibroD.type = VIBRO_TYPE_ON;
+            vTaskDelay(MS2ST(vibroD.vibro_on_ms));
+            vibroD.type = VIBRO_TYPE_OFF;
+            vTaskDelay(MS2ST(vibroD.vibro_off_ms));
         }
         else
         {
             vibroD.type = VIBRO_TYPE_OFF;
             vTaskDelay(MS2ST(250));
         }
-
-        //LOG("period %d working_time %d, type %d state %d", vibroD.period, vibroD.working_time, vibroD.type, vibroD.state);
     }
 }
 
