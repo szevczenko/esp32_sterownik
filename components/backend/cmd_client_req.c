@@ -54,11 +54,11 @@ static struct cmd_client_req_context ctx;
 static int _receive_packet(TickType_t timeout)
 {
     uint32_t bytes_read = 0;
-    do 
+
+    do
     {
-        int ret =
-            cmdClientRead(&ctx.buffer[bytes_read], PACKET_SIZE - bytes_read, ST2MS(
-                timeout - xTaskGetTickCount()));
+        int ret = cmdClientRead(&ctx.buffer[bytes_read], PACKET_SIZE - bytes_read, ST2MS(
+            timeout - xTaskGetTickCount()));
         if (ret < 0)
         {
             LOG(PRINT_ERROR, "%s Error read %d", __func__, ret);
@@ -100,11 +100,11 @@ static int _request_msg_process(struct cmd_client_request_data *msg)
         return TRUE;
     }
 
-    do 
+    do
     {
         ret = _receive_packet(timeout);
-        
-        if (ret < 0 || ret != PACKET_SIZE)
+
+        if ((ret < 0) || (ret != PACKET_SIZE))
         {
             return ret < 0 ? ret : ERROR;
         }

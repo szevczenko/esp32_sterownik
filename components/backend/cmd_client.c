@@ -20,7 +20,7 @@
 #define DEBUG_LVL       PRINT_WARNING
 
 #if CONFIG_DEBUG_CMD_CLIENT
-#define LOG(_lvl, ...)                        \
+#define LOG(_lvl, ...) \
     debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
@@ -165,7 +165,7 @@ static void _connect_ready_state(void)
         return;
     }
 
-   osDelay(50);
+    osDelay(50);
 }
 
 static void _close_soc_state(void)
@@ -278,13 +278,13 @@ int cmdClientSend(uint8_t *buffer, uint32_t len)
 
 int cmdClientRead(uint8_t *buffer, uint32_t len, uint32_t timeout_ms)
 {
-    if (buffer == NULL || len == 0)
+    if ((buffer == NULL) || (len == 0))
     {
         LOG(PRINT_ERROR, "%s Invalid arg", __func__);
         return ERROR;
     }
 
-    if (!cmdClientIsConnected() || ctx.socket < 0)
+    if (!cmdClientIsConnected() || (ctx.socket < 0))
     {
         LOG(PRINT_ERROR, "%s Invalid state", __func__);
         return ERROR;
@@ -382,8 +382,7 @@ void cmdClientDisconnect(void)
 
 int cmdClientIsConnected(void)
 {
-    return !ctx.disconect_req && ctx.start &&
-           (ctx.state == CMD_CLIENT_STATE_READY);
+    return !ctx.disconect_req && ctx.start && (ctx.state == CMD_CLIENT_STATE_READY);
 }
 
 int cmdClientTryConnect(uint32_t timeout)

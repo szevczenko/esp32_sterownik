@@ -38,7 +38,7 @@
 #define DEBUG_LVL                         PRINT_INFO
 
 #if CONFIG_DEBUG_WIFI
-#define LOG(_lvl, ...)                          \
+#define LOG(_lvl, ...) \
     debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
@@ -161,9 +161,11 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
             MAX_VAL(strlen((char *)ctx.wifi_config.sta.password), strlen((char *)ctx.wifi_con_data.password))) != 0))
         {
             strncpy((char *)ctx.wifi_con_data.ssid, (char *)ctx.wifi_config.sta.ssid, sizeof(ctx.wifi_con_data.ssid));
-            strncpy((char *)ctx.wifi_con_data.password, (char *)ctx.wifi_config.sta.password, sizeof(ctx.wifi_con_data.password));
+            strncpy((char *)ctx.wifi_con_data.password, (char *)ctx.wifi_config.sta.password,
+                sizeof(ctx.wifi_con_data.password));
             wifiDataSave(&ctx.wifi_con_data);
         }
+
         ctx.connected = true;
         break;
     }
@@ -175,8 +177,9 @@ static void debug_handler(void *arg, esp_event_base_t event_base, int32_t event_
     if (event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         wifi_event_sta_disconnected_t *data = event_data;
-        LOG(PRINT_DEBUG, "Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reason %d/n/r", data->ssid, data->bssid[0], data->bssid[1],
-            data->bssid[2], data->bssid[3], data->bssid[4], data->bssid[5], data->ssid_len, data->reason);
+        LOG(PRINT_DEBUG, "Ssid %s bssid %x.%x.%x.%x.%x.%x len %d reason %d/n/r", data->ssid, data->bssid[0],
+            data->bssid[1], data->bssid[2], data->bssid[3], data->bssid[4], data->bssid[5], data->ssid_len,
+            data->reason);
     }
 }
 
@@ -292,7 +295,8 @@ static void wifi_init(void)
         if (wifiDataRead(&ctx.wifi_con_data) == ESP_OK)
         {
             strncpy((char *)ctx.wifi_config.sta.ssid, (char *)ctx.wifi_con_data.ssid, sizeof(ctx.wifi_config.sta.ssid));
-            strncpy((char *)ctx.wifi_config.sta.password, (char *)ctx.wifi_con_data.password, sizeof(ctx.wifi_config.sta.password));
+            strncpy((char *)ctx.wifi_config.sta.password, (char *)ctx.wifi_con_data.password,
+                sizeof(ctx.wifi_config.sta.password));
             ctx.read_wifi_data = true;
         }
         else
@@ -440,10 +444,13 @@ static void wifi_app_ready(void)
 {
     if (ctx.disconect_req || !ctx.connected || ctx.connect_req)
     {
-        LOG(PRINT_INFO, "WiFi STOP reason disconnect_req %d connect %d conect_req %d", ctx.disconect_req, !ctx.connected, ctx.connect_req);
+        LOG(PRINT_INFO, "WiFi STOP reason disconnect_req %d connect %d conect_req %d", ctx.disconect_req,
+            !ctx.connected, ctx.connect_req);
         _change_state(WIFI_APP_STOP);
     }
+
     wifi_ap_record_t ap_info = {0};
+
     esp_wifi_sta_get_ap_info(&ap_info);
     ctx.rssi = ap_info.rssi;
     vTaskDelay(MS2ST(200));
@@ -562,11 +569,13 @@ void wifiDrvGetScanResult(uint16_t *ap_count)
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(ap_count));
     for (uint32_t i = 0; i < *ap_count; i++)
     {
-      LOG(PRINT_DEBUG, "AP: %s CH %d CH2 %d RSSI %d",ctx.scan_list[i].ssid, ctx.scan_list[i].primary, ctx.scan_list[i].second, ctx.scan_list[i].rssi);
-      print_auth_mode(ctx.scan_list[i].authmode);
-      if (ctx.scan_list[i].authmode != WIFI_AUTH_WEP) {
-          print_cipher_type(ctx.scan_list[i].pairwise_cipher, ctx.scan_list[i].group_cipher);
-      }
+        LOG(PRINT_DEBUG, "AP: %s CH %d CH2 %d RSSI %d", ctx.scan_list[i].ssid, ctx.scan_list[i].primary,
+            ctx.scan_list[i].second, ctx.scan_list[i].rssi);
+        print_auth_mode(ctx.scan_list[i].authmode);
+        if (ctx.scan_list[i].authmode != WIFI_AUTH_WEP)
+        {
+            print_cipher_type(ctx.scan_list[i].pairwise_cipher, ctx.scan_list[i].group_cipher);
+        }
     }
 }
 

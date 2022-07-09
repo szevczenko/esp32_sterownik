@@ -5,11 +5,11 @@
 #include "driver/gpio.h"
 #include "config.h"
 
-#define ECHO_UART_PORT_NUM UART_NUM_1
-#define RX_PIN 16
-#define TX_PIN 17
+#define ECHO_UART_PORT_NUM     UART_NUM_1
+#define RX_PIN                 16
+#define TX_PIN                 17
 
-#define FILTERED_TABLE_SIZE 32
+#define FILTERED_TABLE_SIZE    32
 
 static uint8_t read_buff[1024];
 static uint16_t read_data;
@@ -19,12 +19,13 @@ static uint32_t tab_iterator;
 
 static void uart_init(void)
 {
-	uart_config_t uart_config = {
-        .baud_rate = 9600,
-        .data_bits = UART_DATA_8_BITS,
-        .parity    = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    uart_config_t uart_config =
+    {
+        .baud_rate  = 9600,
+        .data_bits  = UART_DATA_8_BITS,
+        .parity     = UART_PARITY_DISABLE,
+        .stop_bits  = UART_STOP_BITS_1,
+        .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_APB,
     };
     int intr_alloc_flags = 0;
@@ -40,37 +41,40 @@ static void uart_init(void)
 
 static void sonar_task(void *arg)
 {
-    while (1) {
+    while (1)
+    {
         // Read data from the UART
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, read_buff, sizeof(read_buff), 20 / portTICK_RATE_MS);
-		//printf("[SONAR] Read data size %d\n\r", len);
+        //printf("[SONAR] Read data size %d\n\r", len);
         for (int i = 0; i < len; i++)
-		{
-			if (read_buff[i] == 0xFF && i + 2 < len)
-			{
-				read_data = (read_buff[i + 1] << 8) | (read_buff[i + 2]);
-				
-				i += 2;
-				filtered_tab[tab_iterator++ % FILTERED_TABLE_SIZE] = read_data;
-				for (uint32_t j = 0; j < FILTERED_TABLE_SIZE; j++)
-				{
-					distance += filtered_tab[j];
-				}
-				distance = distance / FILTERED_TABLE_SIZE;
-				//printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
-			}
-		}
-		osDelay(100);
+        {
+            if ((read_buff[i] == 0xFF) && (i + 2 < len))
+            {
+                read_data = (read_buff[i + 1] << 8) | (read_buff[i + 2]);
+
+                i += 2;
+                filtered_tab[tab_iterator++ % FILTERED_TABLE_SIZE] = read_data;
+                for (uint32_t j = 0; j < FILTERED_TABLE_SIZE; j++)
+                {
+                    distance += filtered_tab[j];
+                }
+
+                distance = distance / FILTERED_TABLE_SIZE;
+                //printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
+            }
+        }
+
+        osDelay(100);
     }
 }
 
 uint32_t ultrasonar_get_distance(void)
 {
-	return distance;
+    return distance;
 }
 
 void ultrasonar_start(void)
 {
-	uart_init();
+    uart_init();
     xTaskCreate(sonar_task, "sonar_task", 4096, NULL, 10, NULL);
 }

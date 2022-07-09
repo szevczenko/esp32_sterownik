@@ -9,7 +9,7 @@ uint8_t srvrControllGetMotorPwm(void);
 uint16_t srvrControllGetServoPwm(void);
 bool srvrControllGetEmergencyDisable(void);
 void srvrControllStart(void);
-bool srvrConrollerSetError(menuValue_t error_reason);
+bool srvrConrollerSetError(uint16_t error_reason);
 bool srvrControllerErrorReset(void);
 
 #endif
