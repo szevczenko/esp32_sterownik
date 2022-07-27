@@ -25,5 +25,6 @@ int ssdFigureFillLine(int y_start, int height);
 void drawMotor(uint8_t x, uint8_t y);
 void drawServo(uint8_t x, uint8_t y, uint8_t open);
 void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging);
+void drawQR(uint8_t x, uint8_t y);
 
 #endif

@@ -10,6 +10,7 @@
 #include "driver/mcpwm.h"
 #include "soc/mcpwm_periph.h"
 #include "error_siewnik.h"
+#include "error_solarka.h"
 #include "measure.h"
 
 #define MODULE_NAME       "[Srvr Ctrl] "
@@ -436,6 +437,10 @@ static void state_error(void)
 #if CONFIG_DEVICE_SIEWNIK
         errorSiewnikErrorReset();
 #endif
+
+#if CONFIG_DEVICE_SOLARKA
+        errorSolarkaErrorReset();
+#endif
         change_state(STATE_IDLE);
         return;
     }
@@ -491,6 +496,11 @@ static void _task(void *arg)
     }
 }
 
+bool srvrControllIsWorking(void)
+{
+    return ctx.state == STATE_WORKING;
+}
+
 bool srvrControllGetMotorStatus(void)
 {
     return ctx.motor_on;
@@ -533,6 +543,7 @@ void srvrControllStart(void)
 
 bool srvrConrollerSetError(uint16_t error_reason)
 {
+    printf("%s\n\r", __func__);
     if (ctx.state == STATE_WORKING)
     {
         change_state(STATE_ERROR);
@@ -546,11 +557,17 @@ bool srvrConrollerSetError(uint16_t error_reason)
 
 bool srvrControllerErrorReset(void)
 {
+    printf("%s\n\r", __func__);
     if (ctx.state == STATE_ERROR)
     {
 #if CONFIG_DEVICE_SIEWNIK
         errorSiewnikErrorReset();
 #endif
+
+#if CONFIG_DEVICE_SOLARKA
+        errorSolarkaErrorReset();
+#endif
+
         change_state(STATE_IDLE);
         return true;
     }

@@ -35,6 +35,7 @@ static menuPStruct_t menuParameters[] =
     [MENU_BOOTUP_SYSTEM] =               {.max_value = 1,      .default_value = 1  },
     [MENU_EMERGENCY_DISABLE] =           {.max_value = 1,      .default_value = 0  },
     [MENU_LOW_LEVEL_SILOS] =             {.max_value = 1,      .default_value = 0  },
+    [MENU_LANGUAGE] =                    {.max_value = 2,      .default_value = 0  },
 
     [MENU_MACHINE_ERRORS] =              {.max_value = 0xFFFF, .default_value = 0  },
 
@@ -70,6 +71,7 @@ static char *parameters_name[] =
     [MENU_BOOTUP_SYSTEM] = "MENU_BOOTUP_SYSTEM",
     [MENU_EMERGENCY_DISABLE] = "MENU_EMERGENCY_DISABLE",
     [MENU_LOW_LEVEL_SILOS] = "MENU_LOW_LEVEL_SILOS",
+    [MENU_LANGUAGE] = "MENU_LANGUAGE",
 
     [MENU_MACHINE_ERRORS] = "MENU_MACHINE_ERRORS",
 

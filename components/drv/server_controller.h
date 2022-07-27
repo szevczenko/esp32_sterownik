@@ -11,5 +11,6 @@ bool srvrControllGetEmergencyDisable(void);
 void srvrControllStart(void);
 bool srvrConrollerSetError(uint16_t error_reason);
 bool srvrControllerErrorReset(void);
+bool srvrControllIsWorking(void);
 
 #endif

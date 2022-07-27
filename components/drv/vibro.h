@@ -16,8 +16,8 @@ typedef enum {
 typedef struct {
 	vibro_state_t state;
 	vibro_type_t type;
-	uint32_t period; //okres pomiędzy wibracjami w [ms]
-	uint32_t working_time; //czas pracy [ms] <= period
+	uint32_t vibro_on_ms;
+	uint32_t vibro_off_ms;
 }vibro_t;
 
 void vibro_config(uint32_t period, uint32_t working_time);

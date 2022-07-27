@@ -6,6 +6,7 @@
 #include "servo.h"
 #include "math.h"
 #include "menu_param.h"
+#include "vibro.h"
 
 #include "cmd_server.h"
 #include "server_controller.h"
@@ -59,6 +60,7 @@ static char *state_name[] =
     [STATE_ERROR_TEMPERATURE] = "STATE_ERROR_TEMPERATURE",
     [STATE_ERROR_MOTOR_CURRENT] = "STATE_ERROR_MOTOR_CURRENT",
     [STATE_ERROR_MOTOR_NOT_CONNECTED] = "STATE_ERROR_MOTOR_NOT_CONNECTED",
+    [STATE_ERROR_VIBRO_NOT_CONNECTED] = "STATE_ERROR_VIBRO_NOT_CONNECTED",
     [STATE_ERROR_VIBRO] = "STATE_ERROR_VIBRO",
     [STATE_WAIT_RESET_ERROR] = "STATE_WAIT_RESET_ERROR",
 };
@@ -107,8 +109,8 @@ static void _state_working(void)
     /* Motor error overcurrent */
     uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
 
-    LOG(PRINT_INFO, "Motor current %d", motor_current);
-    if (motor_current > 15000)
+    // LOG(PRINT_INFO, "Motor current %d", motor_current);
+    if (motor_current > 40000)
     {
         if (!ctx.motor_find_overcurrent)
         {
@@ -137,13 +139,14 @@ static void _state_working(void)
     uint32_t check_measure = 0;
     /* Motor error not connected */
     check_measure = measure_get_filtered_value(MEAS_CH_CHECK_MOTOR);
-    if (!menuGetValue(MENU_MOTOR_IS_ON) && check_measure < 100)
+    LOG(PRINT_INFO, "Motor %d", check_measure);
+    if (!menuGetValue(MENU_MOTOR_IS_ON) && check_measure < 100 && srvrControllIsWorking())
     {
         if (!ctx.motor_find_not_connected)
         {
             LOG(PRINT_INFO, "find motor not connected");
             ctx.motor_find_not_connected = true;
-            ctx.motor_not_connected_timer = MS2ST(250) + xTaskGetTickCount();
+            ctx.motor_not_connected_timer = MS2ST(500) + xTaskGetTickCount();
         }
         else
         {
@@ -165,13 +168,14 @@ static void _state_working(void)
 
     /* Vibro error not connected */
     check_measure = measure_get_filtered_value(MEAS_CH_CHECK_VIBRO);
-    if (!vibro_is_on() && check_measure < 100)
+    LOG(PRINT_INFO, "Vibro %d", check_measure);
+    if (!vibro_is_on() && check_measure < 100 && srvrControllIsWorking())
     {
         if (!ctx.vibro_find_not_connected)
         {
             LOG(PRINT_INFO, "find vibro not connected");
             ctx.vibro_find_not_connected = true;
-            ctx.vibro_not_connected_timer = MS2ST(250) + xTaskGetTickCount();
+            ctx.vibro_not_connected_timer = MS2ST(500) + xTaskGetTickCount();
         }
         else
         {
@@ -211,6 +215,7 @@ static void _state_error_mototr_current(void)
 
 static void _state_error_motor_not_connected(void)
 {
+    printf("%s", __func__);
     if (srvrConrollerSetError(ERROR_MOTOR_NOT_CONNECTED))
     {
         _change_state(STATE_WAIT_RESET_ERROR);
@@ -307,6 +312,7 @@ void errorSolarkaStart(void)
 
 void errorSolarkaErrorReset(void)
 {
+    printf("%s\n\r", __func__);
     ctx.is_error_reset = true;
 }
 

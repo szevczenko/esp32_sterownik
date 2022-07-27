@@ -29,10 +29,21 @@ typedef enum
 
 typedef enum
 {
+    MENU_LANGUAGE_ENGLISH,
+    MENU_LANGUAGE_POLISH,
+    MENU_LANGUAGE_GERMANY,
+    MENU_LANGUAGE_TOP
+} menu_language_t;
+
+typedef enum
+{
     PARAM_BOOTUP_MENU,
     PARAM_BUZZER,
+    PARAM_LANGUAGE,
+    #if CONFIG_DEVICE_SIEWNIK
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
+    #endif
     PARAM_TOP,
 } parameters_type_t;
 
@@ -40,6 +51,7 @@ typedef enum
 {
     UNIT_INT,
     UNIT_ON_OFF,
+    UNIT_LANGUAGE,
     UNIT_BOOL,
 } unit_type_t;
 
@@ -56,22 +68,35 @@ typedef struct
     void (*exit)(void);
 } parameters_t;
 
-static void get_bootup(uint32_t *value);
-static void get_buzzer(uint32_t *value);
+#if CONFIG_DEVICE_SIEWNIK
 static void get_servo_close_calibration(uint32_t *value);
 static void get_servo_open_calibration(uint32_t *value);
-static void get_max_bootup(uint32_t *value);
-static void get_max_buzzer(uint32_t *value);
 static void get_max_servo_close_calibration(uint32_t *value);
 static void get_max_servo_open_calibration(uint32_t *value);
-static void set_bootup(uint32_t value);
-static void set_buzzer(uint32_t value);
 static void set_servo_close_calibration(uint32_t value);
 static void set_servo_open_calibration(uint32_t value);
 static void enter_servo_close_calibration(void);
 static void exit_servo_close_calibration(void);
 static void enter_servo_open_calibration(void);
 static void exit_servo_open_calibration(void);
+#endif
+
+static void get_bootup(uint32_t *value);
+static void get_buzzer(uint32_t *value);
+static void get_max_bootup(uint32_t *value);
+static void get_max_buzzer(uint32_t *value);
+static void set_bootup(uint32_t value);
+static void set_buzzer(uint32_t value);
+static void get_language(uint32_t *value);
+static void get_max_language(uint32_t *value);
+static void set_language(uint32_t value);
+
+static const char * language[] =
+{
+    [MENU_LANGUAGE_ENGLISH] = "English",
+    [MENU_LANGUAGE_POLISH] = "Polish",
+    [MENU_LANGUAGE_GERMANY] = "Germany",
+};
 
 static parameters_t parameters_list[] =
 {
@@ -97,6 +122,18 @@ static parameters_t parameters_list[] =
                                           set_buzzer,
                                       .get_max_value                                                             =
                                           get_max_buzzer              },
+    [PARAM_LANGUAGE] = 
+                                      {.name                                                                     =
+                                          "Language",
+                                      .unit_type
+                                          = UNIT_LANGUAGE,
+                                      .get_value                                                                 =
+                                          get_language,
+                                      .set_value                                                                 =
+                                          set_language,
+                                      .get_max_value                                                             =
+                                          get_max_language              },
+#if CONFIG_DEVICE_SIEWNIK
     [PARAM_SERVO_CLOSE_CALIBRATION] =
                                       {.name                                                                     =
                                           "Servo close",
@@ -127,6 +164,7 @@ static parameters_t parameters_list[] =
                                           = enter_servo_open_calibration,
                                       .exit
                                           = exit_servo_open_calibration},
+#endif
 };
 
 static scrollBar_t scrollBar =
@@ -137,36 +175,7 @@ static scrollBar_t scrollBar =
 
 static menu_state_t _state;
 
-static void get_bootup(uint32_t *value)
-{
-    *value = menuGetValue(MENU_BOOTUP_SYSTEM);
-}
-
-static void get_buzzer(uint32_t *value)
-{
-    *value = menuGetValue(MENU_BUZZER);
-}
-
-static void get_servo_close_calibration(uint32_t *value)
-{
-    *value = menuGetValue(MENU_CLOSE_SERVO_REGULATION);
-}
-
-static void get_servo_open_calibration(uint32_t *value)
-{
-    *value = menuGetValue(MENU_OPEN_SERVO_REGULATION);
-}
-
-static void get_max_bootup(uint32_t *value)
-{
-    *value = menuGetMaxValue(MENU_BOOTUP_SYSTEM);
-}
-
-static void get_max_buzzer(uint32_t *value)
-{
-    *value = menuGetMaxValue(MENU_BUZZER);
-}
-
+#if CONFIG_DEVICE_SIEWNIK
 static void get_max_servo_close_calibration(uint32_t *value)
 {
     *value = menuGetMaxValue(MENU_CLOSE_SERVO_REGULATION);
@@ -177,14 +186,14 @@ static void get_max_servo_open_calibration(uint32_t *value)
     *value = menuGetMaxValue(MENU_OPEN_SERVO_REGULATION);
 }
 
-static void set_bootup(uint32_t value)
+static void get_servo_close_calibration(uint32_t *value)
 {
-    menuSetValue(MENU_BOOTUP_SYSTEM, value);
+    *value = menuGetValue(MENU_CLOSE_SERVO_REGULATION);
 }
 
-static void set_buzzer(uint32_t value)
+static void get_servo_open_calibration(uint32_t *value)
 {
-    menuSetValue(MENU_BUZZER, value);
+    *value = menuGetValue(MENU_OPEN_SERVO_REGULATION);
 }
 
 static void set_servo_close_calibration(uint32_t value)
@@ -221,6 +230,52 @@ static void exit_servo_open_calibration(void)
 {
     LOG(PRINT_DEBUG, "%s", __func__);
     cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
+}
+#endif
+
+static void get_language(uint32_t *value)
+{
+    *value = menuGetValue(MENU_LANGUAGE);
+}
+
+static void get_max_language(uint32_t *value)
+{
+    *value = MENU_LANGUAGE_TOP - 1;
+}
+
+static void set_language(uint32_t value)
+{
+    menuSetValue(MENU_LANGUAGE, value);
+}
+
+static void get_bootup(uint32_t *value)
+{
+    *value = menuGetValue(MENU_BOOTUP_SYSTEM);
+}
+
+static void get_buzzer(uint32_t *value)
+{
+    *value = menuGetValue(MENU_BUZZER);
+}
+
+static void get_max_bootup(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_BOOTUP_SYSTEM);
+}
+
+static void get_max_buzzer(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_BUZZER);
+}
+
+static void set_bootup(uint32_t value)
+{
+    menuSetValue(MENU_BOOTUP_SYSTEM, value);
+}
+
+static void set_buzzer(uint32_t value)
+{
+    menuSetValue(MENU_BUZZER, value);
 }
 
 static void menu_button_up_callback(void *arg)
@@ -576,11 +631,16 @@ static bool menu_process(void *arg)
             break;
 
         case UNIT_BOOL:
+            ssd1306_SetCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
             sprintf(buff, "%s", parameters_list[menu->position].value ? "1" : "0");
             ssd1306_WriteString(buff, Font_7x10, White);
-            ssd1306_SetCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
             break;
 
+        case UNIT_LANGUAGE:
+            ssd1306_SetCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
+            sprintf(buff, "%s", language[parameters_list[menu->position].value]);
+            ssd1306_WriteString(buff, Font_7x10, White);
+            break;
         default:
             break;
         }

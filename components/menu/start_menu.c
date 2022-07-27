@@ -1126,6 +1126,10 @@ static void menu_start_error(void)
         menuPrintfInfo("Motor not\nconnected.\nClick any button\nto reset error");
         break;
 
+    case ERROR_VIBRO_NOT_CONNECTED:
+        menuPrintfInfo("Vibro not\nconnected.\nClick any button\nto reset error");
+        break;
+
     case ERROR_MOTOR_OVER_CURRENT:
         menuPrintfInfo("Motor overcurrent.\nClick any button\nto reset error");
         break;
