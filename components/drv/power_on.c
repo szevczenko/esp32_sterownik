@@ -22,7 +22,8 @@
 #endif
 
 #define POWER_HOLD_PIN        13
-#define POWER_OFF_TIME_MIN    5
+
+#define POWER_OFF_TIME_MIN    menuGetValue(MENU_POWER_ON_MIN)
 
 enum state_t
 {

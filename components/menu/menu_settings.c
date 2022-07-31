@@ -40,6 +40,9 @@ typedef enum
     PARAM_BOOTUP_MENU,
     PARAM_BUZZER,
     PARAM_LANGUAGE,
+    PARAM_POWER_ON_MIN,
+    PARAM_MOTOR_ERROR,
+    PARAM_VIBRO_ERROR,
     #if CONFIG_DEVICE_SIEWNIK
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
@@ -90,6 +93,15 @@ static void set_buzzer(uint32_t value);
 static void get_language(uint32_t *value);
 static void get_max_language(uint32_t *value);
 static void set_language(uint32_t value);
+static void get_power_on_min(uint32_t *value);
+static void get_max_power_on_min(uint32_t *value);
+static void set_power_on_min(uint32_t value);
+static void get_motor_error(uint32_t *value);
+static void get_max_motor_error(uint32_t *value);
+static void set_motor_error(uint32_t value);
+static void get_servo_error(uint32_t *value);
+static void get_max_servo_error(uint32_t *value);
+static void set_servo_error(uint32_t value);
 
 static const char * language[] =
 {
@@ -133,6 +145,41 @@ static parameters_t parameters_list[] =
                                           set_language,
                                       .get_max_value                                                             =
                                           get_max_language              },
+    [PARAM_POWER_ON_MIN] = 
+                                      {.name                                                                     =
+                                          "Idle time",
+                                      .unit_type
+                                          = UNIT_INT,
+                                      .get_value                                                                 =
+                                          get_power_on_min,
+                                      .set_value                                                                 =
+                                          set_power_on_min,
+                                      .get_max_value                                                             =
+                                          get_max_power_on_min              },
+
+    [PARAM_MOTOR_ERROR] = 
+                                      {.name                                                                     =
+                                          "Motor err",
+                                      .unit_type
+                                          = UNIT_ON_OFF,
+                                      .get_value                                                                 =
+                                          get_motor_error,
+                                      .set_value                                                                 =
+                                          set_motor_error,
+                                      .get_max_value                                                             =
+                                          get_max_motor_error              },
+
+    [PARAM_VIBRO_ERROR] = 
+                                      {.name                                                                     =
+                                          "Vibro err",
+                                      .unit_type
+                                          = UNIT_ON_OFF,
+                                      .get_value                                                                 =
+                                          get_servo_error,
+                                      .set_value                                                                 =
+                                          set_servo_error,
+                                      .get_max_value                                                             =
+                                          get_max_servo_error              },
 #if CONFIG_DEVICE_SIEWNIK
     [PARAM_SERVO_CLOSE_CALIBRATION] =
                                       {.name                                                                     =
@@ -232,6 +279,51 @@ static void exit_servo_open_calibration(void)
     cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
 }
 #endif
+
+static void get_motor_error(uint32_t *value)
+{
+    *value = menuGetValue(MENU_ERROR_MOTOR);
+}
+
+static void get_max_motor_error(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_ERROR_MOTOR);
+}
+
+static void set_motor_error(uint32_t value)
+{
+    menuSetValue(MENU_ERROR_MOTOR, value);
+}
+
+static void get_servo_error(uint32_t *value)
+{
+    *value = menuGetValue(MENU_ERROR_SERVO);
+}
+
+static void get_max_servo_error(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_ERROR_SERVO);
+}
+
+static void set_servo_error(uint32_t value)
+{
+    menuSetValue(MENU_ERROR_SERVO, value);
+}
+
+static void get_power_on_min(uint32_t *value)
+{
+    *value = menuGetValue(MENU_POWER_ON_MIN);
+}
+
+static void get_max_power_on_min(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_POWER_ON_MIN);
+}
+
+static void set_power_on_min(uint32_t value)
+{
+    menuSetValue(MENU_POWER_ON_MIN, value);
+}
 
 static void get_language(uint32_t *value)
 {

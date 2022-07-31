@@ -4,9 +4,20 @@
 #include "error_siewnik.h"
 #include "error_solarka.h"
 
+struct menu_data
+{
+    uint32_t motor_value;
+    uint32_t servo_value;
+    uint32_t vibro_off_s;
+    uint32_t vibro_on_s;
+    bool motor_on;
+    bool servo_vibro_on;
+};
+
 void menuInitStartMenu(menu_token_t *menu);
 void menuStartReset(void);
 void menuStartSetError(error_type_t error);
 void menuStartResetError(void);
+struct menu_data *menuStartGetData(void);
 
 #endif

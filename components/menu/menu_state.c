@@ -72,7 +72,7 @@ static scrollBar_t scrollBar = {
 
 static void get_current(uint32_t *value)
 {
-	*value = menuGetValue(MENU_CURRENT_MOTOR) / 10;
+	*value = menuGetValue(MENU_CURRENT_MOTOR) * 100;
 }
 
 static void get_voltage(uint32_t *value)
@@ -129,17 +129,6 @@ static void menu_button_down_callback(void * arg)
 	if (menu->position < PARAM_TOP - 1) 
 	{
 		menu->position++;
-	}
-}
-
-static void menu_button_enter_callback(void * arg)
-{
-	menu_token_t *menu = arg;
-
-	if (menu == NULL || menu->menu_list == NULL || menu->menu_list[menu->position] == NULL)
-	{
-		NULL_ERROR_MSG();
-		return;
 	}
 }
 
@@ -200,15 +189,15 @@ static bool menu_exit_cb(void * arg)
 	return true;
 }
 
-static bool menu_process(void * arg)
+static bool _disconnected_process(menu_token_t *menu)
+{
+	menuPrintfInfo("\n    Device not\n    connected");
+	return true;
+}
+
+static bool _connected_process(menu_token_t *menu)
 {
 	static char buff[64];
-	menu_token_t *menu = arg;
-	if (menu == NULL)
-	{
-		NULL_ERROR_MSG();
-		return false;
-	}
 
 	for(int i = 0; i < PARAM_TOP; i++)
 	{
@@ -217,10 +206,6 @@ static bool menu_process(void * arg)
 			parameters_list[i].get_value(&parameters_list[i].value);
 		}
 	}
-
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(menu->name, Font_11x18, White);
 
 	if (menu->line.end - menu->line.start != MAX_LINE - 1)
 	{
@@ -273,7 +258,36 @@ static bool menu_process(void * arg)
 	scrollBar.all_line = PARAM_TOP - 1;
 	ssdFigureDrawScrollBar(&scrollBar);
 
+	MOTOR_LED_SET_GREEN(menuGetValue(MENU_MOTOR_IS_ON));
+    SERVO_VIBRO_LED_SET_GREEN(menuGetValue(MENU_SERVO_IS_ON));
+
 	return true;
+}
+
+static bool menu_process(void * arg)
+{
+	menu_token_t *menu = arg;
+	bool ret = false;
+	if (menu == NULL)
+	{
+		NULL_ERROR_MSG();
+		return false;
+	}
+
+	ssd1306_Fill(Black);
+	ssd1306_SetCursor(2, 0);
+	ssd1306_WriteString(menu->name, Font_11x18, White);
+
+	if (cmdClientIsConnected())
+	{
+		ret = _connected_process(menu);
+	}
+	else
+	{
+		ret = _disconnected_process(menu);
+	}
+
+	return ret;
 }
 
 void menuInitParametersMenu(menu_token_t *menu)

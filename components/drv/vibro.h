@@ -18,6 +18,8 @@ typedef struct {
 	vibro_type_t type;
 	uint32_t vibro_on_ms;
 	uint32_t vibro_off_ms;
+	uint32_t vibro_on_start_time;
+	uint32_t vibro_off_start_time;
 }vibro_t;
 
 void vibro_config(uint32_t period, uint32_t working_time);

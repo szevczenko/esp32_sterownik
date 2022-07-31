@@ -177,7 +177,7 @@ static void measure_process(void *arg)
         menuSetValue(MENU_LOW_LEVEL_SILOS, silos_percent < 10);
         menuSetValue(MENU_SILOS_LEVEL, (uint32_t)silos_percent);
         menuSetValue(MENU_VOLTAGE_ACCUM, (uint32_t)(accum_get_voltage() * 10000.0));
-        menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_CH_MOTOR, 0.1) * 100.0));
+        menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_CH_MOTOR, 0.1)));
         menuSetValue(MENU_TEMPERATURE, (uint32_t)(measure_get_temperature()));
         /* DEBUG */
         // menuPrintParameter(MENU_VOLTAGE_ACCUM);
@@ -255,7 +255,12 @@ float measure_get_current(enum_meas_ch type, float resistor)
     LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
     uint32_t adc = measure_get_filtered_value(type) <
         motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
-    float current = (float)adc * 7.2 /* Amp */;
+
+    float voltage = menuGetValue(MENU_VOLTAGE_ACCUM) / 100.0;
+    float correction = (14.2 - voltage) * 100;
+    float current_meas = (float)adc * 0.92;
+    float current = current_meas/* + correction*//* Amp */;
+    LOG(PRINT_DEBUG, "voltage %f correction %f current_meas %f current %f", voltage, correction, current_meas, current);
     LOG(PRINT_DEBUG, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
 #endif
 

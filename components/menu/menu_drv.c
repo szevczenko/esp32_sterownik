@@ -15,6 +15,7 @@
 #include "menu_backend.h"
 #include "battery.h"
 #include "power_on.h"
+#include "wifidrv.h"
 
 #define MODULE_NAME              "[MENU Drv] "
 #define DEBUG_LVL                PRINT_INFO
@@ -510,6 +511,34 @@ static void menu_state_process(menu_token_t *menu)
     }
 
     drawBattery(115, 1, battery_get_voltage(), battery_get_charging_status());
+
+    uint8_t signal = 0;
+    if (wifiDrvIsConnected())
+    {
+        int rssi = wifiDrvGetRssi();
+        if (rssi >= -50 && rssi < 0)
+        {
+            signal = 5;
+        }
+        else if (rssi >= -60 && rssi < -50)
+        {
+            signal = 4;
+        }
+        else if (rssi >= -70 && rssi < -60)
+        {
+            signal = 3;
+        }
+        else if (rssi >= -80 && rssi < -70)
+        {
+            signal = 2;
+        }
+        else
+        {
+            signal = 1;
+        }
+    }
+    
+    drawSignal(100, 1, signal);
 
     if (ssd1306_UpdateScreen())
     {

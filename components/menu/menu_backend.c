@@ -48,6 +48,9 @@ typedef struct
     bool emergency_msg_sended;
     bool emergency_exit_msg_sended;
     bool emergensy_req;
+
+    bool send_all_data;
+    struct menu_data sended_data;
 } menu_start_context_t;
 
 static menu_start_context_t ctx;
@@ -131,6 +134,7 @@ static void backend_idle(void)
 
     if (ctx.menu_start_is_active)
     {
+        ctx.send_all_data = true;
         change_state(STATE_START);
         return;
     }
@@ -191,7 +195,76 @@ static void backent_start(void)
         return;
     }
 
-    osDelay(50);
+    struct menu_data *data = menuStartGetData();
+
+    if (ctx.send_all_data)
+    {
+        if (cmdClientSetValue(MENU_MOTOR, data->motor_value, 1000) == TRUE &&
+                cmdClientSetValue(MENU_SERVO, data->servo_value, 1000) == TRUE &&
+                cmdClientSetValue(MENU_VIBRO_OFF_S, data->vibro_off_s, 1000) == TRUE &&
+                cmdClientSetValue(MENU_VIBRO_ON_S, data->vibro_on_s, 1000) == TRUE &&
+                cmdClientSetValue(MENU_MOTOR_IS_ON, data->motor_on, 1000) == TRUE &&
+                cmdClientSetValue(MENU_SERVO_IS_ON, data->servo_vibro_on, 1000) == TRUE)
+        {
+            ctx.send_all_data = false;
+            ctx.sended_data.motor_value = data->motor_value;
+            ctx.sended_data.servo_value = data->servo_value;
+            ctx.sended_data.vibro_off_s = data->vibro_off_s;
+            ctx.sended_data.vibro_on_s = data->vibro_on_s;
+            ctx.sended_data.motor_on = data->motor_on;
+            ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
+        }
+    }
+
+    if (data->motor_value != ctx.sended_data.motor_value)
+    {
+        if (cmdClientSetValue(MENU_MOTOR, data->motor_value, 1000) == TRUE)
+        {
+            ctx.sended_data.motor_value = data->motor_value;
+        }
+    }
+
+    if (data->servo_value != ctx.sended_data.servo_value)
+    {
+        if (cmdClientSetValue(MENU_SERVO, data->servo_value, 1000) == TRUE)
+        {
+            ctx.sended_data.servo_value = data->servo_value;
+        }
+    }
+
+    if (data->vibro_off_s != ctx.sended_data.vibro_off_s)
+    {
+        if (cmdClientSetValue(MENU_VIBRO_OFF_S, data->vibro_off_s, 1000) == TRUE)
+        {
+            ctx.sended_data.vibro_off_s = data->vibro_off_s;
+        }
+    }
+
+    if (data->vibro_on_s != ctx.sended_data.vibro_on_s)
+    {
+        if (cmdClientSetValue(MENU_VIBRO_ON_S, data->vibro_on_s, 1000) == TRUE)
+        {
+            ctx.sended_data.vibro_on_s = data->vibro_on_s;
+        }
+    }
+
+    if (data->motor_on != ctx.sended_data.motor_on)
+    {
+        if (cmdClientSetValue(MENU_MOTOR_IS_ON, data->motor_on, 1000) == TRUE)
+        {
+            ctx.sended_data.motor_on = data->motor_on;
+        }
+    }
+
+    if (data->servo_vibro_on != ctx.sended_data.servo_vibro_on)
+    {
+        if (cmdClientSetValue(MENU_SERVO_IS_ON, data->servo_vibro_on, 1000) == TRUE)
+        {
+            ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
+        }
+    } 
+
+    osDelay(10);
 }
 
 static void backend_menu_parameters(void)

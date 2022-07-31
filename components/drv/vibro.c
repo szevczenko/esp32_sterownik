@@ -33,6 +33,7 @@ void vibro_stop(void)
     }
 
     vibroD.state = VIBRO_STATE_STOP;
+    vibroD.type = VIBRO_TYPE_OFF;
 }
 
 uint8_t vibro_is_on(void)
@@ -52,14 +53,34 @@ static void vibro_process(void *pv)
         if (vibroD.state == VIBRO_STATE_START)
         {
             vibroD.type = VIBRO_TYPE_ON;
-            vTaskDelay(MS2ST(vibroD.vibro_on_ms));
-            vibroD.type = VIBRO_TYPE_OFF;
-            vTaskDelay(MS2ST(vibroD.vibro_off_ms));
+            vibroD.vibro_on_start_time = xTaskGetTickCount();
+            while (vibroD.state == VIBRO_STATE_START)
+            {
+                if (vibroD.vibro_on_start_time + MS2ST(vibroD.vibro_on_ms) < xTaskGetTickCount())
+                {
+                    break;
+                }
+                osDelay(100);
+            }
+
+            if (vibroD.vibro_off_ms != 0)
+            {
+                vibroD.type = VIBRO_TYPE_OFF;
+                vibroD.vibro_off_start_time = xTaskGetTickCount();
+                while (vibroD.state == VIBRO_STATE_START)
+                {
+                    if (vibroD.vibro_off_start_time + MS2ST(vibroD.vibro_off_ms) < xTaskGetTickCount())
+                    {
+                        break;
+                    }
+                    osDelay(100);
+                }
+            }
         }
         else
         {
             vibroD.type = VIBRO_TYPE_OFF;
-            vTaskDelay(MS2ST(250));
+            vTaskDelay(MS2ST(100));
         }
     }
 }

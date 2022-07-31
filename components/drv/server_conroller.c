@@ -165,7 +165,7 @@ static void set_working_data(void)
     }
 
 #if CONFIG_DEVICE_SOLARKA
-    if (vibro_is_on())
+    if (vibro_is_on() && ctx.servo_on)
     {
         //ToDo napiecie 2 progi
         mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_GEN_A, 99.99);
@@ -190,7 +190,7 @@ static void state_init(void)
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, MOTOR_PWM_PIN);
     mcpwm_config_t pwm_config;
 
-    pwm_config.frequency = 18000;                                                     //frequency = 1000Hz
+    pwm_config.frequency = 2000;                                                     //frequency = 1000Hz
     pwm_config.cmpr_a = 0;                                                            //duty cycle of PWMxA = 60.0%
     pwm_config.cmpr_b = 0;                                                            //duty cycle of PWMxb = 50.0%
     pwm_config.counter_mode = MCPWM_DOWN_COUNTER;
@@ -206,7 +206,7 @@ static void state_init(void)
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config); //Configure PWM0A & PWM0B with above settings
 
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, MOTOR_PWM_PIN2);
-    pwm_config.frequency = 18000;                         //frequency = 1000Hz
+    pwm_config.frequency = 2000;                         //frequency = 1000Hz
     pwm_config.cmpr_a = 0;                                //duty cycle of PWMxA = 60.0%
     pwm_config.cmpr_b = 0;                                //duty cycle of PWMxb = 50.0%
     pwm_config.counter_mode = MCPWM_DOWN_COUNTER;
@@ -256,6 +256,7 @@ static void state_idle(void)
 
     ctx.working_state_req = (bool)menuGetValue(MENU_START_SYSTEM);
     ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
+    vibro_stop();
 
     if (ctx.emergency_disable)
     {
@@ -303,24 +304,28 @@ static void state_working(void)
 
     if (ctx.emergency_disable)
     {
+        vibro_stop();
         change_state(STATE_EMERGENCY_DISABLE);
         return;
     }
 
     if (!ctx.working_state_req || !cmdServerIsWorking())
     {
+        vibro_stop();
         change_state(STATE_IDLE);
         return;
     }
 
     if (ctx.servo_open_calibration_req)
     {
+        vibro_stop();
         change_state(STATE_SERVO_OPEN_REGULATION);
         return;
     }
 
     if (ctx.servo_close_calibration_req)
     {
+        vibro_stop();
         change_state(STATE_SERVO_CLOSE_REGULATION);
         return;
     }
@@ -543,7 +548,6 @@ void srvrControllStart(void)
 
 bool srvrConrollerSetError(uint16_t error_reason)
 {
-    printf("%s\n\r", __func__);
     if (ctx.state == STATE_WORKING)
     {
         change_state(STATE_ERROR);
@@ -557,7 +561,6 @@ bool srvrConrollerSetError(uint16_t error_reason)
 
 bool srvrControllerErrorReset(void)
 {
-    printf("%s\n\r", __func__);
     if (ctx.state == STATE_ERROR)
     {
 #if CONFIG_DEVICE_SIEWNIK

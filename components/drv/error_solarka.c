@@ -42,6 +42,12 @@ struct error_siewnik_ctx
     TickType_t motor_error_timer;
     bool motor_find_overcurrent;
 
+    TickType_t vibro_error_timer;
+    bool vibro_find_overcurrent;
+
+    TickType_t temperature_error_timer;
+    bool temperature_find_overcurrent;
+
     TickType_t motor_not_connected_timer;
     TickType_t vibro_not_connected_timer;
     bool motor_find_not_connected;
@@ -83,6 +89,20 @@ static void _reset_error(void)
     ctx.is_error_reset = false;
     ctx.motor_error_timer = 0;
     ctx.motor_find_overcurrent = false;
+    ctx.vibro_error_timer = 0;
+    ctx.vibro_find_overcurrent = false;
+    ctx.temperature_error_timer = 0;
+    ctx.temperature_find_overcurrent = false;
+}
+
+static bool _is_overcurrent(void)
+{
+    float motor_current = (float)menuGetValue(MENU_CURRENT_MOTOR);
+    float overcurrent = 0.972 * menuGetValue(MENU_MOTOR) + 6.458;
+
+    LOG(PRINT_INFO, "Motor current %f overcurrent %f", motor_current, overcurrent);
+
+    return motor_current > overcurrent;
 }
 
 static void _state_init(void)
@@ -93,6 +113,8 @@ static void _state_init(void)
 static void _state_idle(void)
 {
     ctx.motor_find_overcurrent = false;
+    ctx.vibro_find_overcurrent = false;
+    ctx.temperature_find_overcurrent = false;
     if (menuGetValue(MENU_START_SYSTEM))
     {
         _change_state(STATE_WORKING);
@@ -107,10 +129,8 @@ static void _state_working(void)
     }
 
     /* Motor error overcurrent */
-    uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
-
-    // LOG(PRINT_INFO, "Motor current %d", motor_current);
-    if (motor_current > 40000)
+    
+    if (_is_overcurrent() && menuGetValue(MENU_ERROR_MOTOR))
     {
         if (!ctx.motor_find_overcurrent)
         {
@@ -136,17 +156,75 @@ static void _state_working(void)
         ctx.motor_find_overcurrent = false;
     }
 
+    uint32_t temperature = menuGetValue(MENU_TEMPERATURE);
+    LOG(PRINT_INFO, "Temperature %d", temperature);
+    if (temperature > 105)
+    {
+        if (!ctx.temperature_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "find temperature");
+            ctx.temperature_find_overcurrent = true;
+            ctx.temperature_error_timer = MS2ST(1500) + xTaskGetTickCount();
+        }
+        else
+        {
+            if (ctx.temperature_error_timer < xTaskGetTickCount())
+            {
+                _change_state(STATE_ERROR_TEMPERATURE);
+            }
+        }
+    }
+    else
+    {
+        if (ctx.temperature_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "reset temperature overcurrent");
+        }
+
+        ctx.temperature_find_overcurrent = false;
+    }
+
+    /* Vibro error overcurrent */
+
     uint32_t check_measure = 0;
+    check_measure = measure_get_filtered_value(MEAS_CH_CHECK_VIBRO);
+    
+    if (check_measure > 2800 && menuGetValue(MENU_ERROR_SERVO) && vibro_is_on())
+    {
+        if (!ctx.vibro_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "find vibro overcurrent");
+            ctx.vibro_find_overcurrent = true;
+            ctx.vibro_error_timer = MS2ST(1500) + xTaskGetTickCount();
+        }
+        else
+        {
+            if (ctx.vibro_error_timer < xTaskGetTickCount())
+            {
+                _change_state(STATE_ERROR_VIBRO);
+            }
+        }
+    }
+    else
+    {
+        if (ctx.vibro_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "reset vibro overcurrent");
+        }
+
+        ctx.vibro_find_overcurrent = false;
+    }
+
     /* Motor error not connected */
     check_measure = measure_get_filtered_value(MEAS_CH_CHECK_MOTOR);
-    LOG(PRINT_INFO, "Motor %d", check_measure);
-    if (!menuGetValue(MENU_MOTOR_IS_ON) && check_measure < 100 && srvrControllIsWorking())
+    LOG(PRINT_DEBUG, "Motor %d", check_measure);
+    if (!menuGetValue(MENU_MOTOR_IS_ON) && check_measure < 100 && srvrControllIsWorking() && menuGetValue(MENU_ERROR_MOTOR))
     {
         if (!ctx.motor_find_not_connected)
         {
             LOG(PRINT_INFO, "find motor not connected");
             ctx.motor_find_not_connected = true;
-            ctx.motor_not_connected_timer = MS2ST(500) + xTaskGetTickCount();
+            ctx.motor_not_connected_timer = MS2ST(1250) + xTaskGetTickCount();
         }
         else
         {
@@ -168,14 +246,14 @@ static void _state_working(void)
 
     /* Vibro error not connected */
     check_measure = measure_get_filtered_value(MEAS_CH_CHECK_VIBRO);
-    LOG(PRINT_INFO, "Vibro %d", check_measure);
-    if (!vibro_is_on() && check_measure < 100 && srvrControllIsWorking())
+    LOG(PRINT_DEBUG, "Vibro %d", check_measure);
+    if (!vibro_is_on() && check_measure < 100 && srvrControllIsWorking() && menuGetValue(MENU_ERROR_SERVO))
     {
         if (!ctx.vibro_find_not_connected)
         {
             LOG(PRINT_INFO, "find vibro not connected");
             ctx.vibro_find_not_connected = true;
-            ctx.vibro_not_connected_timer = MS2ST(500) + xTaskGetTickCount();
+            ctx.vibro_not_connected_timer = MS2ST(1250) + xTaskGetTickCount();
         }
         else
         {
@@ -198,6 +276,15 @@ static void _state_working(void)
 
 static void _state_error_temperature(void)
 {
+    if (srvrConrollerSetError(ERROR_OVER_TEMPERATURE))
+    {
+        _change_state(STATE_WAIT_RESET_ERROR);
+    }
+    else
+    {
+        _reset_error();
+        _change_state(STATE_IDLE);
+    }
 }
 
 static void _state_error_mototr_current(void)
@@ -242,6 +329,15 @@ static void _state_error_vibro_not_connected(void)
 
 static void _state_error_vibro(void)
 {
+    if (srvrConrollerSetError(ERROR_VIBRO_OVER_CURRENT))
+    {
+        _change_state(STATE_WAIT_RESET_ERROR);
+    }
+    else
+    {
+        _reset_error();
+        _change_state(STATE_IDLE);
+    }
 }
 
 static void _state_wait_reset_error(void)
@@ -312,7 +408,6 @@ void errorSolarkaStart(void)
 
 void errorSolarkaErrorReset(void)
 {
-    printf("%s\n\r", __func__);
     ctx.is_error_reset = true;
 }
 
