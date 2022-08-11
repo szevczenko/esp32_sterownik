@@ -20,26 +20,26 @@
 
 static menu_token_t setings =
 {
-    .name     = "SETINGS",
+    .name     = "drittgrößte",
     .arg_type = T_ARG_TYPE_MENU,
     //.menu_list = setting_tokens
 };
 
 static menu_token_t start_menu =
 {
-    .name     = "START",
+    .name     = "СТАРТ",
     .arg_type = T_ARG_TYPE_MENU,
     //.menu_list = setting_tokens
 };
 
 static menu_token_t wifi_menu =
 {
-    .name = "DEVICES",
+    .name = "ŚŹĆŻŹĆ",
 };
 
 static menu_token_t parameters_menu =
 {
-    .name = "PARAMETERS",
+    .name = "WÓDKA",
 };
 
 static menu_token_t low_battery_menu =

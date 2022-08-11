@@ -1,6 +1,6 @@
 #include "ssdFigure.h"
 #include "ssd1306.h"
-
+#include "oled.h"
 #include "math.h"
 
 //#undef LOG
@@ -196,7 +196,7 @@ void drawSignal(uint8_t x, uint8_t y, uint8_t signal_lvl)
         {
             if (signal[signal_lvl][j * 11 + i])
             {
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
         }
     }
@@ -227,11 +227,11 @@ int ssdFigureDrawLoadBar(loadBar_t *figure)
         {
             if ((x <= scaling_fill_x) || (x == figure->width + figure->x - 1))
             {
-                ssd1306_DrawPixel(x, y, (SSD1306_COLOR)White);
+                oled_putPixel(x, y);
             }
             else if ((y == figure->y) || (y == figure->height + figure->y - 1))
             {
-                ssd1306_DrawPixel(x, y, (SSD1306_COLOR)White);
+                oled_putPixel(x, y);
             }
         }
     }
@@ -274,17 +274,17 @@ int ssdFigureDrawScrollBar(scrollBar_t *figure)
         {
             if ((x <= SSD1306_WIDTH - 4) || (x == SSD1306_WIDTH - 1))
             {
-                ssd1306_DrawPixel(x, y, (SSD1306_COLOR)White);
+                oled_putPixel(x, y);
                 continue;
             }
             else if ((y == figure->y_start) || ((y >= start_scroll_y) && (y <= start_scroll_y + width_px)) ||
                 (y == SSD1306_HEIGHT))
             {
-                ssd1306_DrawPixel(x, y, (SSD1306_COLOR)White);
+                oled_putPixel(x, y);
                 continue;
             }
 
-            ssd1306_DrawPixel(x, y, (SSD1306_COLOR)Black);
+            oled_clearPixel(x, y);
         }
     }
 
@@ -297,7 +297,7 @@ int ssdFigureFillLine(int y_start, int height)
     {
         for (int x = 0; x < SSD1306_WIDTH; x++)
         {
-            ssd1306_DrawPixel(x, y, (SSD1306_COLOR)White);
+            oled_putPixel(x, y);
         }
     }
 
@@ -312,7 +312,7 @@ void drawMotor(uint8_t x, uint8_t y)
         {
             if (bitmap[j * 30 + i])
             {
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
         }
     }
@@ -326,7 +326,7 @@ void drawQR(uint8_t x, uint8_t y)
         {
             if (qr_code[j * 40 + i])
             {
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
         }
     }
@@ -356,12 +356,12 @@ void drawServo(uint8_t x, uint8_t y, uint8_t open)
                     start_flag = 0;
                 }
 
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
 
             if ((start_flag == 1) && (i + x > x_open))
             {
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
         }
     }
@@ -398,12 +398,12 @@ static void _drawBattery(uint8_t x, uint8_t y, uint8_t chrg)
         {
             if (battery[j * 11 + i])
             {
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
 
             if ((j > 1) && (j < 6) && (i > 1) && (i < 1 + chrg))
             {
-                ssd1306_DrawPixel(i + x, j + y, (SSD1306_COLOR)White);
+                oled_putPixel(i + x, j + y);
             }
         }
     }

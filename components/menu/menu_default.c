@@ -4,6 +4,7 @@
 #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "menu_default.h"
+#include "oled.h"
 
 #define MODULE_NAME    "[DEFAULT] "
 #define DEBUG_LVL      PRINT_INFO
@@ -137,14 +138,14 @@ static bool menu_process(void *arg)
 
     if ((menu->menu_list == NULL) || (menu->menu_list[menu->position] == NULL))
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-        ssd1306_WriteString("menu->value == NULL", Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+        oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, "menu->value == NULL", OLED_FONT_SIZE_11);
         return FALSE;
     }
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString(menu->name, Font_11x18, White);
+    oled_clearScreen();
+    oled_printFixed(2, 0, menu->name, OLED_FONT_SIZE_16);
+    oled_setGLCDFont(OLED_FONT_SIZE_11);
 
     if (menu->line.end - menu->line.start != MAX_LINE - 1)
     {
@@ -170,15 +171,14 @@ static bool menu_process(void *arg)
 
     do
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT * line);
         if (line + menu->line.start == menu->position)
         {
             ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
-            ssd1306_WriteString(menu->menu_list[line + menu->line.start]->name, Font_7x10, Black);
+            oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, menu->menu_list[line + menu->line.start]->name, STYLE_NORMAL);
         }
         else
         {
-            ssd1306_WriteString(menu->menu_list[line + menu->line.start]->name, Font_7x10, White);
+            oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, menu->menu_list[line + menu->line.start]->name, STYLE_NORMAL);
         }
 
         line++;

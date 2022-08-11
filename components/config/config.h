@@ -13,7 +13,7 @@
 #endif
 
 #ifndef SSD1306_I2C_ADDR
-#define SSD1306_I2C_ADDR        (0x3C << 1)
+#define SSD1306_I2C_ADDR        0x3C
 #endif
 
 #define I2C_EXAMPLE_MASTER_SCL_IO           22                /*!< gpio number for I2C master clock */
