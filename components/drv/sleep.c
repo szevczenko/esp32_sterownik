@@ -2,7 +2,7 @@
 #include "freertos/timers.h"
 #include "menu.h"
 #include "but.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 
 #include "freertos/semphr.h"
