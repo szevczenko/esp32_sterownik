@@ -13,6 +13,7 @@
 #include "battery.h"
 #include "buzzer.h"
 #include "start_menu.h"
+#include "oled.h"
 
 #define MODULE_NAME                 "[START] "
 #define DEBUG_LVL                   PRINT_DEBUG
@@ -856,9 +857,9 @@ static void menu_set_error_msg(char *msg)
 
 static void menu_start_init(void)
 {
-    ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    ssd1306_WriteString("Check connection", Font_7x10, White);
-    ssd1306_UpdateScreen();
+    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+    oled_print("Check connection");
+    oled_update();
     change_state(STATE_CHECK_WIFI);
 }
 
@@ -965,10 +966,10 @@ static void menu_start_ready(void)
 
     motor_bar.fill = ctx.data.motor_value;
     sprintf(str, "%d%%", motor_bar.fill);
-    ssd1306_Fill(Black);
+    oled_clearScreen();
     ssdFigureDrawLoadBar(&motor_bar);
-    ssd1306_SetCursor(80, 25);
-    ssd1306_WriteString(str, Font_7x10, White);
+    oled_setCursor(80, 25);
+    oled_print(str);
     uint8_t cnt = 0;
 
     if (ctx.data.motor_on)
@@ -1003,37 +1004,37 @@ static void menu_start_ready(void)
     /* PERIOD CURSOR */
     char menu_buff[32];
 
-    ssd1306_SetCursor(2, MENU_START_OFFSET);
+    oled_setCursor(2, MENU_START_OFFSET);
     sprintf(menu_buff, "Vibro ON: %d [s]", ctx.data.vibro_on_s);
 
     if (ctx.edit_value == EDIT_VIBRO_ON_S)
     {
         ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
-        ssd1306_WriteString(menu_buff, Font_7x10, Black);
+        oled_printBlack(menu_buff);
     }
     else
     {
-        ssd1306_WriteString(menu_buff, Font_7x10, White);
+        oled_print(menu_buff);
     }
 
     /* WORKING TIME CURSOR */
     sprintf(menu_buff, "Vibro OFF: %d [s]", ctx.data.vibro_off_s);
-    ssd1306_SetCursor(2, MENU_START_OFFSET + LINE_HEIGHT);
+    oled_setCursor(2, MENU_START_OFFSET + LINE_HEIGHT);
     if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
         ssdFigureFillLine(MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT);
-        ssd1306_WriteString(menu_buff, Font_7x10, Black);
+        oled_printBlack(menu_buff);
     }
     else
     {
-        ssd1306_WriteString(menu_buff, Font_7x10, White);
+        oled_print(menu_buff);
     }
 #elif CONFIG_DEVICE_SIEWNIK
     servo_bar.fill = ctx.data.servo_value;
     sprintf(str, "%d", servo_bar.fill);
     ssdFigureDrawLoadBar(&servo_bar);
-    ssd1306_SetCursor(80, 55);
-    ssd1306_WriteString(str, Font_7x10, White);
+    oled_setCursor(80, 55);
+    oled_print(str);
     if (ctx.data.servo_vibro_on)
     {
         drawServo(10, 35, ctx.data.servo_value);
@@ -1077,11 +1078,11 @@ static void menu_start_low_silos(void)
         return;
     }
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(2, 2);
-    ssd1306_WriteString("Low", Font_16x26, White);
-    ssd1306_SetCursor(2, 2 + 28);
-    ssd1306_WriteString("silos", Font_16x26, White);
+    oled_clearScreen();
+    oled_setCursor(2, 2);
+    oled_print("Low"); //Font_16x26
+    oled_setCursor(2, 2 + 28);
+    oled_print("silos"); //Font_16x26
 }
 
 static void menu_start_error(void)
@@ -1167,11 +1168,11 @@ static void menu_start_motor_change(void)
         return;
     }
 
-    ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString("   MOTOR", Font_11x18, White);
-    ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+    oled_setCursor(2, 0);
+    oled_print("   MOTOR"); //11x18 White
+    oled_setCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
     sprintf(ctx.buff, "%d%%", ctx.data.motor_value);
-    ssd1306_WriteString(ctx.buff, Font_16x26, White);
+    oled_print(ctx.buff); //Font_16x26
 
     if (ctx.change_menu_timeout < xTaskGetTickCount())
     {
@@ -1189,31 +1190,31 @@ static void menu_start_vibro_change(void)
     }
 
 #if CONFIG_DEVICE_SIEWNIK
-    ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString("   SERVO", Font_11x18, White);
-    ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+    oled_setCursor(2, 0);
+    oled_print("   SERVO"); //11x18 White
+    oled_setCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
     sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
-    ssd1306_WriteString(ctx.buff, Font_16x26, White);
+    oled_print(ctx.buff); //Font_16x26
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString(ctx.edit_value == EDIT_VIBRO_OFF_S ? "Vibro OFF" : "Vibro ON", Font_11x18, White);
+    oled_setCursor(2, 0);
+    oled_print(ctx.edit_value == EDIT_VIBRO_OFF_S ? "Vibro OFF" : "Vibro ON"); //11x18 White
     if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 10)
     {
-        ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+        oled_setCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
     }
     else if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 100)
     {
-        ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET - 16, MENU_HEIGHT + LINE_HEIGHT);
+        oled_setCursor(CHANGE_VALUE_DISP_OFFSET - 16, MENU_HEIGHT + LINE_HEIGHT);
     }
     else
     {
-       ssd1306_SetCursor(CHANGE_VALUE_DISP_OFFSET - 32, MENU_HEIGHT + LINE_HEIGHT); 
+       oled_setCursor(CHANGE_VALUE_DISP_OFFSET - 32, MENU_HEIGHT + LINE_HEIGHT); 
     }
     
     sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s);
-    ssd1306_WriteString(ctx.buff, Font_16x26, White);
+    oled_print(ctx.buff); //Font_16x26
 #endif
 
     if (ctx.change_menu_timeout < xTaskGetTickCount())
@@ -1256,9 +1257,9 @@ static void _show_wait_connection(void)
 {
     sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ",
         xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
-    ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    ssd1306_WriteString(ctx.buff, Font_7x10, White);
-    ssd1306_UpdateScreen();
+    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+    oled_print(ctx.buff);
+    oled_update();
 }
 
 static void menu_wait_connect(void)

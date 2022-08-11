@@ -4,7 +4,7 @@
 #include "config.h"
 #include "menu.h"
 #include "menu_drv.h"
-#include "ssd1306.h"
+// #include "ssd1306.h"
 #include "ssdFigure.h"
 #include "but.h"
 #include "freertos/semphr.h"
@@ -13,6 +13,7 @@
 #include "menu_default.h"
 #include "cmd_client.h"
 #include "parse_cmd.h"
+#include "oled.h"
 
 #define MODULE_NAME    "[BOOTUP] "
 #define DEBUG_LVL      PRINT_INFO
@@ -131,9 +132,9 @@ static void _show_wait_connection(void)
 {
     sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ",
         xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
-    ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    ssd1306_WriteString(ctx.buff, Font_7x10, White);
-    ssd1306_UpdateScreen();
+    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+    oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_11);
+    oled_update();
 }
 
 static void bootup_wait_connect(void)
@@ -231,9 +232,9 @@ static bool menu_process(void *arg)
         return false;
     }
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString(menu->name, Font_11x18, White);
+    oled_clearScreen();
+    oled_printFixed(2, 0, menu->name, OLED_FONT_SIZE_16);
+    oled_setGLCDFont(OLED_FONT_SIZE_11);
 
     switch (ctx.state)
     {

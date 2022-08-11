@@ -7,6 +7,7 @@
 
 #include "wifidrv.h"
 #include "cmd_client.h"
+#include "oled.h"
 
 #define MODULE_NAME         "[SETTING] "
 #define DEBUG_LVL           PRINT_INFO
@@ -256,24 +257,24 @@ static void menu_wifi_init(void)
         change_state(ST_WIFI_IDLE);
     }
 
-    ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    ssd1306_WriteString("Wait to WiFi init", Font_7x10, White);
+    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+    oled_print("Wait to WiFi init");
 }
 
 static void menu_wifi_idle(void)
 {
     if (ctx.scan_req)
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        ssd1306_WriteString("Scanning devices...", Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+        oled_print("Scanning devices...");
         change_state(ST_WIFI_FIND_DEVICE);
         return;
     }
 
-    ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-    ssd1306_WriteString("Click enter to", Font_7x10, White);
-    ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    ssd1306_WriteString("scanning devices", Font_7x10, White);
+    oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+    oled_print("Click enter to");
+    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+    oled_print("scanning devices");
 }
 
 static void menu_wifi_find_devices(void)
@@ -320,28 +321,28 @@ static void menu_wifi_show_list(menu_token_t *menu)
     {
         if (ctx.scan_req)
         {
-            ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-            ssd1306_WriteString("Find devices", Font_7x10, White);
+            oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+            oled_print("Find devices");
             change_state(ST_WIFI_FIND_DEVICE);
             return;
         }
 
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        ssd1306_WriteString("Devices not found.", Font_7x10, White);
-        ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-        ssd1306_WriteString("Click button for", Font_7x10, White);
-        ssd1306_SetCursor(2, MENU_HEIGHT + 3 * LINE_HEIGHT);
-        ssd1306_WriteString("try find device", Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+        oled_print("Devices not found.");
+        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+        oled_print("Click button for");
+        oled_setCursor(2, MENU_HEIGHT + 3 * LINE_HEIGHT);
+        oled_print("try find device");
         return;
     }
 
     if (ctx.connect_req)
     {
         ctx.connect_req = false;
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        ssd1306_WriteString("Try connect to:", Font_7x10, White);
-        ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-        ssd1306_WriteString(ctx.devices_list[menu->position], Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+        oled_print("Try connect to:");
+        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+        oled_print(ctx.devices_list[menu->position]);
         change_state(ST_WIFI_DEVICE_TRY_CONNECT);
         return;
     }
@@ -371,15 +372,15 @@ static void menu_wifi_show_list(menu_token_t *menu)
 
     do
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT * line);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT * line);
         if (line + menu->line.start == menu->position)
         {
             ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
-            ssd1306_WriteString(&ctx.devices_list[line + menu->line.start][6], Font_7x10, Black);
+            oled_printBlack(&ctx.devices_list[line + menu->line.start][6]);
         }
         else
         {
-            ssd1306_WriteString(&ctx.devices_list[line + menu->line.start][6], Font_7x10, White);
+            oled_print(&ctx.devices_list[line + menu->line.start][6]);
         }
 
         line++;
@@ -394,10 +395,10 @@ static void menu_wifi_connect(menu_token_t *menu)
 {
     if (connectToDevice(ctx.devices_list[menu->position]))
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        ssd1306_WriteString("Wait to connect", Font_7x10, White);
-        ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-        ssd1306_WriteString(ctx.devices_list[menu->position], Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+        oled_print("Wait to connect");
+        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+        oled_print(ctx.devices_list[menu->position]);
         change_state(ST_WIFI_DEVICE_WAIT_CONNECT);
     }
     else
@@ -427,10 +428,10 @@ static void menu_wifi_wait_connect(void)
 
     if (wifiDrvIsConnected())
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        ssd1306_WriteString("WiFi connected.", Font_7x10, White);
-        ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-        ssd1306_WriteString("Wait to server...", Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+        oled_print("WiFi connected.");
+        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+        oled_print("Wait to server...");
         change_state(ST_WIFI_DEVICE_WAIT_CMD_CLIENT);
     }
     else
@@ -467,12 +468,12 @@ static void menu_wifi_error_check(void)
 
     if (ctx.error_flag)
     {
-        ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        ssd1306_WriteString("Error", Font_7x10, White);
+        oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+        oled_print("Error");
         if (ctx.error_msg != NULL)
         {
             sprintf(error_buff, "%s:%d", ctx.error_msg, ctx.error_code);
-            ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+            oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
             LOG(PRINT_INFO, "Wifi error [%d] %s", ctx.error_code, ctx.error_msg);
         }
 
@@ -498,11 +499,11 @@ static void menu_wifi_error_check(void)
 
 static void menu_wifi_connected(menu_token_t *menu)
 {
-    ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-    ssd1306_WriteString("Connected to:", Font_7x10, White);
-    ssd1306_SetCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    ssd1306_WriteString(ctx.devices_list[menu->position], Font_7x10, White);
-    ssd1306_UpdateScreen();
+    oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
+    oled_print("Connected to:");
+    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
+    oled_print(ctx.devices_list[menu->position]);
+    oled_update();
 
     if (ctx.scan_req)
     {
@@ -532,9 +533,10 @@ static bool menu_process(void *arg)
         return false;
     }
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(2, 0);
-    ssd1306_WriteString(menu->name, Font_11x18, White);
+    oled_clearScreen();
+    oled_setGLCDFont(OLED_FONT_SIZE_16);
+    oled_printFixed(2, 0, menu->name, STYLE_NORMAL);
+    oled_setGLCDFont(OLED_FONT_SIZE_11);
 
     switch (ctx.state)
     {

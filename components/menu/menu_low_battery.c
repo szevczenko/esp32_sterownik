@@ -65,13 +65,10 @@ static bool menu_process(void *arg)
         return false;
     }
 
-    ssd1306_Fill(Black);
-    ssd1306_SetCursor(2, MENU_HEIGHT);
-    ssd1306_WriteString("LOW BATTERY", Font_11x18, White);
-
-    ssd1306_SetCursor(2, 2 * MENU_HEIGHT + 5);
-    ssd1306_WriteString(" Connect charger", Font_7x10, White);
-    ssd1306_UpdateScreen();
+    oled_clearScreen();
+    oled_printFixed(2, MENU_HEIGHT, "LOW BATTERY", STYLE_NORMAL); //11x18 White
+    oled_printFixed(2, 2 * MENU_HEIGHT + 5, " Connect charger", STYLE_NORMAL);
+    oled_update();
 
     return true;
 }

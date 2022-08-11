@@ -8,6 +8,27 @@
 #include "lwip/arch.h"
 #include "driver/gpio.h"
 
+#ifndef SSD1306_I2C_PORT
+#define SSD1306_I2C_PORT		I2C_NUM_0
+#endif
+
+#ifndef SSD1306_I2C_ADDR
+#define SSD1306_I2C_ADDR        0x3C
+#endif
+
+#define I2C_EXAMPLE_MASTER_SCL_IO           22                /*!< gpio number for I2C master clock */
+#define I2C_EXAMPLE_MASTER_SDA_IO           21               /*!< gpio number for I2C master data  */
+
+// SSD1306 OLED height in pixels
+#ifndef SSD1306_HEIGHT
+#define SSD1306_HEIGHT          64
+#endif
+
+// SSD1306 width in pixels
+#ifndef SSD1306_WIDTH
+#define SSD1306_WIDTH           128
+#endif
+
 #ifndef NULL
 #define NULL                                  0
 #endif

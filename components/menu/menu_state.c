@@ -231,7 +231,7 @@ static bool _connected_process(menu_token_t *menu)
 	int line = 0;
 	do
 	{
-		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
+		oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
 		int pos = line + menu->line.start;
 		
 		if (parameters_list[pos].unit_type == UNIT_DOUBLE)
@@ -246,11 +246,11 @@ static bool _connected_process(menu_token_t *menu)
 		if (line + menu->line.start == menu->position)
 		{
 			ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT*line, LINE_HEIGHT);
-			ssd1306_WriteString(buff, Font_7x10, Black);
+			oled_printBlack(buff);
 		}
 		else
 		{
-			ssd1306_WriteString(buff, Font_7x10, White);
+			oled_print(buff);
 		}
 		line++;
 	} while (line + menu->line.start != PARAM_TOP && line < MAX_LINE);
@@ -274,9 +274,10 @@ static bool menu_process(void * arg)
 		return false;
 	}
 
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(menu->name, Font_11x18, White);
+	oled_clearScreen();
+	oled_setGLCDFont(OLED_FONT_SIZE_16);
+    oled_printFixed(2, 0, menu->name, STYLE_NORMAL);
+    oled_setGLCDFont(OLED_FONT_SIZE_11);
 
 	if (cmdClientIsConnected())
 	{

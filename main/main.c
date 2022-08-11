@@ -10,7 +10,7 @@
 #include "but.h"
 #include "fast_add.h"
 #include "ssd1306.h"
-#include "ssd1306_tests.h"
+#include "intf/i2c/ssd1306_i2c.h"
 #include "menu.h"
 #include "keepalive.h"
 #include "menu_param.h"
@@ -31,29 +31,14 @@
 #include "server_controller.h"
 #include "power_on.h"
 #include "error_solarka.h"
+#include "oled.h"
 
 uint16_t test_value;
 static gpio_config_t io_conf;
 static uint32_t blink_pin = GPIO_NUM_23;
-
 portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
+
 extern void ultrasonar_start(void);
-
-static int i2cInit(void)
-{
-    int i2c_master_port = SSD1306_I2C_PORT;
-    i2c_config_t conf;
-
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = I2C_EXAMPLE_MASTER_SDA_IO;
-    conf.sda_pullup_en = 1;
-    conf.scl_io_num = I2C_EXAMPLE_MASTER_SCL_IO;
-    conf.scl_pullup_en = 1;
-    conf.master.clk_speed = 100000;
-    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, conf.mode, 0, 0, 0));
-    ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
-    return ESP_OK;
-}
 
 void debug_function_name(const char *name)
 {
@@ -67,13 +52,35 @@ void debug_last_out_task(char *task_name)
 {
 }
 
+void graphic_init(void)
+{
+    ssd1306_i2cInitEx(I2C_EXAMPLE_MASTER_SCL_IO, I2C_EXAMPLE_MASTER_SDA_IO, SSD1306_I2C_ADDR);
+    sh1106_128x64_init();
+    ssd1306_clearScreen();
+    ssd1306_fillScreen(0x00);
+    ssd1306_flipHorizontal(1);
+    ssd1306_flipVertical(1);
+    oled_init();
+
+    // uint32_t counter = 0;
+    // char print_buff[64] = {0};
+
+    // while(1)
+    // {
+    //     sprintf(print_buff, "couner %d", counter++);
+    //     oled_printFixed(2, 15, print_buff, STYLE_NORMAL);
+    //     oled_printFixed(2, 24, "Test2", STYLE_NORMAL);
+        
+    //     osDelay(100);
+    // }
+}
+
 static void checkDevType(void)
 {
-    i2cInit();
+    graphic_init();
     pcf8574_init();
-    int read_i2c_value = -1;
-
-    read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
+    int read_i2c_value = ESP_OK;
+    // read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
     if (read_i2c_value == ESP_OK)
     {
         config.dev_type = T_DEV_TYPE_CLIENT;
@@ -114,7 +121,7 @@ void app_main()
 
         float voltage = battery_get_voltage();
 
-        ssd1306_Init();
+        // ssd1306_Init();
         power_on_enable_system();
         init_buttons();
 

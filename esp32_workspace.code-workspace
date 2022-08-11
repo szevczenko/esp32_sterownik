@@ -73,7 +73,12 @@
             "menu_param.h": "c",
             "power_on.h": "c",
             "menu_state.h": "c",
-            "*.ipp": "c"
+            "*.ipp": "c",
+            "oled_ssd1306.h": "c",
+            "ssd1306_i2c_conf.h": "c",
+            "ssd1306_i2c.h": "c",
+            "nano_engine.h": "c",
+            "ssd1306_fonts.h": "c"
         },
         "files.exclude": {
             "**/.git": true,         // this is a default value
