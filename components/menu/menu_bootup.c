@@ -193,16 +193,7 @@ static void bootup_get_server_data(void)
         }
     }
 
-    if (start_status > 0)
-    {
-        if (cmdClientGetAllValue(150) == 0)
-        {
-            LOG(PRINT_INFO, "Timeout get ALL VALUES");
-            change_state(STATE_EXIT);
-        }
-    }
-
-    menuPrintfInfo("Read data from: %s\n", ctx.ap_name);
+    menuPrintfInfo("Reading data from:\n%s", ctx.ap_name);
     change_state(STATE_CHECKING_DATA);
 }
 

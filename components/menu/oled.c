@@ -102,12 +102,10 @@ static struct oledFont *_get_font_table(enum oledFontSize font_size)
 
 static const uint8_t * _read_unicode_record(oledGLCDInfo *r, const uint8_t *p)
 {
-    printf("First %x %x last %x %x\n\r", p[3], p[2], p[5], p[4]);
     r->first_symbol =((pgm_read_byte(&p[3]) << 8) | (pgm_read_byte(&p[2])));
     r->last_symbol = ((pgm_read_byte(&p[5]) << 8) | (pgm_read_byte(&p[4])));
     r->height = pgm_read_byte(&p[6]);
     r->count = r->last_symbol - r->first_symbol;
-    printf("first %d last %d height %d count %d new %x\n\r", r->first_symbol, r->last_symbol, r->height, r->count, p[8]);
     return (r->count > 0) ? (&p[8]): NULL;
 }
 
@@ -133,10 +131,9 @@ static void _get_GLCD_char_bitmap(uint16_t unicode, SCharInfo *info)
         info->height = actual_font->height;
         info->spacing = 1;
         info->glyph = &actual_font->data[i].data[addr];
-        printf("width %d, height %d, glyph %p, addr %d\n\r",info->width, info->height, info->glyph, addr);
         return;
     }
-    printf("Unicode %d not found\n\r", unicode);
+
     if (!info->glyph)
     {
         info->width = 0;

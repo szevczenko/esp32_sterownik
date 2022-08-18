@@ -272,9 +272,7 @@ static void menu_wifi_idle(void)
     }
 
     oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-    oled_print("Click enter to");
-    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    oled_print("scanning devices");
+    oled_print("Click enter to\nscanning devices");
 }
 
 static void menu_wifi_find_devices(void)
@@ -328,11 +326,7 @@ static void menu_wifi_show_list(menu_token_t *menu)
         }
 
         oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT);
-        oled_print("Devices not found.");
-        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-        oled_print("Click button for");
-        oled_setCursor(2, MENU_HEIGHT + 3 * LINE_HEIGHT);
-        oled_print("try find device");
+        oled_print("Devices not found.\nClick button for\ntry find device");
         return;
     }
 

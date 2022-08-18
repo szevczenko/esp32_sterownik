@@ -29,9 +29,6 @@
 #endif
 
 #define CONFIG_MENU_TEST_TASK    0
-#define LINE_HEIGHT              10
-#define MENU_HEIGHT              18
-#define MAX_LINE                 (SSD1306_HEIGHT - MENU_HEIGHT) / LINE_HEIGHT
 #define PROCESS_TASK_TIMEOUT     50
 #define MENU_TAB_SIZE            8
 #define POWER_OFF_TIMEOUT_MS     3500
