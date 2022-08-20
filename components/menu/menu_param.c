@@ -37,6 +37,7 @@ static menuPStruct_t menuParameters[] =
     [MENU_LOW_LEVEL_SILOS] =             {.max_value = 1,      .default_value = 0  },
     [MENU_LANGUAGE] =                    {.max_value = 2,      .default_value = 0  },
     [MENU_POWER_ON_MIN] =                {.max_value = 100,    .default_value = 30 },
+    [MENU_PERIOD] =                      {.max_value = 180,    .default_value = 30 },
 
     [MENU_MACHINE_ERRORS] =              {.max_value = 0xFFFF, .default_value = 0  },
 
@@ -74,6 +75,7 @@ static char *parameters_name[] =
     [MENU_LOW_LEVEL_SILOS] = "MENU_LOW_LEVEL_SILOS",
     [MENU_LANGUAGE] = "MENU_LANGUAGE",
     [MENU_POWER_ON_MIN] = "MENU_POWER_ON_MIN",
+    [MENU_PERIOD] = "MENU_PERIOD",
 
     [MENU_MACHINE_ERRORS] = "MENU_MACHINE_ERRORS",
 

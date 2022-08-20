@@ -60,6 +60,8 @@
 
 #define LOGO_CLIENT_NAME                      "DEXWAL"
 
+#define MENU_VIRO_ON_OFF_VERSION              FALSE
+
 ///////////////////// LOGS //////////////////////
 
 #define CONFIG_DEBUG_CMD_CLIENT               TRUE

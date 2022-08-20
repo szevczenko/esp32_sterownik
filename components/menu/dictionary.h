@@ -45,6 +45,7 @@ enum dictionary_phrase
     DICT_MOTOR_ERR,
     DICT_SERVO_ERR,
     DICT_VIBRO_ERR,
+    DICT_PERIOD,
     DICT_SERVO_CLOSE,
     DICT_SERVO_OPEN,
     DICT_ON,

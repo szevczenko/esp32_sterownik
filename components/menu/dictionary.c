@@ -159,6 +159,12 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Oшибка вибратора",
         "Błąd wibratora"
     },
+    [DICT_PERIOD] =
+    {
+        "Period",
+        "Период",
+        "Okres"
+    },
     [DICT_SERVO_CLOSE] =
     { 
         "Servo close",

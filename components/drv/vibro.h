@@ -16,13 +16,24 @@ typedef enum {
 typedef struct {
 	vibro_state_t state;
 	vibro_type_t type;
+#if MENU_VIRO_ON_OFF_VERSION
 	uint32_t vibro_on_ms;
 	uint32_t vibro_off_ms;
+#else
+	uint32_t period;
+	uint32_t filling;
+#endif
 	uint32_t vibro_on_start_time;
 	uint32_t vibro_off_start_time;
 }vibro_t;
 
-void vibro_config(uint32_t period, uint32_t working_time);
+
+#if MENU_VIRO_ON_OFF_VERSION
+void vibro_config(uint32_t vibro_on_ms, uint32_t vibro_off_ms);
+#else
+void vibro_config(uint32_t period, uint32_t filling);
+#endif
+
 void vibro_start (void);
 void vibro_stop(void);
 void vibro_init(void);

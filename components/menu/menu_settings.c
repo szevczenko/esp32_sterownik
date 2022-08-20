@@ -35,6 +35,7 @@ typedef enum
     PARAM_POWER_ON_MIN,
     PARAM_MOTOR_ERROR,
     PARAM_VIBRO_ERROR,
+    PARAM_PERIOD,
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
     PARAM_TOP,
@@ -78,18 +79,27 @@ static void get_max_bootup(uint32_t *value);
 static void get_max_buzzer(uint32_t *value);
 static void set_bootup(uint32_t value);
 static void set_buzzer(uint32_t value);
+
 static void get_language(uint32_t *value);
 static void get_max_language(uint32_t *value);
 static void set_language(uint32_t value);
+
 static void get_power_on_min(uint32_t *value);
 static void get_max_power_on_min(uint32_t *value);
 static void set_power_on_min(uint32_t value);
+
 static void get_motor_error(uint32_t *value);
 static void get_max_motor_error(uint32_t *value);
 static void set_motor_error(uint32_t value);
+
 static void get_servo_error(uint32_t *value);
 static void get_max_servo_error(uint32_t *value);
 static void set_servo_error(uint32_t value);
+
+static void get_period(uint32_t *value);
+static void get_max_period(uint32_t *value);
+static void set_period(uint32_t value);
+static void exit_period(void);
 
 static const char *language[] =
 {
@@ -139,6 +149,15 @@ static parameters_t parameters_list[] =
     .get_value      = get_servo_error,
     .set_value      = set_servo_error,
     .get_max_value  = get_max_servo_error},
+
+    [PARAM_PERIOD] =
+    {.name_dict     = DICT_PERIOD,
+    .unit_type      = UNIT_INT,
+    .get_value      = get_period,
+    .set_value      = set_period,
+    .get_max_value  = get_max_period,
+    .exit           = exit_period},
+
     [PARAM_SERVO_CLOSE_CALIBRATION] =
     {.name_dict     = DICT_SERVO_CLOSE,
     .unit_type      = UNIT_INT,
@@ -147,6 +166,7 @@ static parameters_t parameters_list[] =
     .get_max_value  = get_max_servo_close_calibration,
     .enter          = enter_servo_close_calibration,
     .exit           = exit_servo_close_calibration},
+
     [PARAM_SERVO_OPEN_CALIBRATION] =
     {.name_dict     = DICT_SERVO_OPEN,
     .unit_type      = UNIT_INT,
@@ -249,6 +269,27 @@ static void get_max_servo_error(uint32_t *value)
 static void set_servo_error(uint32_t value)
 {
     menuSetValue(MENU_ERROR_SERVO, value);
+}
+
+static void get_period(uint32_t *value)
+{
+    *value = menuGetValue(MENU_PERIOD);
+}
+
+static void get_max_period(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_PERIOD);
+}
+
+static void set_period(uint32_t value)
+{
+    menuSetValue(MENU_PERIOD, value);
+}
+
+static void exit_period(void)
+{
+    LOG(PRINT_DEBUG, "%s", __func__);
+    cmdClientSetValueWithoutResp(MENU_PERIOD, menuGetValue(MENU_PERIOD));
 }
 
 static void get_power_on_min(uint32_t *value)
@@ -558,6 +599,8 @@ static bool menu_button_init_cb(void *arg)
     menu->button.exit.fall_callback = menu_button_exit_callback;
     menu->button.up_minus.fall_callback = menu_button_minus_callback;
     menu->button.up_plus.fall_callback = menu_button_plus_callback;
+    menu->button.down_minus.fall_callback = menu_button_minus_callback;
+    menu->button.down_plus.fall_callback = menu_button_plus_callback;
     return true;
 }
 

@@ -8,8 +8,10 @@ struct menu_data
 {
     uint32_t motor_value;
     uint32_t servo_value;
+#if MENU_VIRO_ON_OFF_VERSION
     uint32_t vibro_off_s;
     uint32_t vibro_on_s;
+#endif
     bool motor_on;
     bool servo_vibro_on;
 };

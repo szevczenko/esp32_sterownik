@@ -70,10 +70,12 @@ static meas_data_t meas_data[MEAS_CH_LAST] =
 static uint32_t table_size;
 static uint32_t table_iter;
 uint32_t motor_calibration_meas;
-static TimerHandle_t servoCalibrationTimer;
+#if CONFIG_DEVICE_SOLARKA
 static TimerHandle_t motorCalibrationTimer;
+#endif
 
 #if CONFIG_DEVICE_SIEWNIK
+static TimerHandle_t servoCalibrationTimer;
 static uint32_t calibration_value;
 static void measure_get_servo_calibration(TimerHandle_t xTimer)
 {
@@ -118,7 +120,6 @@ static void _read_adc_values(void)
     for (uint8_t ch = 0; ch < MEAS_CH_LAST; ch++)
     {
         meas_data[ch].adc = 0;
-        int ret_v = 0;
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++)
         {
@@ -129,7 +130,7 @@ static void _read_adc_values(void)
             else
             {
                 int raw = 0;
-                ret_v = adc2_get_raw((adc2_channel_t)meas_data[ch].channel, width, &raw);
+                adc2_get_raw((adc2_channel_t)meas_data[ch].channel, width, &raw);
                 meas_data[ch].adc += raw;
             }
         }

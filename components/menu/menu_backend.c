@@ -199,16 +199,20 @@ static void backent_start(void)
     {
         if (cmdClientSetValue(MENU_MOTOR, data->motor_value, 1000) == TRUE &&
                 cmdClientSetValue(MENU_SERVO, data->servo_value, 1000) == TRUE &&
+#if MENU_VIRO_ON_OFF_VERSION
                 cmdClientSetValue(MENU_VIBRO_OFF_S, data->vibro_off_s, 1000) == TRUE &&
                 cmdClientSetValue(MENU_VIBRO_ON_S, data->vibro_on_s, 1000) == TRUE &&
+#endif
                 cmdClientSetValue(MENU_MOTOR_IS_ON, data->motor_on, 1000) == TRUE &&
                 cmdClientSetValue(MENU_SERVO_IS_ON, data->servo_vibro_on, 1000) == TRUE)
         {
             ctx.send_all_data = false;
             ctx.sended_data.motor_value = data->motor_value;
             ctx.sended_data.servo_value = data->servo_value;
+#if MENU_VIRO_ON_OFF_VERSION
             ctx.sended_data.vibro_off_s = data->vibro_off_s;
             ctx.sended_data.vibro_on_s = data->vibro_on_s;
+#endif
             ctx.sended_data.motor_on = data->motor_on;
             ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
         }
@@ -229,7 +233,7 @@ static void backent_start(void)
             ctx.sended_data.servo_value = data->servo_value;
         }
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     if (data->vibro_off_s != ctx.sended_data.vibro_off_s)
     {
         if (cmdClientSetValue(MENU_VIBRO_OFF_S, data->vibro_off_s, 1000) == TRUE)
@@ -245,7 +249,7 @@ static void backent_start(void)
             ctx.sended_data.vibro_on_s = data->vibro_on_s;
         }
     }
-
+#endif
     if (data->motor_on != ctx.sended_data.motor_on)
     {
         if (cmdClientSetValue(MENU_MOTOR_IS_ON, data->motor_on, 1000) == TRUE)

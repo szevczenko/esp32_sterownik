@@ -55,8 +55,10 @@ typedef enum
 {
     EDIT_MOTOR,
     EDIT_SERVO,
+#if MENU_VIRO_ON_OFF_VERSION
     EDIT_VIBRO_OFF_S,
     EDIT_VIBRO_ON_S,
+#endif
     EDIT_TOP,
 } edit_value_t;
 
@@ -73,11 +75,13 @@ typedef struct
     char ap_name[64];
     uint32_t timeout_con;
     uint32_t low_silos_ckeck_timeout;
-
     error_type_t error_dev;
+    
+#if MENU_VIRO_ON_OFF_VERSION
     edit_value_t edit_value;
-    struct menu_data data;
+#endif
 
+    struct menu_data data;
     TickType_t animation_timeout;
     uint8_t animation_cnt;
     TickType_t change_menu_timeout;
@@ -160,10 +164,11 @@ static void set_change_menu(edit_value_t val)
         case EDIT_MOTOR:
             change_state(STATE_MOTOR_CHANGE);
             break;
-
+#if MENU_VIRO_ON_OFF_VERSION
         case EDIT_VIBRO_ON_S:
-        case EDIT_SERVO:
         case EDIT_VIBRO_OFF_S:
+#endif
+        case EDIT_SERVO:
             change_state(STATE_SERVO_VIBRO_CHANGE);
             break;
 
@@ -261,7 +266,9 @@ static void menu_button_up_callback(void *arg)
         return;
     }
 
+#if MENU_VIRO_ON_OFF_VERSION
     ctx.edit_value = EDIT_VIBRO_ON_S;
+#endif
 }
 
 static void menu_button_down_callback(void *arg)
@@ -288,8 +295,9 @@ static void menu_button_down_callback(void *arg)
     {
         return;
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     ctx.edit_value = EDIT_VIBRO_OFF_S;
+#endif
 }
 
 static void menu_button_exit_callback(void *arg)
@@ -567,7 +575,7 @@ static void menu_button_servo_plus_push_cb(void *arg)
     {
         return;
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
         if (ctx.edit_value == EDIT_VIBRO_OFF_S)
@@ -586,6 +594,7 @@ static void menu_button_servo_plus_push_cb(void *arg)
         }
     }
     else
+#endif
     {
         if (ctx.data.servo_value < 100)
         {
@@ -618,7 +627,7 @@ static void menu_button_servo_plus_time_cb(void *arg)
     {
         return;
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
         if (ctx.edit_value == EDIT_VIBRO_OFF_S)
@@ -631,6 +640,7 @@ static void menu_button_servo_plus_time_cb(void *arg)
         }
     }
     else
+#endif
     {
         fastProcessStart(&ctx.data.servo_value, 100, 0, FP_PLUS, servo_fast_add_cb);
     }
@@ -660,7 +670,7 @@ static void menu_button_servo_minus_push_cb(void *arg)
     {
         return;
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
         if (ctx.edit_value == EDIT_VIBRO_OFF_S)
@@ -679,6 +689,7 @@ static void menu_button_servo_minus_push_cb(void *arg)
         }
     }
     else
+#endif
     {
         if (ctx.data.servo_value > 0)
         {
@@ -711,7 +722,7 @@ static void menu_button_servo_minus_time_cb(void *arg)
     {
         return;
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
         if (ctx.edit_value == EDIT_VIBRO_OFF_S)
@@ -724,6 +735,7 @@ static void menu_button_servo_minus_time_cb(void *arg)
         }
     }
     else
+#endif
     {
         fastProcessStart(&ctx.data.servo_value, 100, 0, FP_MINUS, servo_fast_add_cb);
     }
@@ -739,13 +751,14 @@ static void menu_button_servo_p_m_pull_cb(void *arg)
         NULL_ERROR_MSG();
         return;
     }
-
+#if MENU_VIRO_ON_OFF_VERSION
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
         fastProcessStop(&ctx.data.vibro_off_s);
         fastProcessStop(&ctx.data.vibro_on_s);
     }
     else
+#endif
     {
         fastProcessStop(&ctx.data.servo_value);
     }
@@ -891,20 +904,22 @@ static void menu_check_connection(void)
     ctx.data.servo_value = menuGetValue(MENU_SERVO);
     ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
     ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+#if MENU_VIRO_ON_OFF_VERSION
     if (menuGetValue(MENU_VIBRO_ON_S) == 0)
     {
         menuSetValue(MENU_VIBRO_ON_S, 1);
     }
     ctx.data.vibro_on_s = menuGetValue(MENU_VIBRO_ON_S);
     ctx.data.vibro_off_s = menuGetValue(MENU_VIBRO_OFF_S);
-
+#endif
     for (uint8_t i = 0; i < 3; i++)
     {
         LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i);
         osDelay(250);
         
 
-        if (cmdClientSetValue(MENU_EMERGENCY_DISABLE, 0, 1000) == TRUE)
+        if ((cmdClientSetValue(MENU_EMERGENCY_DISABLE, 0, 1000) == TRUE) 
+            && (cmdClientSetValue(MENU_PERIOD, menuGetValue(MENU_PERIOD), 1000) == TRUE))
         {
             break;
         }
@@ -976,7 +991,7 @@ static void menu_start_ready(void)
         ctx.animation_timeout = xTaskGetTickCount() + MS2ST(100);
     }
 
-    char str[8];
+    char str[32];
 
     motor_bar.fill = ctx.data.motor_value;
     sprintf(str, "%d%%", motor_bar.fill);
@@ -1015,6 +1030,7 @@ static void menu_start_ready(void)
 
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
+#if MENU_VIRO_ON_OFF_VERSION
         /* PERIOD CURSOR */
         char menu_buff[32];
 
@@ -1041,6 +1057,12 @@ static void menu_start_ready(void)
         {
             oled_printFixed(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
         }
+#else
+        servo_bar.fill = ctx.data.servo_value;
+        sprintf(str, "Bzzz: %d", servo_bar.fill);
+        ssdFigureDrawLoadBar(&servo_bar);
+        oled_printFixed(80, 55, str, OLED_FONT_SIZE_11);
+#endif
     }
     else
     {
@@ -1200,6 +1222,7 @@ static void menu_start_vibro_change(void)
 
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
+#if MENU_VIRO_ON_OFF_VERSION
         oled_printFixed(0, 0, dictionary_get_string(ctx.edit_value == EDIT_VIBRO_OFF_S ? DICT_VIBRO_OFF : DICT_VIBRO_OFF), OLED_FONT_SIZE_16);
         uint32_t x = 0;
         uint32_t y = MENU_HEIGHT + LINE_HEIGHT;
@@ -1217,6 +1240,11 @@ static void menu_start_vibro_change(void)
         }
         sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s);
         oled_printFixed(x, y, ctx.buff, OLED_FONT_SIZE_26);
+#else
+        oled_printFixed(0, 0, dictionary_get_string(DICT_VIBRO_ON), OLED_FONT_SIZE_16);
+        sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
+        oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26);
+#endif
     }
     else
     {
@@ -1411,7 +1439,9 @@ void menuStartReset(void)
 void menuInitStartMenu(menu_token_t *menu)
 {
     memset(&ctx, 0, sizeof(ctx));
+#if MENU_VIRO_ON_OFF_VERSION
     ctx.edit_value = EDIT_VIBRO_ON_S;
+#endif
     menu->menu_cb.enter = menu_enter_cb;
     menu->menu_cb.button_init_cb = menu_button_init_cb;
     menu->menu_cb.exit = menu_exit_cb;
