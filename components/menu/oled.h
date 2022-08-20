@@ -5,16 +5,21 @@
 #include "oled_glcd.h"
 #include "ssd1306_fonts.h"
 
-extern const PROGMEM uint8_t Calibri16x17 [];
-extern const PROGMEM uint8_t Small_Fonts8x9[];
-extern const PROGMEM uint8_t Calibri11x11[];
-extern const PROGMEM uint8_t Calibri_RU_11x11[];
-extern const PROGMEM uint8_t Calibri10x11_PL[];
+extern const PROGMEM uint8_t Calibri11x13[];
+extern const PROGMEM uint8_t Calibri12x13_RU[];
+extern const PROGMEM uint8_t Calibri10x13_PL[];
+extern const PROGMEM uint8_t Calibri13x17[];
+extern const PROGMEM uint8_t Calibri14x17_PL[];
+extern const PROGMEM uint8_t Calibri16x17_RU[];
+extern const PROGMEM uint8_t Calibri21x24[];
+extern const PROGMEM uint8_t Calibri21x24_PL[];
+extern const PROGMEM uint8_t Calibri26x24_RU[];
 
 enum oledFontSize
 {
     OLED_FONT_SIZE_11,
     OLED_FONT_SIZE_16,
+    OLED_FONT_SIZE_26,
     OLED_FONT_SIZE_LAST
 };
 

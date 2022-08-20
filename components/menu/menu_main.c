@@ -20,39 +20,39 @@
 
 static menu_token_t setings =
 {
-    .name     = "drittgrößte",
-    .arg_type = T_ARG_TYPE_MENU,
+    .name_dict = DICT_SETTINGS,
+    .arg_type  = T_ARG_TYPE_MENU,
     //.menu_list = setting_tokens
 };
 
 static menu_token_t start_menu =
 {
-    .name     = "СТАРТ",
-    .arg_type = T_ARG_TYPE_MENU,
+    .name_dict = DICT_START,
+    .arg_type  = T_ARG_TYPE_MENU,
     //.menu_list = setting_tokens
 };
 
 static menu_token_t wifi_menu =
 {
-    .name = "ŚŹĆŻŹĆ",
+    .name_dict = DICT_DEVICES,
 };
 
 static menu_token_t parameters_menu =
 {
-    .name = "WÓDKA",
+    .name_dict = DICT_PARAMETES,
 };
 
 static menu_token_t low_battery_menu =
 {
-    .name     = "LOW_BAT",
-    .arg_type = T_ARG_TYPE_MENU,
+    .arg_type  = T_ARG_TYPE_MENU,
+    .name_dict = DICT_LOW_BATTERY,
 };
 
 menu_token_t *main_menu_tokens[] = {&start_menu, &setings, &wifi_menu, &parameters_menu, NULL};
 
 menu_token_t main_menu =
 {
-    .name      = "MENU",
+    .name_dict = DICT_MENU,
     .arg_type  = T_ARG_TYPE_MENU,
     .menu_list = main_menu_tokens
 };

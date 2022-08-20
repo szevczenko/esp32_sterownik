@@ -857,8 +857,7 @@ static void menu_set_error_msg(char *msg)
 
 static void menu_start_init(void)
 {
-    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    oled_print("Check connection");
+    oled_printFixed(2, 2 * LINE_HEIGHT, dictionary_get_string(DICT_CHECK_CONNECTION), OLED_FONT_SIZE_11);
     oled_update();
     change_state(STATE_CHECK_WIFI);
 }
@@ -968,8 +967,7 @@ static void menu_start_ready(void)
     sprintf(str, "%d%%", motor_bar.fill);
     oled_clearScreen();
     ssdFigureDrawLoadBar(&motor_bar);
-    oled_setCursor(80, 25);
-    oled_print(str);
+    oled_printFixed(80, 25, str, OLED_FONT_SIZE_11);
     uint8_t cnt = 0;
 
     if (ctx.data.motor_on)
@@ -1004,37 +1002,34 @@ static void menu_start_ready(void)
     /* PERIOD CURSOR */
     char menu_buff[32];
 
-    oled_setCursor(2, MENU_START_OFFSET);
-    sprintf(menu_buff, "Vibro ON: %d [s]", ctx.data.vibro_on_s);
+    sprintf(menu_buff, "%s: %d [s]", dictionary_get_string(DICT_VIBRO_ON), ctx.data.vibro_on_s);
 
     if (ctx.edit_value == EDIT_VIBRO_ON_S)
     {
         ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
-        oled_printBlack(menu_buff);
+        oled_printFixedBlack(2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11);
     }
     else
     {
-        oled_print(menu_buff);
+        oled_printFixed(2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11);
     }
 
     /* WORKING TIME CURSOR */
-    sprintf(menu_buff, "Vibro OFF: %d [s]", ctx.data.vibro_off_s);
-    oled_setCursor(2, MENU_START_OFFSET + LINE_HEIGHT);
+    sprintf(menu_buff, "%s: %d [s]", dictionary_get_string(DICT_VIBRO_OFF), ctx.data.vibro_off_s);
     if (ctx.edit_value == EDIT_VIBRO_OFF_S)
     {
         ssdFigureFillLine(MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT);
-        oled_printBlack(menu_buff);
+        oled_printFixedBlack(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
     }
     else
     {
-        oled_print(menu_buff);
+        oled_printFixed(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
     }
 #elif CONFIG_DEVICE_SIEWNIK
     servo_bar.fill = ctx.data.servo_value;
     sprintf(str, "%d", servo_bar.fill);
     ssdFigureDrawLoadBar(&servo_bar);
-    oled_setCursor(80, 55);
-    oled_print(str);
+    oled_printFixed(80, 55, str, OLED_FONT_SIZE_11);
     if (ctx.data.servo_vibro_on)
     {
         drawServo(10, 35, ctx.data.servo_value);
@@ -1079,10 +1074,8 @@ static void menu_start_low_silos(void)
     }
 
     oled_clearScreen();
-    oled_setCursor(2, 2);
-    oled_print("Low"); //Font_16x26
-    oled_setCursor(2, 2 + 28);
-    oled_print("silos"); //Font_16x26
+    oled_printFixed(2, 2, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
+    oled_printFixed(2, 32, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
 }
 
 static void menu_start_error(void)
@@ -1168,11 +1161,9 @@ static void menu_start_motor_change(void)
         return;
     }
 
-    oled_setCursor(2, 0);
-    oled_print("   MOTOR"); //11x18 White
-    oled_setCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+    oled_printFixed(0, 0, "   MOTOR", OLED_FONT_SIZE_16);
     sprintf(ctx.buff, "%d%%", ctx.data.motor_value);
-    oled_print(ctx.buff); //Font_16x26
+    oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26); //Font_16x26
 
     if (ctx.change_menu_timeout < xTaskGetTickCount())
     {
@@ -1190,31 +1181,29 @@ static void menu_start_vibro_change(void)
     }
 
 #if CONFIG_DEVICE_SIEWNIK
-    oled_setCursor(2, 0);
-    oled_print("   SERVO"); //11x18 White
-    oled_setCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+    oled_printFixed(0, 0, "   SERVO", OLED_FONT_SIZE_16);
     sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
-    oled_print(ctx.buff); //Font_16x26
+    oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26);
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    oled_setCursor(2, 0);
-    oled_print(ctx.edit_value == EDIT_VIBRO_OFF_S ? "Vibro OFF" : "Vibro ON"); //11x18 White
+    oled_printFixed(0, 0, ctx.edit_value == EDIT_VIBRO_OFF_S ? "Vibro OFF" : "Vibro ON", OLED_FONT_SIZE_16);
+    uint32_t x = 0;
+    uint32_t y = MENU_HEIGHT + LINE_HEIGHT;
     if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 10)
     {
-        oled_setCursor(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT);
+        x = CHANGE_VALUE_DISP_OFFSET;
     }
     else if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 100)
     {
-        oled_setCursor(CHANGE_VALUE_DISP_OFFSET - 16, MENU_HEIGHT + LINE_HEIGHT);
+        x = CHANGE_VALUE_DISP_OFFSET - 16;
     }
     else
     {
-       oled_setCursor(CHANGE_VALUE_DISP_OFFSET - 32, MENU_HEIGHT + LINE_HEIGHT); 
+        x = CHANGE_VALUE_DISP_OFFSET - 32;
     }
-    
     sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s);
-    oled_print(ctx.buff); //Font_16x26
+    oled_printFixed(x, y, ctx.buff, OLED_FONT_SIZE_26);
 #endif
 
     if (ctx.change_menu_timeout < xTaskGetTickCount())
@@ -1255,10 +1244,9 @@ static void menu_reconnect(void)
 
 static void _show_wait_connection(void)
 {
-    sprintf(ctx.buff, "Wait connection%s%s%s", xTaskGetTickCount() % 400 > 100 ? "." : " ",
+    sprintf(ctx.buff, dictionary_get_string(DICT_WAIT_CONNECTION_S_S_S), xTaskGetTickCount() % 400 > 100 ? "." : " ",
         xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
-    oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
-    oled_print(ctx.buff);
+    oled_printFixed(2, 2 * LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_11);
     oled_update();
 }
 
@@ -1271,7 +1259,7 @@ static void menu_wait_connect(void)
     {
         if ((ctx.timeout_con < xTaskGetTickCount()) || ctx.exit_wait_flag)
         {
-            menu_set_error_msg("Timeout connect");
+            menu_set_error_msg(dictionary_get_string(DICT_TIMEOUT_CONNECT));
             return;
         }
 
@@ -1284,7 +1272,7 @@ static void menu_wait_connect(void)
     {
         if ((ctx.timeout_con < xTaskGetTickCount()) || ctx.exit_wait_flag)
         {
-            menu_set_error_msg("Timeout server");
+            menu_set_error_msg(dictionary_get_string(DICT_TIMEOUT_SERVER));
             return;
         }
 

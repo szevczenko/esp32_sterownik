@@ -29,24 +29,16 @@ typedef enum
 
 typedef enum
 {
-    MENU_LANGUAGE_ENGLISH,
-    MENU_LANGUAGE_POLISH,
-    MENU_LANGUAGE_GERMANY,
-    MENU_LANGUAGE_TOP
-} menu_language_t;
-
-typedef enum
-{
     PARAM_BOOTUP_MENU,
     PARAM_BUZZER,
     PARAM_LANGUAGE,
     PARAM_POWER_ON_MIN,
     PARAM_MOTOR_ERROR,
     PARAM_VIBRO_ERROR,
-    #if CONFIG_DEVICE_SIEWNIK
+#if CONFIG_DEVICE_SIEWNIK
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
-    #endif
+#endif
     PARAM_TOP,
 } parameters_type_t;
 
@@ -60,7 +52,7 @@ typedef enum
 
 typedef struct
 {
-    char *name;
+    enum dictionary_phrase name_dict;
     uint32_t value;
     uint32_t max_value;
     unit_type_t unit_type;
@@ -82,6 +74,7 @@ static void enter_servo_close_calibration(void);
 static void exit_servo_close_calibration(void);
 static void enter_servo_open_calibration(void);
 static void exit_servo_open_calibration(void);
+
 #endif
 
 static void get_bootup(uint32_t *value);
@@ -103,114 +96,71 @@ static void get_servo_error(uint32_t *value);
 static void get_max_servo_error(uint32_t *value);
 static void set_servo_error(uint32_t value);
 
-static const char * language[] =
+static const char *language[] =
 {
     [MENU_LANGUAGE_ENGLISH] = "English",
-    [MENU_LANGUAGE_POLISH] = "Polish",
+    [MENU_LANGUAGE_RUSSIAN] = "Russian",
+        [MENU_LANGUAGE_POLISH] = "Polish",
     [MENU_LANGUAGE_GERMANY] = "Germany",
 };
 
 static parameters_t parameters_list[] =
 {
     [PARAM_BOOTUP_MENU] =
-                                      {.name                                                                     =
-                                          "Booting",
-                                      .unit_type
-                                          = UNIT_ON_OFF,
-                                      .get_value                                                                 =
-                                          get_bootup,
-                                      .set_value                                                                 =
-                                          set_bootup,
-                                      .get_max_value                                                             =
-                                          get_max_bootup              },
+    {.name_dict     = DICT_BOOTING,
+    .unit_type      = UNIT_ON_OFF,
+    .get_value      = get_bootup,
+    .set_value      = set_bootup,
+    .get_max_value  = get_max_bootup},
     [PARAM_BUZZER] =
-                                      {.name                                                                     =
-                                          "Buzzer",
-                                      .unit_type
-                                          = UNIT_ON_OFF,
-                                      .get_value                                                                 =
-                                          get_buzzer,
-                                      .set_value                                                                 =
-                                          set_buzzer,
-                                      .get_max_value                                                             =
-                                          get_max_buzzer              },
-    [PARAM_LANGUAGE] = 
-                                      {.name                                                                     =
-                                          "Language",
-                                      .unit_type
-                                          = UNIT_LANGUAGE,
-                                      .get_value                                                                 =
-                                          get_language,
-                                      .set_value                                                                 =
-                                          set_language,
-                                      .get_max_value                                                             =
-                                          get_max_language              },
-    [PARAM_POWER_ON_MIN] = 
-                                      {.name                                                                     =
-                                          "Idle time",
-                                      .unit_type
-                                          = UNIT_INT,
-                                      .get_value                                                                 =
-                                          get_power_on_min,
-                                      .set_value                                                                 =
-                                          set_power_on_min,
-                                      .get_max_value                                                             =
-                                          get_max_power_on_min              },
+    {.name_dict     = DICT_BUZZER,
+    .unit_type      = UNIT_ON_OFF,
+    .get_value      = get_buzzer,
+    .set_value      = set_buzzer,
+    .get_max_value  = get_max_buzzer},
+    [PARAM_LANGUAGE] =
+    {.name_dict     = DICT_LANGUAGE,
+    .unit_type      = UNIT_LANGUAGE,
+    .get_value      = get_language,
+    .set_value      = set_language,
+    .get_max_value  = get_max_language},
+    [PARAM_POWER_ON_MIN] =
+    {.name_dict     = DICT_IDLE_TIME,
+    .unit_type      = UNIT_INT,
+    .get_value      = get_power_on_min,
+    .set_value      = set_power_on_min,
+    .get_max_value  = get_max_power_on_min},
 
-    [PARAM_MOTOR_ERROR] = 
-                                      {.name                                                                     =
-                                          "Motor err",
-                                      .unit_type
-                                          = UNIT_ON_OFF,
-                                      .get_value                                                                 =
-                                          get_motor_error,
-                                      .set_value                                                                 =
-                                          set_motor_error,
-                                      .get_max_value                                                             =
-                                          get_max_motor_error              },
+    [PARAM_MOTOR_ERROR] =
+    {.name_dict     = DICT_MOTOR_ERR,
+    .unit_type      = UNIT_ON_OFF,
+    .get_value      = get_motor_error,
+    .set_value      = set_motor_error,
+    .get_max_value  = get_max_motor_error},
 
-    [PARAM_VIBRO_ERROR] = 
-                                      {.name                                                                     =
-                                          "Vibro err",
-                                      .unit_type
-                                          = UNIT_ON_OFF,
-                                      .get_value                                                                 =
-                                          get_servo_error,
-                                      .set_value                                                                 =
-                                          set_servo_error,
-                                      .get_max_value                                                             =
-                                          get_max_servo_error              },
+    [PARAM_VIBRO_ERROR] =
+    {.name_dict     = DICT_VIBRO_ERR,
+    .unit_type      = UNIT_ON_OFF,
+    .get_value      = get_servo_error,
+    .set_value      = set_servo_error,
+    .get_max_value  = get_max_servo_error},
 #if CONFIG_DEVICE_SIEWNIK
     [PARAM_SERVO_CLOSE_CALIBRATION] =
-                                      {.name                                                                     =
-                                          "Servo close",
-                                      .unit_type
-                                          = UNIT_INT,
-                                      .get_value                                                                 =
-                                          get_servo_close_calibration,
-                                      .set_value                                                                 =
-                                          set_servo_close_calibration,
-                                      .get_max_value                                                             =
-                                          get_max_servo_close_calibration,
-                                      .enter                                                                     =
-                                          enter_servo_close_calibration,
-                                      .exit
-                                          = exit_servo_close_calibration},
+    {.name_dict     = DICT_SERVO_CLOSE,
+    .unit_type      = UNIT_INT,
+    .get_value      = get_servo_close_calibration,
+    .set_value      = set_servo_close_calibration,
+    .get_max_value  = get_max_servo_close_calibration,
+    .enter          = enter_servo_close_calibration,
+    .exit           = exit_servo_close_calibration},
     [PARAM_SERVO_OPEN_CALIBRATION] =
-                                      {.name                                                                     =
-                                          "Servo open",
-                                      .unit_type
-                                          = UNIT_INT,
-                                      .get_value
-                                          = get_servo_open_calibration,
-                                      .set_value
-                                          = set_servo_open_calibration,
-                                      .get_max_value
-                                          = get_max_servo_open_calibration,
-                                      .enter
-                                          = enter_servo_open_calibration,
-                                      .exit
-                                          = exit_servo_open_calibration},
+    {.name_dict     = DICT_SERVO_OPEN,
+    .unit_type      = UNIT_INT,
+    .get_value      = get_servo_open_calibration,
+    .set_value      = set_servo_open_calibration,
+    .get_max_value  = get_max_servo_open_calibration,
+    .enter          = enter_servo_open_calibration,
+    .exit           = exit_servo_open_calibration},
 #endif
 };
 
@@ -278,6 +228,7 @@ static void exit_servo_open_calibration(void)
     LOG(PRINT_DEBUG, "%s", __func__);
     cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
 }
+
 #endif
 
 static void get_motor_error(uint32_t *value)
@@ -337,7 +288,7 @@ static void get_max_language(uint32_t *value)
 
 static void set_language(uint32_t value)
 {
-    menuSetValue(MENU_LANGUAGE, value);
+    dictionary_set_language(value);
 }
 
 static void get_bootup(uint32_t *value)
@@ -654,9 +605,9 @@ static bool menu_process(void *arg)
     {
     case MENU_LIST_PARAMETERS:
        {
-            oled_setGLCDFont(OLED_FONT_SIZE_16);
-            oled_printFixed(2, 0, menu->name, STYLE_NORMAL);
-            oled_setGLCDFont(OLED_FONT_SIZE_11);
+           oled_setGLCDFont(OLED_FONT_SIZE_16);
+           oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
+           oled_setGLCDFont(OLED_FONT_SIZE_11);
 
            if (menu->line.end - menu->line.start != MAX_LINE - 1)
            {
@@ -684,17 +635,16 @@ static bool menu_process(void *arg)
            int line = 0;
            do
            {
-               oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT * line);
                int pos = line + menu->line.start;
-               sprintf(buff, "%s", parameters_list[pos].name);
+               sprintf(buff, "%s", dictionary_get_string(parameters_list[pos].name_dict));
                if (line + menu->line.start == menu->position)
                {
                    ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
-                   oled_printBlack(buff);
+                   oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, buff, OLED_FONT_SIZE_11);
                }
                else
                {
-                   oled_print(buff);
+                   oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, buff, OLED_FONT_SIZE_11);
                }
 
                line++;
@@ -707,32 +657,28 @@ static bool menu_process(void *arg)
        break;
 
     case MENU_EDIT_PARAMETERS:
-        oled_setCursor(2, 0);
-        oled_print(parameters_list[menu->position].name); //11x18 White
+        oled_printFixed(2, 0, dictionary_get_string(parameters_list[menu->position].name_dict), OLED_FONT_SIZE_16);
         switch (parameters_list[menu->position].unit_type)
         {
         case UNIT_INT:
-            oled_setCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
             sprintf(buff, "%d", parameters_list[menu->position].value);
-            oled_print(buff);
+            oled_printFixed(30,MENU_HEIGHT + LINE_HEIGHT * 2, buff, OLED_FONT_SIZE_11);
             break;
 
         case UNIT_ON_OFF:
-            oled_setCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
-            sprintf(buff, "%s", parameters_list[menu->position].value ? "ON" : "OFF");
-            oled_print(buff);
+            sprintf(buff, "%s", parameters_list[menu->position].value ? dictionary_get_string(
+                DICT_ON) : dictionary_get_string(DICT_OFF));
+            oled_printFixed(30,MENU_HEIGHT + LINE_HEIGHT * 2, buff, OLED_FONT_SIZE_11);
             break;
 
         case UNIT_BOOL:
-            oled_setCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
             sprintf(buff, "%s", parameters_list[menu->position].value ? "1" : "0");
-            oled_print(buff);
+            oled_printFixed(30,MENU_HEIGHT + LINE_HEIGHT * 2, buff, OLED_FONT_SIZE_11);
             break;
 
         case UNIT_LANGUAGE:
-            oled_setCursor(30, MENU_HEIGHT + LINE_HEIGHT * 2);
             sprintf(buff, "%s", language[parameters_list[menu->position].value]);
-            oled_print(buff);
+            oled_printFixed(30,MENU_HEIGHT + LINE_HEIGHT * 2, buff, OLED_FONT_SIZE_11);
             break;
         default:
             break;

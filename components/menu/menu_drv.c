@@ -17,6 +17,7 @@
 #include "power_on.h"
 #include "wifidrv.h"
 #include "oled.h"
+#include "menu_default.h"
 
 #define MODULE_NAME              "[MENU Drv] "
 #define DEBUG_LVL                PRINT_INFO
@@ -115,7 +116,7 @@ int menuDrvElementsCnt(menu_token_t *menu)
 {
     if (menu->menu_list == NULL)
     {
-        LOG(PRINT_INFO, "menu->menu_list == NULL (%s)\n", menu->name);
+        LOG(PRINT_INFO, "menu->menu_list == NULL (%s)\n", dictionary_get_string(menu->name_dict));
         return 0;
     }
 
@@ -431,7 +432,7 @@ void menu_deactivate_but(void)
 
 static void menu_state_init(void)
 {
-    oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, "Wait to init...", STYLE_NORMAL);
+    oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, dictionary_get_string(DICT_WAIT_TO_INIT), OLED_FONT_SIZE_11);
     oled_update();
     menu_init_buttons();
     ctx.state = MENU_STATE_IDLE;
@@ -458,7 +459,7 @@ static void menu_state_idle(menu_token_t *menu)
 
     if (menu == NULL)
     {
-        oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, "Menu idle state...", STYLE_NORMAL);
+        oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, dictionary_get_string(DICT_MENU_IDLE_STATE), OLED_FONT_SIZE_11);
         oled_update();
         osDelay(100);
     }
@@ -548,7 +549,7 @@ static void menu_state_process(menu_token_t *menu)
 static void menu_state_emergency_disable(void)
 {
     oled_clearScreen();
-    oled_printFixed(2, MENU_HEIGHT, "  STOP", STYLE_NORMAL); //Font_16x26
+    oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_MENU_STOP), OLED_FONT_SIZE_26); //Font_16x26
     oled_update();
     if (ctx.led_cnt % 10 == 0)
     {
@@ -591,23 +592,21 @@ static void menu_state_error_check(menu_token_t *menu)
         oled_clearScreen();
         if (menu != NULL)
         {
-            oled_setGLCDFont(OLED_FONT_SIZE_16);
-            oled_printFixed(2, 0, menu->name, STYLE_NORMAL);
-            oled_setGLCDFont(OLED_FONT_SIZE_11);
+            oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
         }
 
-        oled_printFixed(2, MENU_HEIGHT, "Error menu_drv", STYLE_NORMAL);
+        oled_printFixed(2, MENU_HEIGHT, "Error menu_drv", OLED_FONT_SIZE_11);
         sprintf(buff, "Error %d...", ctx.error_code);
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, buff, STYLE_NORMAL);
+        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, buff, OLED_FONT_SIZE_11);
 
         if (ctx.error_msg != NULL)
         {
             sprintf(buff, "Msg: %s", ctx.error_msg);
-            oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, buff, STYLE_NORMAL);
+            oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, buff, OLED_FONT_SIZE_11);
         }
         else
         {
-            oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, "Undef", STYLE_NORMAL);
+            oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, "Undef", OLED_FONT_SIZE_11);
         }
 
         oled_update();
@@ -649,10 +648,10 @@ static void menu_state_power_off_count(menu_token_t *menu)
     }
 
     oled_clearScreen();
-    oled_printFixed(2, 10, " POWER OFF", STYLE_NORMAL); //11x18 White
+    oled_printFixed(2, 10, dictionary_get_string(DICT_POWER_OFF), OLED_FONT_SIZE_16);
 
     sprintf(buff, "     %d", time);
-    oled_printFixed(2, 2 * MENU_HEIGHT, buff, STYLE_NORMAL); //11x18 White
+    oled_printFixed(2, 2 * MENU_HEIGHT, buff, OLED_FONT_SIZE_16);
 
     oled_update();
     osDelay(100);
@@ -681,7 +680,7 @@ static void menu_task(void *arg)
         {
             if (menu != NULL)
             {
-                LOG(PRINT_INFO, "state: %s, menu %s", state_name[ctx.state], menu->name);
+                LOG(PRINT_INFO, "state: %s, menu %s", state_name[ctx.state], dictionary_get_string(menu->name_dict));
             }
             else
             {
@@ -777,7 +776,7 @@ void menuPrintfInfo(const char *format, ...)
     vsnprintf(infoBuff, sizeof(infoBuff), format, ap);
     va_end(ap);
 
-    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, infoBuff, STYLE_NORMAL);
+    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, infoBuff, OLED_FONT_SIZE_11);
     oled_update();
 }
 

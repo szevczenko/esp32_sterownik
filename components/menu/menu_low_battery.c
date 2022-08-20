@@ -66,8 +66,8 @@ static bool menu_process(void *arg)
     }
 
     oled_clearScreen();
-    oled_printFixed(2, MENU_HEIGHT, "LOW BATTERY", STYLE_NORMAL); //11x18 White
-    oled_printFixed(2, 2 * MENU_HEIGHT + 5, " Connect charger", STYLE_NORMAL);
+    oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_LOW_BATTERY), OLED_FONT_SIZE_16);
+    oled_printFixed(2, 2 * MENU_HEIGHT + 5, dictionary_get_string(DICT_CONNECT_CHARGER), OLED_FONT_SIZE_11);
     oled_update();
 
     return true;

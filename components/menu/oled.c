@@ -56,11 +56,25 @@ static uint16_t  m_color;                               ///< current color for m
 static struct NanoPoint offset;
 static struct oledFont *actual_font;
 
-static struct oledFont font11x11 = 
+static struct oledFont font11 = 
 {
     .width = 11, 
-    .height = 11,
-    .data = {{.data = Calibri11x11}, {.data = Calibri_RU_11x11}, {.data = Calibri10x11_PL}},
+    .height = 13,
+    .data = {{.data = Calibri11x13}, {.data = Calibri12x13_RU}, {.data = Calibri10x13_PL}},
+};
+
+static struct oledFont font16 = 
+{
+    .width = 16, 
+    .height = 17,
+    .data = {{.data = Calibri13x17}, {.data = Calibri14x17_PL}, {.data = Calibri16x17_RU}},
+};
+
+static struct oledFont font26 = 
+{
+    .width = 16, 
+    .height = 26,
+    .data = {{.data = Calibri21x24}, {.data = Calibri21x24_PL}, {.data = Calibri26x24_RU}},
 };
 
 extern SFixedFontInfo s_fixedFont;
@@ -91,8 +105,14 @@ static struct oledFont *_get_font_table(enum oledFontSize font_size)
     switch(font_size)
     {
         case OLED_FONT_SIZE_11:
-            return &font11x11;
+            return &font11;
         
+        case OLED_FONT_SIZE_16:
+            return &font16;
+
+        case OLED_FONT_SIZE_26:
+            return &font26;
+
         default:
             break;
     }
@@ -154,7 +174,9 @@ void oled_init(void)
     oled_clearScreen();
     for (int i = 0; i < FONTS_TABLE_SIZE; i++)
     {
-        _read_unicode_record(&font11x11.data[i].info, font11x11.data[i].data);
+        _read_unicode_record(&font11.data[i].info, font11.data[i].data);
+        _read_unicode_record(&font16.data[i].info, font16.data[i].data);
+        _read_unicode_record(&font26.data[i].info, font26.data[i].data);
     }
     oled_setGLCDFont(OLED_FONT_SIZE_11);
 }
@@ -271,8 +293,6 @@ uint8_t draw_GLCD(lcdint_t x, lcdint_t y, lcduint_t w, lcduint_t h, const uint8_
 {
     uint8_t i;
 	uint8_t bytes_width;
-
-    printf("w %d, h %d\n\r", w, h);
 		
 	if ((w % 8) > 0){
 		bytes_width = (w / 8) + 1;

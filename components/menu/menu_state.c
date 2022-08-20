@@ -41,7 +41,7 @@ typedef enum
 
 typedef struct 
 {
-	char * name;
+	enum dictionary_phrase name_dict;
 	char * unit;
 	uint32_t value;
 	unit_type_t unit_type;
@@ -57,12 +57,12 @@ static void get_conection(uint32_t *value);
 
 static parameters_t parameters_list[] = 
 {
-	[PARAM_CURRENT] 	= { .name = "Current", .unit = "A", .unit_type = UNIT_DOUBLE, .get_value = get_current},
-	[PARAM_VOLTAGE] 	= { .name = "Voltage", .unit = "V", .unit_type = UNIT_DOUBLE, .get_value = get_voltage},
-	[PARAM_SILOS]		= { .name = "Silos", .unit = "%", .unit_type = UNIT_INT, .get_value = get_silos},
-	[PARAM_SIGNAL] 		= { .name = "Signal", .unit = "", .unit_type = UNIT_INT, .get_value = get_signal},
-	[PARAM_TEMEPRATURE] = { .name = "Temp", .unit = "\"C", .unit_type = UNIT_INT, .get_value = get_temp},
-	[PARAM_CONECTION] 	= { .name = "Connect", .unit = "", .unit_type = UNIT_BOOL, .get_value = get_conection}
+	[PARAM_CURRENT] 	= { .name_dict = DICT_CURRENT, 	.unit = "A", 	.unit_type = UNIT_DOUBLE, 	.get_value = get_current},
+	[PARAM_VOLTAGE] 	= { .name_dict = DICT_VOLTAGE, 	.unit = "V", 	.unit_type = UNIT_DOUBLE, 	.get_value = get_voltage},
+	[PARAM_SILOS]		= { .name_dict = DICT_SILOS, 	.unit = "%", 	.unit_type = UNIT_INT, 		.get_value = get_silos},
+	[PARAM_SIGNAL] 		= { .name_dict = DICT_SIGNAL, 	.unit = "", 	.unit_type = UNIT_INT, 		.get_value = get_signal},
+	[PARAM_TEMEPRATURE] = { .name_dict = DICT_TEMP, 	.unit = "\"C", 	.unit_type = UNIT_INT, 		.get_value = get_temp},
+	[PARAM_CONECTION] 	= { .name_dict = DICT_CONNECT, 	.unit = "", 	.unit_type = UNIT_BOOL, 	.get_value = get_conection}
 };
 
 static scrollBar_t scrollBar = {
@@ -191,7 +191,7 @@ static bool menu_exit_cb(void * arg)
 
 static bool _disconnected_process(menu_token_t *menu)
 {
-	menuPrintfInfo("\n    Device not\n    connected");
+	menuPrintfInfo(dictionary_get_string(DICT_DEVICE_NOT_CONNECTED));
 	return true;
 }
 
@@ -231,26 +231,25 @@ static bool _connected_process(menu_token_t *menu)
 	int line = 0;
 	do
 	{
-		oled_setCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
 		int pos = line + menu->line.start;
 		
 		if (parameters_list[pos].unit_type == UNIT_DOUBLE)
 		{
-			sprintf(buff, "%s: %.2f %s", parameters_list[pos].name, (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
+			sprintf(buff, "%s: %.2f %s", dictionary_get_string(parameters_list[pos].name_dict), (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
 		}
 		else
 		{
-			sprintf(buff, "%s: %d %s", parameters_list[pos].name, parameters_list[pos].value, parameters_list[pos].unit);
+			sprintf(buff, "%s: %d %s", dictionary_get_string(parameters_list[pos].name_dict), parameters_list[pos].value, parameters_list[pos].unit);
 		}
 		
 		if (line + menu->line.start == menu->position)
 		{
 			ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT*line, LINE_HEIGHT);
-			oled_printBlack(buff);
+			oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT*line, buff, OLED_FONT_SIZE_11);
 		}
 		else
 		{
-			oled_print(buff);
+			oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT*line, buff, OLED_FONT_SIZE_11);
 		}
 		line++;
 	} while (line + menu->line.start != PARAM_TOP && line < MAX_LINE);
@@ -276,7 +275,7 @@ static bool menu_process(void * arg)
 
 	oled_clearScreen();
 	oled_setGLCDFont(OLED_FONT_SIZE_16);
-    oled_printFixed(2, 0, menu->name, STYLE_NORMAL);
+    oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
     oled_setGLCDFont(OLED_FONT_SIZE_11);
 
 	if (cmdClientIsConnected())

@@ -2,6 +2,7 @@
 #define MENU_PARAM_H
 
 #include "config.h"
+#include "dictionary.h"
 
 typedef enum
 {

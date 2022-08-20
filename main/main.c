@@ -61,18 +61,6 @@ void graphic_init(void)
     ssd1306_flipHorizontal(1);
     ssd1306_flipVertical(1);
     oled_init();
-
-    // uint32_t counter = 0;
-    // char print_buff[64] = {0};
-
-    // while(1)
-    // {
-    //     sprintf(print_buff, "couner %d", counter++);
-    //     oled_printFixed(2, 15, print_buff, STYLE_NORMAL);
-    //     oled_printFixed(2, 24, "Test2", STYLE_NORMAL);
-        
-    //     osDelay(100);
-    // }
 }
 
 static void checkDevType(void)
@@ -131,6 +119,7 @@ void app_main()
             wifiDrvInit();
             keepAliveStartTask();
             menuParamInit();
+            dictionary_init();
             fastProcessStartTask();
             power_on_start_task();
             // init_sleep();

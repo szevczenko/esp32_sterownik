@@ -1,7 +1,18 @@
 #ifndef _DICTIONARY_H_
 #define _DICTIONARY_H_
 
+#include <stdbool.h>
+
 #define LANGUAGE_CNT_SUPPORT 3
+
+typedef enum
+{
+    MENU_LANGUAGE_ENGLISH,
+    MENU_LANGUAGE_RUSSIAN,
+    MENU_LANGUAGE_POLISH,
+    MENU_LANGUAGE_GERMANY,
+    MENU_LANGUAGE_TOP
+} menu_language_t;
 
 enum dictionary_phrase
 {
@@ -41,7 +52,6 @@ enum dictionary_phrase
     /* PARAMETERS */
     DICT_CURRENT,
     DICT_VOLTAGE,
-    DICT_SILOS,
     DICT_SIGNAL,
     DICT_TEMP,
     DICT_CONNECT,
@@ -49,7 +59,7 @@ enum dictionary_phrase
     /* WIFI */
     DICT_WAIT_TO_WIFI_INIT,
     DICT_SCANNING_DEVICES,
-    DICT_CLICK_ENETER_TO_SCANNING,
+    DICT_CLICK_ENTER_TO_SCANNING,
     DICT_FIND_DEVICES,
     DICT_DEVICE_NOT_FOUND,
     DICT_TRY_CONNECT_TO,
@@ -82,6 +92,10 @@ enum dictionary_phrase
     DICT_TIMEOUT_CONNECT,
     DICT_TIMEOUT_SERVER,
     DICT_TOP
-}
+};
+
+void dictionary_init(void);
+bool dictionary_set_language(menu_language_t lang);
+const char *dictionary_get_string(enum dictionary_phrase phrase);
 
 #endif

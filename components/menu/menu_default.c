@@ -138,13 +138,12 @@ static bool menu_process(void *arg)
 
     if ((menu->menu_list == NULL) || (menu->menu_list[menu->position] == NULL))
     {
-        oled_setCursor(2, MENU_HEIGHT + 2 * LINE_HEIGHT);
         oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, "menu->value == NULL", OLED_FONT_SIZE_11);
         return FALSE;
     }
 
     oled_clearScreen();
-    oled_printFixed(2, 0, menu->name, OLED_FONT_SIZE_16);
+    oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
     oled_setGLCDFont(OLED_FONT_SIZE_11);
 
     if (menu->line.end - menu->line.start != MAX_LINE - 1)
@@ -174,11 +173,11 @@ static bool menu_process(void *arg)
         if (line + menu->line.start == menu->position)
         {
             ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
-            oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, menu->menu_list[line + menu->line.start]->name, STYLE_NORMAL);
+            oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, dictionary_get_string(menu->menu_list[line + menu->line.start]->name_dict), OLED_FONT_SIZE_11);
         }
         else
         {
-            oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, menu->menu_list[line + menu->line.start]->name, STYLE_NORMAL);
+            oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, dictionary_get_string(menu->menu_list[line + menu->line.start]->name_dict), OLED_FONT_SIZE_11);
         }
 
         line++;
