@@ -47,7 +47,7 @@ typedef struct
     bool scan_req;
     bool error_flag;
     int error_code;
-    char *error_msg;
+    const char *error_msg;
 } wifi_menu_t;
 
 static wifi_menu_t ctx;
@@ -209,7 +209,19 @@ static bool menu_exit_cb(void *arg)
 static bool connectToDevice(char *dev)
 {
     LOG(PRINT_INFO, "Try connect %s ", dev);
-    if (memcmp(WIFI_AP_NAME, dev, strlen(WIFI_AP_NAME) - 1) == 0)
+
+    /* Check device type */
+    config.dev_type = 0xFF;
+    if (memcmp(WIFI_SIEWNIK_NAME, dev, strlen(WIFI_SIEWNIK_NAME) - 1) == 0)
+    {
+        config.dev_type = T_DEV_TYPE_SIEWNIK;       
+    }
+    else if (memcmp(WIFI_SOLARKA_NAME, dev, strlen(WIFI_SOLARKA_NAME) - 1) == 0)
+    {
+        config.dev_type = T_DEV_TYPE_SOLARKA;
+    }
+
+    if (config.dev_type != 0xFF)
     {
         /* Disconnect if connected */
         if (wifiDrvIsConnected())
@@ -244,6 +256,10 @@ static bool connectToDevice(char *dev)
         }
 
         return true;
+    }
+    else
+    {
+        config.dev_type = DEFAULT_DEV_TYPE;
     }
 
     ctx.error_msg = "Bad dev name";
@@ -290,7 +306,8 @@ static void menu_wifi_find_devices(void)
             }
 
             wifiDrvGetNameFromScannedList(i, dev_name);
-            if (memcmp(dev_name, WIFI_AP_NAME, strlen(WIFI_AP_NAME) - 1) == 0)
+            if ((memcmp(WIFI_SIEWNIK_NAME, dev_name, strlen(WIFI_SIEWNIK_NAME) - 1) == 0) 
+                || (memcmp(WIFI_SOLARKA_NAME, dev_name, strlen(WIFI_SOLARKA_NAME) - 1) == 0))
             {
                 LOG(PRINT_INFO, "%s\n", dev_name);
                 strncpy(ctx.devices_list[ctx.devices_count++], dev_name, 33);
@@ -362,12 +379,11 @@ static void menu_wifi_show_list(menu_token_t *menu)
         if (line + menu->line.start == menu->position)
         {
             ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
-            oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, &ctx.devices_list[line + menu->line.start][6], OLED_FONT_SIZE_11);
-            
+            oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, &ctx.devices_list[line + menu->line.start][strlen(WIFI_SOLARKA_NAME) + 1], OLED_FONT_SIZE_11);
         }
         else
         {
-            oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, &ctx.devices_list[line + menu->line.start][6], OLED_FONT_SIZE_11);
+            oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, &ctx.devices_list[line + menu->line.start][strlen(WIFI_SOLARKA_NAME) + 1], OLED_FONT_SIZE_11);
         }
 
         line++;

@@ -67,8 +67,8 @@ typedef struct
     bool error_flag;
     bool exit_wait_flag;
     int error_code;
-    char *error_msg;
-    char *info_msg;
+    const char *error_msg;
+    const char *info_msg;
     char buff[128];
     char ap_name[64];
     uint32_t timeout_con;
@@ -568,27 +568,30 @@ static void menu_button_servo_plus_push_cb(void *arg)
         return;
     }
 
-#if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        if (ctx.data.vibro_off_s < 100)
+        if (ctx.edit_value == EDIT_VIBRO_OFF_S)
         {
-            ctx.data.vibro_off_s++;
+            if (ctx.data.vibro_off_s < 100)
+            {
+                ctx.data.vibro_off_s++;
+            }
+        }
+        else
+        {
+            if (ctx.data.vibro_on_s < 100)
+            {
+                ctx.data.vibro_on_s++;
+            }
         }
     }
     else
     {
-        if (ctx.data.vibro_on_s < 100)
+        if (ctx.data.servo_value < 100)
         {
-            ctx.data.vibro_on_s++;
+            ctx.data.servo_value++;
         }
     }
-#elif CONFIG_DEVICE_SIEWNIK
-    if (ctx.data.servo_value < 100)
-    {
-        ctx.data.servo_value++;
-    }
-#endif
     set_change_menu(EDIT_SERVO);
 }
 
@@ -616,18 +619,21 @@ static void menu_button_servo_plus_time_cb(void *arg)
         return;
     }
 
-#if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        fastProcessStart(&ctx.data.vibro_off_s, 100, 0, FP_PLUS, servo_fast_add_cb);
+        if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+        {
+            fastProcessStart(&ctx.data.vibro_off_s, 100, 0, FP_PLUS, servo_fast_add_cb);
+        }
+        else
+        {
+            fastProcessStart(&ctx.data.vibro_on_s, 100, 1, FP_PLUS, servo_fast_add_cb);
+        }
     }
     else
     {
-        fastProcessStart(&ctx.data.vibro_on_s, 100, 1, FP_PLUS, servo_fast_add_cb);
+        fastProcessStart(&ctx.data.servo_value, 100, 0, FP_PLUS, servo_fast_add_cb);
     }
-#elif CONFIG_DEVICE_SIEWNIK
-    fastProcessStart(&ctx.data.servo_value, 100, 0, FP_PLUS, servo_fast_add_cb);
-#endif
 }
 
 static void menu_button_servo_minus_push_cb(void *arg)
@@ -655,27 +661,30 @@ static void menu_button_servo_minus_push_cb(void *arg)
         return;
     }
 
-#if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        if (ctx.data.vibro_off_s > 0)
+        if (ctx.edit_value == EDIT_VIBRO_OFF_S)
         {
-            ctx.data.vibro_off_s--;
+            if (ctx.data.vibro_off_s > 0)
+            {
+                ctx.data.vibro_off_s--;
+            }
+        }
+        else
+        {
+            if (ctx.data.vibro_on_s > 1)
+            {
+                ctx.data.vibro_on_s--;
+            }
         }
     }
     else
     {
-        if (ctx.data.vibro_on_s > 1)
+        if (ctx.data.servo_value > 0)
         {
-            ctx.data.vibro_on_s--;
+            ctx.data.servo_value--;
         }
     }
-#elif CONFIG_DEVICE_SIEWNIK
-    if (ctx.data.servo_value > 0)
-    {
-        ctx.data.servo_value--;
-    }
-#endif
     set_change_menu(EDIT_SERVO);
 }
 
@@ -703,18 +712,21 @@ static void menu_button_servo_minus_time_cb(void *arg)
         return;
     }
 
-#if CONFIG_DEVICE_SOLARKA
-    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        fastProcessStart(&ctx.data.vibro_off_s, 100, 0, FP_MINUS, servo_fast_add_cb);
+        if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+        {
+            fastProcessStart(&ctx.data.vibro_off_s, 100, 0, FP_MINUS, servo_fast_add_cb);
+        }
+        else
+        {
+            fastProcessStart(&ctx.data.vibro_on_s, 100, 1, FP_MINUS, servo_fast_add_cb);
+        }
     }
     else
     {
-        fastProcessStart(&ctx.data.vibro_on_s, 100, 1, FP_MINUS, servo_fast_add_cb);
+        fastProcessStart(&ctx.data.servo_value, 100, 0, FP_MINUS, servo_fast_add_cb);
     }
-#elif CONFIG_DEVICE_SIEWNIK
-    fastProcessStart(&ctx.data.servo_value, 100, 0, FP_MINUS, servo_fast_add_cb);
-#endif
 }
 
 static void menu_button_servo_p_m_pull_cb(void *arg)
@@ -728,12 +740,15 @@ static void menu_button_servo_p_m_pull_cb(void *arg)
         return;
     }
 
-#if CONFIG_DEVICE_SOLARKA
-    fastProcessStop(&ctx.data.vibro_off_s);
-    fastProcessStop(&ctx.data.vibro_on_s);
-#elif CONFIG_DEVICE_SIEWNIK
-    fastProcessStop(&ctx.data.servo_value);
-#endif
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
+    {
+        fastProcessStop(&ctx.data.vibro_off_s);
+        fastProcessStop(&ctx.data.vibro_on_s);
+    }
+    else
+    {
+        fastProcessStop(&ctx.data.servo_value);
+    }
 
     _reset_power_save_timer();
 
@@ -848,7 +863,7 @@ static bool menu_exit_cb(void *arg)
     return true;
 }
 
-static void menu_set_error_msg(char *msg)
+static void menu_set_error_msg(const char *msg)
 {
     ctx.error_msg = msg;
     ctx.error_flag = 1;
@@ -936,7 +951,7 @@ static void menu_start_ready(void)
     debug_function_name(__func__);
     if (!backendIsConnected())
     {
-        menu_set_error_msg("Lost connection with server");
+        menu_set_error_msg(dictionary_get_string(DICT_LOST_CONNECTION_WITH_SERVER));
         return;
     }
 
@@ -998,47 +1013,50 @@ static void menu_start_ready(void)
         }
     }
 
-#if CONFIG_DEVICE_SOLARKA
-    /* PERIOD CURSOR */
-    char menu_buff[32];
-
-    sprintf(menu_buff, "%s: %d [s]", dictionary_get_string(DICT_VIBRO_ON), ctx.data.vibro_on_s);
-
-    if (ctx.edit_value == EDIT_VIBRO_ON_S)
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
-        oled_printFixedBlack(2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11);
+        /* PERIOD CURSOR */
+        char menu_buff[32];
+
+        sprintf(menu_buff, "%s: %d [s]", dictionary_get_string(DICT_VIBRO_ON), ctx.data.vibro_on_s);
+
+        if (ctx.edit_value == EDIT_VIBRO_ON_S)
+        {
+            ssdFigureFillLine(MENU_START_OFFSET, LINE_HEIGHT);
+            oled_printFixedBlack(2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11);
+        }
+        else
+        {
+            oled_printFixed(2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11);
+        }
+
+        /* WORKING TIME CURSOR */
+        sprintf(menu_buff, "%s: %d [s]", dictionary_get_string(DICT_VIBRO_OFF), ctx.data.vibro_off_s);
+        if (ctx.edit_value == EDIT_VIBRO_OFF_S)
+        {
+            ssdFigureFillLine(MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT);
+            oled_printFixedBlack(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
+        }
+        else
+        {
+            oled_printFixed(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
+        }
     }
     else
     {
-        oled_printFixed(2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11);
+        servo_bar.fill = ctx.data.servo_value;
+        sprintf(str, "%d", servo_bar.fill);
+        ssdFigureDrawLoadBar(&servo_bar);
+        oled_printFixed(80, 55, str, OLED_FONT_SIZE_11);
+        if (ctx.data.servo_vibro_on)
+        {
+            drawServo(10, 35, ctx.data.servo_value);
+        }
+        else
+        {
+            drawServo(10, 35, 0);
+        }
     }
-
-    /* WORKING TIME CURSOR */
-    sprintf(menu_buff, "%s: %d [s]", dictionary_get_string(DICT_VIBRO_OFF), ctx.data.vibro_off_s);
-    if (ctx.edit_value == EDIT_VIBRO_OFF_S)
-    {
-        ssdFigureFillLine(MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT);
-        oled_printFixedBlack(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
-    }
-    else
-    {
-        oled_printFixed(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
-    }
-#elif CONFIG_DEVICE_SIEWNIK
-    servo_bar.fill = ctx.data.servo_value;
-    sprintf(str, "%d", servo_bar.fill);
-    ssdFigureDrawLoadBar(&servo_bar);
-    oled_printFixed(80, 55, str, OLED_FONT_SIZE_11);
-    if (ctx.data.servo_vibro_on)
-    {
-        drawServo(10, 35, ctx.data.servo_value);
-    }
-    else
-    {
-        drawServo(10, 35, 0);
-    }
-#endif
     backendEnterMenuStart();
 }
 
@@ -1046,7 +1064,7 @@ static void menu_start_power_save(void)
 {
     if (!backendIsConnected())
     {
-        menu_set_error_msg("Lost connection with server");
+        menu_set_error_msg(dictionary_get_string(DICT_LOST_CONNECTION_WITH_SERVER));
         return;
     }
 
@@ -1055,7 +1073,7 @@ static void menu_start_power_save(void)
         return;
     }
 
-    menuPrintfInfo("Power save");
+    menuPrintfInfo(dictionary_get_string(DICT_POWER_SAVE));
     backendEnterMenuStart();
 }
 
@@ -1063,7 +1081,7 @@ static void menu_start_low_silos(void)
 {
     if (!backendIsConnected())
     {
-        menu_set_error_msg("Lost connection with server");
+        menu_set_error_msg(dictionary_get_string(DICT_LOST_CONNECTION_WITH_SERVER));
         return;
     }
 
@@ -1090,49 +1108,49 @@ static void menu_start_error(void)
 
     if (!backendIsConnected())
     {
-        menu_set_error_msg("Lost connection with server");
+        menu_set_error_msg(dictionary_get_string(DICT_LOST_CONNECTION_WITH_SERVER));
         return;
     }
 
     switch (ctx.error_dev)
     {
-#if CONFIG_DEVICE_SIEWNIK
+    
     case ERROR_SERVO_NOT_CONNECTED:
-        menuPrintfInfo("Servo not\nconnected.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_SERVO_NOT_CONNECTED));
         break;
 
     case ERROR_SERVO_OVER_CURRENT:
-        menuPrintfInfo("Servo overcurrent.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_SERVO_OVERCURRENT));
         break;
-#endif
+
     case ERROR_MOTOR_NOT_CONNECTED:
-        menuPrintfInfo("Motor not\nconnected.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_MOTOR_NOT_CONNECTED));
         motor_led_blink = true;
         break;
 
     case ERROR_VIBRO_NOT_CONNECTED:
-        menuPrintfInfo("Vibro not\nconnected.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_VIBRO_NOT_CONNECTED));
         servo_led_blink = true;
         break;
 
     case ERROR_VIBRO_OVER_CURRENT:
-        menuPrintfInfo("Vibro overcurrent.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_VIBRO_OVERCURRENT));
         servo_led_blink = true;
         break;
 
     case ERROR_MOTOR_OVER_CURRENT:
-        menuPrintfInfo("Motor overcurrent.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_MOTOR_OVERCURRENT));
         motor_led_blink = true;
         break;
 
     case ERROR_OVER_TEMPERATURE:
-        menuPrintfInfo("Temperature is\nhigh.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_TEMPERATURE_IS_HIGH));
         motor_led_blink = true;
         servo_led_blink = true;
         break;
 
     default:
-        menuPrintfInfo("Unknown error.\nClick any button\nto reset error");
+        menuPrintfInfo(dictionary_get_string(DICT_UNKNOWN_ERROR));
         motor_led_blink = true;
         servo_led_blink = true;
         break;
@@ -1157,7 +1175,7 @@ static void menu_start_motor_change(void)
 {
     if (!backendIsConnected())
     {
-        menu_set_error_msg("Lost connection with server");
+        menu_set_error_msg(dictionary_get_string(DICT_LOST_CONNECTION_WITH_SERVER));
         return;
     }
 
@@ -1176,35 +1194,36 @@ static void menu_start_vibro_change(void)
     debug_function_name(__func__);
     if (!backendIsConnected())
     {
-        menu_set_error_msg("Lost connection with server");
+        menu_set_error_msg(dictionary_get_string(DICT_LOST_CONNECTION_WITH_SERVER));
         return;
     }
 
-#if CONFIG_DEVICE_SIEWNIK
-    oled_printFixed(0, 0, "   SERVO", OLED_FONT_SIZE_16);
-    sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
-    oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26);
-#endif
-
-#if CONFIG_DEVICE_SOLARKA
-    oled_printFixed(0, 0, ctx.edit_value == EDIT_VIBRO_OFF_S ? "Vibro OFF" : "Vibro ON", OLED_FONT_SIZE_16);
-    uint32_t x = 0;
-    uint32_t y = MENU_HEIGHT + LINE_HEIGHT;
-    if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 10)
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        x = CHANGE_VALUE_DISP_OFFSET;
-    }
-    else if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 100)
-    {
-        x = CHANGE_VALUE_DISP_OFFSET - 16;
+        oled_printFixed(0, 0, dictionary_get_string(ctx.edit_value == EDIT_VIBRO_OFF_S ? DICT_VIBRO_OFF : DICT_VIBRO_OFF), OLED_FONT_SIZE_16);
+        uint32_t x = 0;
+        uint32_t y = MENU_HEIGHT + LINE_HEIGHT;
+        if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 10)
+        {
+            x = CHANGE_VALUE_DISP_OFFSET;
+        }
+        else if ((ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s) < 100)
+        {
+            x = CHANGE_VALUE_DISP_OFFSET - 16;
+        }
+        else
+        {
+            x = CHANGE_VALUE_DISP_OFFSET - 32;
+        }
+        sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s);
+        oled_printFixed(x, y, ctx.buff, OLED_FONT_SIZE_26);
     }
     else
     {
-        x = CHANGE_VALUE_DISP_OFFSET - 32;
+        oled_printFixed(0, 0, dictionary_get_string(DICT_SERVO), OLED_FONT_SIZE_16);
+        sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
+        oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26);
     }
-    sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s);
-    oled_printFixed(x, y, ctx.buff, OLED_FONT_SIZE_26);
-#endif
 
     if (ctx.change_menu_timeout < xTaskGetTickCount())
     {

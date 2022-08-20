@@ -439,7 +439,7 @@ bool dictionary_set_language(menu_language_t lang)
     return false;
 }
 
-const char *dictionary_get_string(enum dictionary_phrase phrase)
+const char * dictionary_get_string(enum dictionary_phrase phrase)
 {
     if (phrase < DICT_TOP)
     {

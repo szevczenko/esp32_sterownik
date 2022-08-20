@@ -254,7 +254,7 @@ esp_err_t wifiDataRead(wifiConData_t *data)
 static void wifi_init(void)
 {
     /* Nadawanie nazwy WiFi Access point oraz przypisanie do niego mac adresu */
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
         uint8_t mac[6];
         esp_efuse_mac_get_default(mac);
@@ -273,7 +273,7 @@ static void wifi_init(void)
     /* Inicjalizacja WiFi */
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
         esp_netif_create_default_wifi_ap();
     }
@@ -286,7 +286,7 @@ static void wifi_init(void)
 
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
         wifiStartAccessPoint();
     }
@@ -319,7 +319,7 @@ static void wifi_init(void)
 
 static void wifi_idle(void)
 {
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
         _change_state(WIFI_APP_START);
         ctx.connected = true;
@@ -396,7 +396,7 @@ static void wifi_wait_connect(void)
 static void wifi_app_start(void)
 {
     osDelay(100);
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
 #if CONFIG_USE_CONSOLE_TELNET
         //telnetStart();
@@ -413,7 +413,7 @@ static void wifi_app_start(void)
 
 static void wifi_app_stop(void)
 {
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
 #if CONFIG_USE_CONSOLE_TELNET
         telnetStop();
@@ -624,7 +624,7 @@ int wifiDrvSetPassword(char *passwd, size_t len)
 
 int wifiDrvConnect(void)
 {
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
         return -1;
     }
@@ -635,7 +635,7 @@ int wifiDrvConnect(void)
 
 int wifiDrvDisconnect(void)
 {
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
         return -1;
     }
@@ -767,7 +767,7 @@ void wifiDrvPowerSave(bool state)
 
 void wifiDrvInit(void)
 {
-    if (config.dev_type == T_DEV_TYPE_SERVER)
+    if (config.wifi_type == T_WIFI_TYPE_SERVER)
     {
 #if CONFIG_USE_CONSOLE_TELNET
         telnetInit();

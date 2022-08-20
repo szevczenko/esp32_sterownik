@@ -52,8 +52,11 @@
 #define CONFIG_DEVICE_SIEWNIK                 FALSE
 #define CONFIG_DEVICE_SOLARKA                 TRUE
 
-#define T_DEV_TYPE_SERVER                     1
-#define T_DEV_TYPE_CLIENT                     2
+#define T_WIFI_TYPE_SERVER                     1
+#define T_WIFI_TYPE_CLIENT                     2
+
+#define T_DEV_TYPE_SIEWNIK                     1
+#define T_DEV_TYPE_SOLARKA                     2
 
 #define LOGO_CLIENT_NAME                      "DEXWAL"
 
@@ -144,6 +147,7 @@ typedef struct
     uint8_t hw_ver[3];
     uint8_t sw_ver[3];
     uint8_t dev_type;
+    uint8_t wifi_type;
     const uint32_t end_config;
 } config_t;
 

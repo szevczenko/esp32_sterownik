@@ -58,7 +58,7 @@ int verify_config(config_t * conf)
             sizeof(config.sw_ver)) != 0) || (memcmp(&config.name, &conf->name, sizeof(config.name)) != 0))
         {
             config.can_id = conf->can_id;
-            config.dev_type = conf->dev_type;
+            config.wifi_type = conf->wifi_type;
             return 0;
         }
 
@@ -119,6 +119,13 @@ void configInit(void)
     {
         configInitStruct(&config);
     }
+    #if CONFIG_DEVICE_SIEWNIK
+    config.dev_type = T_DEV_TYPE_SIEWNIK;
+    #endif
+
+    #if CONFIG_DEVICE_SOLARKA
+    config.dev_type = T_DEV_TYPE_SOLARKA;
+    #endif
 }
 
 int configSave(config_t *config)

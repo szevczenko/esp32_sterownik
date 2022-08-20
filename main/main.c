@@ -71,11 +71,11 @@ static void checkDevType(void)
     // read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
     if (read_i2c_value == ESP_OK)
     {
-        config.dev_type = T_DEV_TYPE_CLIENT;
+        config.wifi_type = T_WIFI_TYPE_CLIENT;
     }
     else
     {
-        config.dev_type = T_DEV_TYPE_SERVER;
+        config.wifi_type = T_WIFI_TYPE_SERVER;
     }
 }
 
@@ -84,7 +84,7 @@ void app_main()
     configInit();
     checkDevType();
 
-    if (config.dev_type != T_DEV_TYPE_SERVER)
+    if (config.wifi_type != T_WIFI_TYPE_SERVER)
     {
         battery_init();
         osDelay(10);
@@ -165,14 +165,14 @@ void app_main()
     while (1)
     {
         vTaskDelay(MS2ST(250));
-        if ((config.dev_type == T_DEV_TYPE_SERVER) && !cmdServerIsWorking())
+        if ((config.wifi_type == T_WIFI_TYPE_SERVER) && !cmdServerIsWorking())
         {
             gpio_set_level(blink_pin, 0);
         }
 
         vTaskDelay(MS2ST(750));
 
-        if (config.dev_type == T_DEV_TYPE_SERVER)
+        if (config.wifi_type == T_WIFI_TYPE_SERVER)
         {
             gpio_set_level(blink_pin, 1);
         }

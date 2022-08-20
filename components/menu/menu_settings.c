@@ -35,10 +35,8 @@ typedef enum
     PARAM_POWER_ON_MIN,
     PARAM_MOTOR_ERROR,
     PARAM_VIBRO_ERROR,
-#if CONFIG_DEVICE_SIEWNIK
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
-#endif
     PARAM_TOP,
 } parameters_type_t;
 
@@ -63,7 +61,6 @@ typedef struct
     void (*exit)(void);
 } parameters_t;
 
-#if CONFIG_DEVICE_SIEWNIK
 static void get_servo_close_calibration(uint32_t *value);
 static void get_servo_open_calibration(uint32_t *value);
 static void get_max_servo_close_calibration(uint32_t *value);
@@ -74,8 +71,6 @@ static void enter_servo_close_calibration(void);
 static void exit_servo_close_calibration(void);
 static void enter_servo_open_calibration(void);
 static void exit_servo_open_calibration(void);
-
-#endif
 
 static void get_bootup(uint32_t *value);
 static void get_buzzer(uint32_t *value);
@@ -144,7 +139,6 @@ static parameters_t parameters_list[] =
     .get_value      = get_servo_error,
     .set_value      = set_servo_error,
     .get_max_value  = get_max_servo_error},
-#if CONFIG_DEVICE_SIEWNIK
     [PARAM_SERVO_CLOSE_CALIBRATION] =
     {.name_dict     = DICT_SERVO_CLOSE,
     .unit_type      = UNIT_INT,
@@ -161,7 +155,6 @@ static parameters_t parameters_list[] =
     .get_max_value  = get_max_servo_open_calibration,
     .enter          = enter_servo_open_calibration,
     .exit           = exit_servo_open_calibration},
-#endif
 };
 
 static scrollBar_t scrollBar =
@@ -172,7 +165,6 @@ static scrollBar_t scrollBar =
 
 static menu_state_t _state;
 
-#if CONFIG_DEVICE_SIEWNIK
 static void get_max_servo_close_calibration(uint32_t *value)
 {
     *value = menuGetMaxValue(MENU_CLOSE_SERVO_REGULATION);
@@ -228,8 +220,6 @@ static void exit_servo_open_calibration(void)
     LOG(PRINT_DEBUG, "%s", __func__);
     cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION_FLAG, 0);
 }
-
-#endif
 
 static void get_motor_error(uint32_t *value)
 {
@@ -393,9 +383,20 @@ static void menu_button_down_callback(void *arg)
     }
 
     menu->last_button = LAST_BUTTON_DOWN;
-    if (menu->position < PARAM_TOP - 1)
+    
+    if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
-        menu->position++;
+        if (menu->position < PARAM_SERVO_CLOSE_CALIBRATION - 1)
+        {
+            menu->position++;
+        }
+    }
+    else
+    {
+        if (menu->position < PARAM_TOP - 1)
+        {
+            menu->position++;
+        }
     }
 
     if (_state == MENU_EDIT_PARAMETERS)
