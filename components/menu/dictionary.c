@@ -27,7 +27,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     [DICT_TRY_CONNECT_TO_S] = 
     {
         "Try connect to:\n",
-        "Соединение c:\n"
+        "Соединение c:\n",
         "Łączę się do:\n"
     },
     [DICT_WAIT_CONNECTION_S_S_S] = 
@@ -38,9 +38,9 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     },
     [DICT_CONNECTED_TRY_READ_DATA] = 
     {
-        "Connected:\n%s\n Try read data",
-        "Подключено:\n%s\n Попытка чтения данных",
-        "Połączono:\n%s\n Próbuję odczytać dane"
+        "Connected\n Try read data",
+        "Подключено\n Попытка чтения данных",
+        "Połączono\n Próbuję odczytać dane"
     },
     [DICT_READ_DATA_FROM_S] = 
     {

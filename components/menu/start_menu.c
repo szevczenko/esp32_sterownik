@@ -886,7 +886,6 @@ static void menu_set_error_msg(const char *msg)
 static void menu_start_init(void)
 {
     oled_printFixed(2, 2 * LINE_HEIGHT, dictionary_get_string(DICT_CHECK_CONNECTION), OLED_FONT_SIZE_11);
-    oled_update();
     change_state(STATE_CHECK_WIFI);
 }
 
@@ -1327,7 +1326,8 @@ static void menu_wait_connect(void)
         osDelay(50);
     } while (!cmdClientIsConnected());
 
-    menuPrintfInfo("Connected:\n%s\nTry read data   ", ctx.ap_name);
+    oled_clearScreen();
+    menuPrintfInfo(dictionary_get_string(DICT_CONNECTED_TRY_READ_DATA));
     change_state(STATE_CHECK_WIFI);
 }
 

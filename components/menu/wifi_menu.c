@@ -273,19 +273,19 @@ static void menu_wifi_init(void)
         change_state(ST_WIFI_IDLE);
     }
 
-    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_WAIT_TO_WIFI_INIT), OLED_FONT_SIZE_11);
+    oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_WAIT_TO_WIFI_INIT), OLED_FONT_SIZE_11);
 }
 
 static void menu_wifi_idle(void)
 {
     if (ctx.scan_req)
     {
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_SCANNING_DEVICES), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_SCANNING_DEVICES), OLED_FONT_SIZE_11);
         change_state(ST_WIFI_FIND_DEVICE);
         return;
     }
 
-    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_CLICK_ENTER_TO_SCANNING), OLED_FONT_SIZE_11);
+    oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_CLICK_ENTER_TO_SCANNING), OLED_FONT_SIZE_11);
 }
 
 static void menu_wifi_find_devices(void)
@@ -333,20 +333,20 @@ static void menu_wifi_show_list(menu_token_t *menu)
     {
         if (ctx.scan_req)
         {
-            oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_FIND_DEVICES), OLED_FONT_SIZE_11);
+            oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_FIND_DEVICES), OLED_FONT_SIZE_11);
             change_state(ST_WIFI_FIND_DEVICE);
             return;
         }
 
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_DEVICE_NOT_FOUND), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_DEVICE_NOT_FOUND), OLED_FONT_SIZE_11);
         return;
     }
 
     if (ctx.connect_req)
     {
         ctx.connect_req = false;
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_TRY_CONNECT_TO), OLED_FONT_SIZE_11);
-        oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_TRY_CONNECT_TO), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
         change_state(ST_WIFI_DEVICE_TRY_CONNECT);
         return;
     }
@@ -398,8 +398,8 @@ static void menu_wifi_connect(menu_token_t *menu)
 {
     if (connectToDevice(ctx.devices_list[menu->position]))
     {
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_WAIT_TO_CONNECT), OLED_FONT_SIZE_11);
-        oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_WAIT_TO_CONNECT), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
         change_state(ST_WIFI_DEVICE_WAIT_CONNECT);
     }
     else
@@ -427,10 +427,12 @@ static void menu_wifi_wait_connect(void)
         osDelay(50);
     } while (wifiDrvTryingConnect());
 
+    oled_clearScreen();
+
     if (wifiDrvIsConnected())
     {
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_WIFI_CONNECTED), OLED_FONT_SIZE_11);
-        oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, dictionary_get_string(DICT_WAIT_TO_SERVER), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_WIFI_CONNECTED), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_WAIT_TO_SERVER), OLED_FONT_SIZE_11);
         change_state(ST_WIFI_DEVICE_WAIT_CMD_CLIENT);
     }
     else
@@ -467,7 +469,7 @@ static void menu_wifi_error_check(void)
 
     if (ctx.error_flag)
     {
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_ERROR_CONNECT), OLED_FONT_SIZE_11);
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_ERROR_CONNECT), OLED_FONT_SIZE_11);
         if (ctx.error_msg != NULL)
         {
             sprintf(error_buff, "%s:%d", ctx.error_msg, ctx.error_code);
@@ -496,9 +498,8 @@ static void menu_wifi_error_check(void)
 
 static void menu_wifi_connected(menu_token_t *menu)
 {
-    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, dictionary_get_string(DICT_CONNECTED_TO), OLED_FONT_SIZE_11);
-    oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
-    oled_update();
+    oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_CONNECTED_TO), OLED_FONT_SIZE_11);
+    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
 
     if (ctx.scan_req)
     {

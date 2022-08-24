@@ -776,8 +776,7 @@ void menuPrintfInfo(const char *format, ...)
     vsnprintf(infoBuff, sizeof(infoBuff), format, ap);
     va_end(ap);
 
-    oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, infoBuff, OLED_FONT_SIZE_11);
-    oled_update();
+    oled_printFixed(2, MENU_HEIGHT, infoBuff, OLED_FONT_SIZE_11);
 }
 
 void menuDrvEnterEmergencyDisable(void)

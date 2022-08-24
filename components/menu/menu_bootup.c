@@ -123,7 +123,7 @@ static void bootup_check_memory(void)
 static void bootup_connect(void)
 {
     wifiDrvGetAPName(ctx.ap_name);
-    menuPrintfInfo(dictionary_get_string(DICT_TRY_CONNECT_TO_S), ctx.ap_name);
+    menuPrintfInfo("%s %s", dictionary_get_string(DICT_TRY_CONNECT_TO_S), ctx.ap_name);
     wifiDrvConnect();
     change_state(STATE_WAIT_CONNECT);
 }
@@ -169,7 +169,8 @@ static void bootup_wait_connect(void)
         osDelay(50);
     } while (!cmdClientIsConnected());
 
-    menuPrintfInfo(dictionary_get_string(DICT_CONNECTED_TRY_READ_DATA), ctx.ap_name);
+    oled_clearScreen();
+    menuPrintfInfo(dictionary_get_string(DICT_CONNECTED_TRY_READ_DATA));
     change_state(STATE_GET_SERVER_DATA);
 }
 

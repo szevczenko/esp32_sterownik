@@ -403,7 +403,7 @@ static void _error_task(void *arg)
 
 void errorSolarkaStart(void)
 {
-    xTaskCreate(_error_task, "_error_task", 4096, NULL, NORMALPRIO, NULL);
+    // xTaskCreate(_error_task, "_error_task", 4096, NULL, NORMALPRIO, NULL);
 }
 
 void errorSolarkaErrorReset(void)

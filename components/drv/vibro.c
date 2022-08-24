@@ -82,7 +82,7 @@ static void vibro_process(void *pv)
 #if MENU_VIRO_ON_OFF_VERSION
             if (vibroD.vibro_off_ms != 0)
 #else
-            if (vibroD.filling >= 99)
+            if (vibroD.filling != 0)
 #endif
             {
                 vibroD.type = VIBRO_TYPE_OFF;

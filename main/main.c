@@ -33,12 +33,27 @@
 #include "error_solarka.h"
 #include "oled.h"
 
-uint16_t test_value;
+extern void ultrasonar_start(void);
+
 static gpio_config_t io_conf;
 static uint32_t blink_pin = GPIO_NUM_23;
 portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
 
-extern void ultrasonar_start(void);
+static bool check_i2c_communication(void)
+{
+    ssd1306_i2cInitEx(I2C_EXAMPLE_MASTER_SCL_IO, I2C_EXAMPLE_MASTER_SDA_IO, SSD1306_I2C_ADDR);
+    uint8_t s_i2c_addr = 0x3C;
+    int ret;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( s_i2c_addr << 1 ) | I2C_MASTER_WRITE, 0x1);
+    i2c_master_write_byte(cmd, 0x00, 0x1);
+    i2c_master_stop(cmd);
+    ret = i2c_master_cmd_begin(I2C_NUM_1, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    printf("I2C TEST %d\n\r", ret);
+    return ret == ESP_OK;
+}
 
 void debug_function_name(const char *name)
 {
@@ -54,7 +69,6 @@ void debug_last_out_task(char *task_name)
 
 void graphic_init(void)
 {
-    ssd1306_i2cInitEx(I2C_EXAMPLE_MASTER_SCL_IO, I2C_EXAMPLE_MASTER_SDA_IO, SSD1306_I2C_ADDR);
     sh1106_128x64_init();
     ssd1306_clearScreen();
     ssd1306_fillScreen(0x00);
@@ -65,11 +79,9 @@ void graphic_init(void)
 
 static void checkDevType(void)
 {
-    graphic_init();
     pcf8574_init();
-    int read_i2c_value = ESP_OK;
-    // read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
-    if (read_i2c_value == ESP_OK)
+    bool read_i2c_value = check_i2c_communication();
+    if (read_i2c_value)
     {
         config.wifi_type = T_WIFI_TYPE_CLIENT;
     }
@@ -86,6 +98,7 @@ void app_main()
 
     if (config.wifi_type != T_WIFI_TYPE_SERVER)
     {
+        graphic_init();
         battery_init();
         osDelay(10);
 
@@ -100,7 +113,7 @@ void app_main()
 
         buzzer_init();
         power_on_init();
-
+        
         /* Wait to measure voltage */
         while (!battery_is_measured())
         {
@@ -108,17 +121,15 @@ void app_main()
         }
 
         float voltage = battery_get_voltage();
-
-        // ssd1306_Init();
         power_on_enable_system();
         init_buttons();
+        menuParamInit();
 
         if (voltage > 3.2)
         {
             init_menu(MENU_DRV_NORMAL_INIT);
             wifiDrvInit();
             keepAliveStartTask();
-            menuParamInit();
             dictionary_init();
             fastProcessStartTask();
             power_on_start_task();
