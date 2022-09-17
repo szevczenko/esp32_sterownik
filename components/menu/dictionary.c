@@ -34,7 +34,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     {
         "Wait connection%s%s%s",
         "Ожидание соединения%s%s%s",
-        "Oczekuję na połączenie%s%s%s"
+        "Oczekuję na \npołączenie%s%s%s"
     },
     [DICT_CONNECTED_TRY_READ_DATA] = 
     {
@@ -59,25 +59,25 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "Settings",
         "Настройки",
-        "Ustawienia"
+        "USTAWIENIA"
     },
     [DICT_START] =
     { 
         "Start",
         "старт",
-        "Start"
+        "START"
     },
     [DICT_DEVICES] =
     { 
         "Devices",
         "устройства",
-        "Urządzenia"
+        "URZĄDZENIA"
     },
     [DICT_PARAMETES] =
     { 
         "Parameters",
         "Параметры",
-        "Parametry"
+        "PARAMETRY"
     },
     [DICT_LOW_BAT] =
     { 
@@ -89,7 +89,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "Menu",
         "Меню",
-        "Menu"
+        "MENU"
     },
     /* MENU DRV */
     [DICT_WAIT_TO_INIT] =
@@ -106,15 +106,15 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     },
     [DICT_MENU_STOP] =
     { 
-        "STOP",
-        "Oстановка",
-        "STOP"
+        "                STOP",
+        "                CTOП",
+        "                STOP"
     },
     [DICT_POWER_OFF] =
     { 
-        "Power off...",
-        "Выключение...",
-        "Wyłączanie..."
+        "  Power off",
+        "  Выключение",
+        "  Wyłączanie"
     },
     /* SETTINGS */
     [DICT_BOOTING] =
@@ -139,7 +139,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "Idle time",
         "Время простоя",
-        "Czas bezczynności"
+        "Wyłącz po"
     },
     [DICT_MOTOR_ERR] =
     { 
@@ -157,13 +157,19 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "Vibro error",
         "Oшибка вибратора",
-        "Błąd wibratora"
+        "Błąd wibro"
     },
     [DICT_PERIOD] =
     {
         "Period",
         "Период",
         "Okres"
+    },
+    [DICT_MOTOR_ERROR_CALIBRATION] =
+    { 
+        "Motor err calib",
+        "Рег. ошибка двигателя",
+        "Reg. błędu silnika"
     },
     [DICT_SERVO_CLOSE] =
     { 
@@ -228,9 +234,9 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     },
     [DICT_DEVICE_NOT_CONNECTED] =
     { 
-        "Device not connected",
-        "устройство не подключено",
-        "Urządzenie niepołączone"
+        "\nDevice not \nconnected",
+        "\nустройство не \nподключено",
+        "\nUrządzenie \nniepołączone"
     },
     /* WIFI */
     [DICT_WAIT_TO_WIFI_INIT] =
@@ -320,9 +326,9 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     },
     [DICT_VIBRO_ON] =
     { 
-        "Vibro on",
-        "вибро на",
-        "Wibro Wł"
+        "Vibro",
+        "вибро",
+        "Wibro"
     },
     [DICT_VIBRO_OFF] =
     { 
@@ -362,45 +368,45 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     },
     [DICT_SERVO_NOT_CONNECTED] =
     { 
-        "Servo not connected",
+        "Servo not\n connected",
         "Серво не подключен",
-        "Serwo nie podłączone"
+        "Serwo nie \npodłączone"
     },
     [DICT_SERVO_OVERCURRENT] =
     { 
-        "Servo overcurrent",
-        "Серво заблокирован",
-        "Servo zablokowane"
+        "Servo \novercurrent",
+        "Серво \nзаблокирован",
+        "Servo \nzablokowane"
     },
     [DICT_MOTOR_NOT_CONNECTED] =
     { 
-        "Motor not connected",
-        "он не определяет двигатель",
-        "Nie wykryto silnika"
+        "Motor not \nconnected",
+        "он не \nопределяет двигатель",
+        "          Nie wykryto\n                    silnika"
     },
     [DICT_VIBRO_NOT_CONNECTED] =
     { 
-        "Vibro not connected",
-        "Двигатель вибратора не подключен",
-        "Silnik wibratora nie podłączony"
+        "Vibro not\nconnected",
+        "Двигатель вибратора\nне подключен",
+        "  Silnik wibratora     nie podłączony"
     },
     [DICT_VIBRO_OVERCURRENT] =
     { 
         "Vibro overcurrent",
-        "Мотор вибратора заблокирован",
-        "Silnik wibratora zablokowany"
+        "Мотор вибратора\nзаблокирован",
+        "  Silnik wibratora     Zablokowany"
     },
     [DICT_MOTOR_OVERCURRENT] =
     { 
-        "Motor overcurrent",
-        "Мотор заблокированный",
-        "Silnik zablokowany"
+        "Motor\novercurrent",
+        "Мотор\nзаблокированный",
+        "                   Silnik\n         Zablokowany"
     },
     [DICT_TEMPERATURE_IS_HIGH] =
     { 
-        "Temperature is high",
-        "Температура высокая",
-        "Zbyt wysoka temperatura"
+        "Temperature \nis high",
+        "Температура \nвысокая",
+        "Zbyt wysoka \ntemperatura"
     },
     [DICT_UNKNOWN_ERROR] =
     { 

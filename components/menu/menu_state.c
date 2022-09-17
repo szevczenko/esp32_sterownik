@@ -235,11 +235,11 @@ static bool _connected_process(menu_token_t *menu)
 		
 		if (parameters_list[pos].unit_type == UNIT_DOUBLE)
 		{
-			sprintf(buff, "%s: %.2f %s", dictionary_get_string(parameters_list[pos].name_dict), (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
+			sprintf(buff, "%s:      %.2f %s", dictionary_get_string(parameters_list[pos].name_dict), (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
 		}
 		else
 		{
-			sprintf(buff, "%s: %d %s", dictionary_get_string(parameters_list[pos].name_dict), parameters_list[pos].value, parameters_list[pos].unit);
+			sprintf(buff, "%s:      %d %s", dictionary_get_string(parameters_list[pos].name_dict), parameters_list[pos].value, parameters_list[pos].unit);
 		}
 		
 		if (line + menu->line.start == menu->position)

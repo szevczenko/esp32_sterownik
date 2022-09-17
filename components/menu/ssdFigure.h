@@ -23,6 +23,8 @@ int ssdFigureDrawLoadBar(loadBar_t * figure);
 int ssdFigureDrawScrollBar(scrollBar_t * figure);
 int ssdFigureFillLine(int y_start, int height);
 void drawMotor(uint8_t x, uint8_t y);
+void drawMotorCircle(uint8_t x, uint8_t y, uint8_t cnt);
+void drawVibro(uint8_t x, uint8_t y, uint8_t cnt);
 void drawServo(uint8_t x, uint8_t y, uint8_t open);
 void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging);
 void drawSignal(uint8_t x, uint8_t y, uint8_t signal_lvl);

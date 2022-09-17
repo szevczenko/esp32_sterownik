@@ -98,9 +98,11 @@ static void _reset_error(void)
 static bool _is_overcurrent(void)
 {
     float motor_current = (float)menuGetValue(MENU_CURRENT_MOTOR);
-    float overcurrent = 0.972 * menuGetValue(MENU_MOTOR) + 6.458;
+    float max_current = 0.972 * menuGetValue(MENU_MOTOR) + 6.458;
+    float calibration = ((float)menuGetValue(MENU_ERROR_MOTOR_CALIBRATION) - 50.0) * (float)menuGetValue(MENU_MOTOR) / 100.0;
+    float overcurrent = max_current + calibration;
 
-    LOG(PRINT_INFO, "Motor current %f overcurrent %f", motor_current, overcurrent);
+    LOG(PRINT_DEBUG, "Motor current %.2f overcurrent %.2f calib_val %d calib %.2f", motor_current, overcurrent, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION), calibration);
 
     return motor_current > overcurrent;
 }
@@ -129,6 +131,8 @@ static void _state_working(void)
     }
 
     /* Motor error overcurrent */
+
+    LOG(PRINT_DEBUG, "Error motor %d, servo %d", menuGetValue(MENU_ERROR_MOTOR), menuGetValue(MENU_ERROR_SERVO));
     
     if (_is_overcurrent() && menuGetValue(MENU_ERROR_MOTOR))
     {
@@ -157,8 +161,8 @@ static void _state_working(void)
     }
 
     uint32_t temperature = menuGetValue(MENU_TEMPERATURE);
-    LOG(PRINT_INFO, "Temperature %d", temperature);
-    if (temperature > 105)
+    LOG(PRINT_DEBUG, "Temperature %d", temperature);
+    if (temperature > 105 && menuGetValue(MENU_ERROR_MOTOR))
     {
         if (!ctx.temperature_find_overcurrent)
         {
@@ -403,7 +407,7 @@ static void _error_task(void *arg)
 
 void errorSolarkaStart(void)
 {
-    // xTaskCreate(_error_task, "_error_task", 4096, NULL, NORMALPRIO, NULL);
+    xTaskCreate(_error_task, "_error_task", 4096, NULL, NORMALPRIO, NULL);
 }
 
 void errorSolarkaErrorReset(void)

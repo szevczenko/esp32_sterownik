@@ -62,6 +62,7 @@ typedef struct
     bool error_flag;
     bool power_off_req;
     bool emergency_led_status;
+    bool emergency_disable_is_active;
     uint32_t led_cnt;
     int error_code;
     char *error_msg;
@@ -233,13 +234,15 @@ static void menu_timer_long_power_off_but_cb(void *arg)
 {
     if ((ctx.state == MENU_STATE_POWER_OFF_COUNT) || (ctx.state == MENU_STATE_POWER_OFF))
     {
-        power_on_disable_system();
+        // power_on_disable_system();
 
-        while (1)
-        {
-            oled_clearScreen();
-            oled_update();
-        }
+        // while (1)
+        // {
+        //     oled_clearScreen();
+        //     oled_update();
+        //     osDelay(10);
+        // }
+        ctx.state = MENU_STATE_POWER_OFF;
     }
 }
 
@@ -630,7 +633,7 @@ static void menu_state_power_off_count(menu_token_t *menu)
         SERVO_VIBRO_LED_SET_RED(0);
         MOTOR_LED_SET_GREEN(0);
         SERVO_VIBRO_LED_SET_GREEN(0);
-        ctx.state = MENU_STATE_PROCESS;
+        ctx.state = ctx.emergency_disable_is_active ? MENU_STATE_EMERGENCY_DISABLE : MENU_STATE_PROCESS;
         return;
     }
 
@@ -648,10 +651,10 @@ static void menu_state_power_off_count(menu_token_t *menu)
     }
 
     oled_clearScreen();
-    oled_printFixed(2, 10, dictionary_get_string(DICT_POWER_OFF), OLED_FONT_SIZE_16);
+    oled_printFixed(2, 5, dictionary_get_string(DICT_POWER_OFF), OLED_FONT_SIZE_26);
 
-    sprintf(buff, "     %d", time);
-    oled_printFixed(2, 2 * MENU_HEIGHT, buff, OLED_FONT_SIZE_16);
+    sprintf(buff, "%d", time);
+    oled_printFixed(52, 2 * MENU_HEIGHT, buff, OLED_FONT_SIZE_26);
 
     oled_update();
     osDelay(100);
@@ -660,7 +663,7 @@ static void menu_state_power_off_count(menu_token_t *menu)
 static void menu_state_power_off(menu_token_t *menu)
 {
     power_on_disable_system();
-
+    
     oled_clearScreen();
     oled_update();
     osDelay(100);
@@ -784,6 +787,7 @@ void menuDrvEnterEmergencyDisable(void)
     ctx.last_state = ctx.state;
     ctx.state = MENU_STATE_EMERGENCY_DISABLE;
     ctx.emergency_led_status = true;
+    ctx.emergency_disable_is_active = true;
     MOTOR_LED_SET_GREEN(0);
     SERVO_VIBRO_LED_SET_GREEN(0);
     ctx.led_cnt = 0;
@@ -794,6 +798,8 @@ void menuDrvExitEmergencyDisable(void)
 {
     ctx.state = ctx.last_state;
     menu_token_t *menu = last_tab_element();
+
+    ctx.emergency_disable_is_active = false;
 
     MOTOR_LED_SET_RED(0);
     SERVO_VIBRO_LED_SET_RED(0);

@@ -130,9 +130,10 @@ static void bootup_connect(void)
 
 static void _show_wait_connection(void)
 {
+    oled_clearScreen();
     sprintf(ctx.buff, dictionary_get_string(DICT_WAIT_CONNECTION_S_S_S), xTaskGetTickCount() % 400 > 100 ? "." : " ",
         xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
-    oled_printFixed(2, MENU_HEIGHT + 2 * LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_11);
+    oled_printFixed(2, 2* MENU_HEIGHT, ctx.buff, OLED_FONT_SIZE_11);
     oled_update();
 }
 

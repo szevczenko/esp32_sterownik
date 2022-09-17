@@ -852,6 +852,7 @@ static bool menu_enter_cb(void *arg)
     cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
+    cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
 
     ctx.error_flag = 0;
     return true;
@@ -942,6 +943,7 @@ static void menu_start_idle(void)
         cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
         cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
+        cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
         change_state(STATE_START);
     }
     else
@@ -996,36 +998,38 @@ static void menu_start_ready(void)
     sprintf(str, "%d%%", motor_bar.fill);
     oled_clearScreen();
     ssdFigureDrawLoadBar(&motor_bar);
-    oled_printFixed(80, 25, str, OLED_FONT_SIZE_11);
+    oled_printFixed(70, 22, str, OLED_FONT_SIZE_11);
     uint8_t cnt = 0;
 
     if (ctx.data.motor_on)
     {
-        cnt = ctx.animation_cnt % 8;
+        cnt = ctx.animation_cnt % 6;
     }
 
-    if (cnt < 4)
-    {
-        if (cnt < 2)
-        {
-            drawMotor(2, 2 - cnt);
-        }
-        else
-        {
-            drawMotor(2, cnt - 2);
-        }
-    }
-    else
-    {
-        if (cnt < 6)
-        {
-            drawMotor(2, cnt - 2);
-        }
-        else
-        {
-            drawMotor(2, 10 - cnt);
-        }
-    }
+    drawMotorCircle(5, 2, cnt);
+
+    // if (cnt < 4)
+    // {
+    //     if (cnt < 2)
+    //     {
+    //         drawMotor(2, 2 - cnt);
+    //     }
+    //     else
+    //     {
+    //         drawMotor(2, cnt - 2);
+    //     }
+    // }
+    // else
+    // {
+    //     if (cnt < 6)
+    //     {
+    //         drawMotor(2, cnt - 2);
+    //     }
+    //     else
+    //     {
+    //         drawMotor(2, 10 - cnt);
+    //     }
+    // }
 
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
@@ -1057,10 +1061,20 @@ static void menu_start_ready(void)
             oled_printFixed(2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11);
         }
 #else
+        if (ctx.data.servo_vibro_on)
+        {
+            cnt = ctx.animation_cnt % 4;
+        }
+        else
+        {
+            cnt = 0;
+        }
+
+        drawVibro(0, 33, cnt);
         servo_bar.fill = ctx.data.servo_value;
-        sprintf(str, "Bzzz: %d", servo_bar.fill);
+        sprintf(str, "%d%%", servo_bar.fill);
         ssdFigureDrawLoadBar(&servo_bar);
-        oled_printFixed(80, 55, str, OLED_FONT_SIZE_11);
+        oled_printFixed(70, 52, str, OLED_FONT_SIZE_11);
 #endif
     }
     else
@@ -1068,7 +1082,7 @@ static void menu_start_ready(void)
         servo_bar.fill = ctx.data.servo_value;
         sprintf(str, "%d", servo_bar.fill);
         ssdFigureDrawLoadBar(&servo_bar);
-        oled_printFixed(80, 55, str, OLED_FONT_SIZE_11);
+        oled_printFixed(80, 52, str, OLED_FONT_SIZE_11);
         if (ctx.data.servo_vibro_on)
         {
             drawServo(10, 35, ctx.data.servo_value);
@@ -1137,30 +1151,30 @@ static void menu_start_error(void)
     {
     
     case ERROR_SERVO_NOT_CONNECTED:
-        menuPrintfInfo(dictionary_get_string(DICT_SERVO_NOT_CONNECTED));
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_SERVO_NOT_CONNECTED), OLED_FONT_SIZE_16);
         break;
 
     case ERROR_SERVO_OVER_CURRENT:
-        menuPrintfInfo(dictionary_get_string(DICT_SERVO_OVERCURRENT));
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_SERVO_OVERCURRENT), OLED_FONT_SIZE_16);
         break;
 
     case ERROR_MOTOR_NOT_CONNECTED:
-        menuPrintfInfo(dictionary_get_string(DICT_MOTOR_NOT_CONNECTED));
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_MOTOR_NOT_CONNECTED), OLED_FONT_SIZE_16);
         motor_led_blink = true;
         break;
 
     case ERROR_VIBRO_NOT_CONNECTED:
-        menuPrintfInfo(dictionary_get_string(DICT_VIBRO_NOT_CONNECTED));
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_VIBRO_NOT_CONNECTED), OLED_FONT_SIZE_16);
         servo_led_blink = true;
         break;
 
     case ERROR_VIBRO_OVER_CURRENT:
-        menuPrintfInfo(dictionary_get_string(DICT_VIBRO_OVERCURRENT));
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_VIBRO_OVERCURRENT), OLED_FONT_SIZE_16);
         servo_led_blink = true;
         break;
 
     case ERROR_MOTOR_OVER_CURRENT:
-        menuPrintfInfo(dictionary_get_string(DICT_MOTOR_OVERCURRENT));
+        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_MOTOR_OVERCURRENT), OLED_FONT_SIZE_16);
         motor_led_blink = true;
         break;
 
@@ -1200,7 +1214,7 @@ static void menu_start_motor_change(void)
         return;
     }
 
-    oled_printFixed(0, 0, "   MOTOR", OLED_FONT_SIZE_16);
+    oled_printFixed(0, 0, dictionary_get_string(DICT_MOTOR), OLED_FONT_SIZE_26);
     sprintf(ctx.buff, "%d%%", ctx.data.motor_value);
     oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26); //Font_16x26
 
@@ -1240,14 +1254,14 @@ static void menu_start_vibro_change(void)
         sprintf(ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s);
         oled_printFixed(x, y, ctx.buff, OLED_FONT_SIZE_26);
 #else
-        oled_printFixed(0, 0, dictionary_get_string(DICT_VIBRO_ON), OLED_FONT_SIZE_16);
+        oled_printFixed(0, 0, dictionary_get_string(DICT_VIBRO_ON), OLED_FONT_SIZE_26);
         sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
         oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26);
 #endif
     }
     else
     {
-        oled_printFixed(0, 0, dictionary_get_string(DICT_SERVO), OLED_FONT_SIZE_16);
+        oled_printFixed(0, 0, dictionary_get_string(DICT_SERVO), OLED_FONT_SIZE_26);
         sprintf(ctx.buff, "%d%%", ctx.data.servo_value);
         oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26);
     }
@@ -1290,6 +1304,7 @@ static void menu_reconnect(void)
 
 static void _show_wait_connection(void)
 {
+    oled_clearScreen();
     sprintf(ctx.buff, dictionary_get_string(DICT_WAIT_CONNECTION_S_S_S), xTaskGetTickCount() % 400 > 100 ? "." : " ",
         xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
     oled_printFixed(2, 2 * LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_11);

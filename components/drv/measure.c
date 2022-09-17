@@ -70,9 +70,9 @@ static meas_data_t meas_data[MEAS_CH_LAST] =
 static uint32_t table_size;
 static uint32_t table_iter;
 uint32_t motor_calibration_meas;
-#if CONFIG_DEVICE_SOLARKA
+//#if CONFIG_DEVICE_SOLARKA
 static TimerHandle_t motorCalibrationTimer;
-#endif
+//#endif
 
 #if CONFIG_DEVICE_SIEWNIK
 static TimerHandle_t servoCalibrationTimer;
@@ -236,7 +236,7 @@ float measure_get_temperature(void)
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 32 + 130;
+    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 28 + 130;
     LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
     return temp;
 #endif

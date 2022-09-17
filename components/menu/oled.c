@@ -60,21 +60,21 @@ static struct oledFont font11 =
 {
     .width = 11, 
     .height = 13,
-    .data = {{.data = Calibri11x13}, {.data = Calibri12x13_RU}, {.data = Calibri10x13_PL}},
+    .data = {{.data = Calibri10x13}, {.data = Calibri13x13_RU}, {.data = Calibri11x13_PL}},
 };
 
 static struct oledFont font16 = 
 {
     .width = 16, 
     .height = 17,
-    .data = {{.data = Calibri13x17}, {.data = Calibri14x17_PL}, {.data = Calibri16x17_RU}},
+    .data = {{.data = Calibri15x17}, {.data = Calibri14x17_PL}, {.data = Calibri16x17_RU}},
 };
 
 static struct oledFont font26 = 
 {
     .width = 16, 
     .height = 26,
-    .data = {{.data = Calibri21x24}, {.data = Calibri21x24_PL}, {.data = Calibri26x24_RU}},
+    .data = {{.data = Calibri21x24}, {.data = Calibri21x26_PL}, {.data = Calibri26x24_RU}},
 };
 
 extern SFixedFontInfo s_fixedFont;

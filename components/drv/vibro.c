@@ -59,10 +59,18 @@ static void vibro_process(void *pv)
 {
     while (1)
     {
+        if (vibroD.filling == 0)
+        {
+            vibroD.type = VIBRO_TYPE_OFF;
+            vTaskDelay(MS2ST(100));
+            continue;
+        }
+
         if (vibroD.state == VIBRO_STATE_START)
         {
             vibroD.type = VIBRO_TYPE_ON;
             vibroD.vibro_on_start_time = xTaskGetTickCount();
+
             while (vibroD.state == VIBRO_STATE_START)
             {
 #if MENU_VIRO_ON_OFF_VERSION
