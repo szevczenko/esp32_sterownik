@@ -34,9 +34,9 @@ typedef enum
     PARAM_BUZZER,
     PARAM_LANGUAGE,
     PARAM_POWER_ON_MIN,
+    PARAM_PERIOD,
     PARAM_MOTOR_ERROR,
     PARAM_VIBRO_ERROR,
-    PARAM_PERIOD,
     PARAM_MOTOR_ERROR_CALIBRATION,
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
@@ -119,7 +119,7 @@ static const char *language[] =
 {
     [MENU_LANGUAGE_ENGLISH] = "English",
     [MENU_LANGUAGE_RUSSIAN] = "Russian",
-    [MENU_LANGUAGE_POLISH]  = "Polish",
+    [MENU_LANGUAGE_POLISH]  = "Polski",
     [MENU_LANGUAGE_GERMANY] = "Germany",
 };
 
@@ -734,6 +734,7 @@ static bool menu_button_init_cb(void *arg)
     menu->button.down.fall_callback = menu_button_down_callback;
     menu->button.up.fall_callback = menu_button_up_callback;
     menu->button.enter.fall_callback = menu_button_enter_callback;
+    menu->button.motor_on.fall_callback = menu_button_enter_callback;
     menu->button.exit.fall_callback = menu_button_exit_callback;
 
     menu->button.up_minus.fall_callback = menu_button_minus_callback;

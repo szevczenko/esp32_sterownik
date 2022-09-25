@@ -77,8 +77,16 @@ int motor_start(mDriver *motorD)
         LED_MOTOR_ON;
         CMD_MOTOR_ON;
         motorD->last_state = motorD->state;
-        motorD->state = MOTOR_AXELERATE;
-        motorD->timeout = xTaskGetTickCount() + MS2ST(1000);
+        if (motorD->pwm >= 40)
+        {
+            motorD->state = MOTOR_AXELERATE;
+            motorD->timeout = xTaskGetTickCount() + MS2ST(1000); 
+        }
+        else
+        {
+            motorD->state = MOTOR_ON;
+        }
+        
         return 1;
     }
     else
@@ -170,6 +178,7 @@ void motor_regulation(mDriver *motorD, float pwm)
 
 float dcmotor_process(mDriver *motorD, uint8_t value)
 {
+    motorD->pwm = value;
     switch (motorD->state)
     {
     case MOTOR_ON:
@@ -206,9 +215,9 @@ float dcmotor_process(mDriver *motorD, uint8_t value)
 
     case MOTOR_AXELERATE:
         printf("MOTOR_AXELERATE %d\n\r", value);
-        motorD->state = MOTOR_ON;    //!!
-        break;                       //!
-        dcmotor_set_pwm(motorD, 50);
+        // motorD->state = MOTOR_ON;    //!!
+        // break;                       //!
+        dcmotor_set_pwm(motorD, 40);
 
         //printf("MOTOR_AXELERATE %d\n", motorD->pwm_value);
         if (motorD->timeout < xTaskGetTickCount())

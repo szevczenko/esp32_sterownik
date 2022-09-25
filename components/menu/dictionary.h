@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#define LANGUAGE_CNT_SUPPORT 3
+#define LANGUAGE_CNT_SUPPORT 4
 
 typedef enum
 {

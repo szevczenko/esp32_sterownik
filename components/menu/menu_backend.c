@@ -424,5 +424,5 @@ bool backendIsConnected(void)
 
 bool backendIsEmergencyDisable(void)
 {
-    return ctx.state == STATE_EMERGENCY_DISABLE_EXIT;
+    return ctx.state == STATE_EMERGENCY_DISABLE;
 }

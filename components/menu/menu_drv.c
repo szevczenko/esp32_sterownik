@@ -234,14 +234,6 @@ static void menu_timer_long_power_off_but_cb(void *arg)
 {
     if ((ctx.state == MENU_STATE_POWER_OFF_COUNT) || (ctx.state == MENU_STATE_POWER_OFF))
     {
-        // power_on_disable_system();
-
-        // while (1)
-        // {
-        //     oled_clearScreen();
-        //     oled_update();
-        //     osDelay(10);
-        // }
         ctx.state = MENU_STATE_POWER_OFF;
     }
 }

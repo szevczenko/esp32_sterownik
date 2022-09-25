@@ -133,6 +133,11 @@ static void _state_working(void)
     /* Motor error overcurrent */
 
     LOG(PRINT_DEBUG, "Error motor %d, servo %d", menuGetValue(MENU_ERROR_MOTOR), menuGetValue(MENU_ERROR_SERVO));
+
+    if (menuGetValue(MENU_CURRENT_MOTOR) > 100 /*&& menuGetValue(MENU_ERROR_MOTOR) */)
+    {
+        _change_state(STATE_ERROR_MOTOR_CURRENT);
+    }
     
     if (_is_overcurrent() && menuGetValue(MENU_ERROR_MOTOR))
     {
@@ -140,7 +145,7 @@ static void _state_working(void)
         {
             LOG(PRINT_INFO, "find motor overcurrent");
             ctx.motor_find_overcurrent = true;
-            ctx.motor_error_timer = MS2ST(1500) + xTaskGetTickCount();
+            ctx.motor_error_timer = MS2ST(750) + xTaskGetTickCount();
         }
         else
         {
@@ -199,7 +204,7 @@ static void _state_working(void)
         {
             LOG(PRINT_INFO, "find vibro overcurrent");
             ctx.vibro_find_overcurrent = true;
-            ctx.vibro_error_timer = MS2ST(1500) + xTaskGetTickCount();
+            ctx.vibro_error_timer = MS2ST(750) + xTaskGetTickCount();
         }
         else
         {

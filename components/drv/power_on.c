@@ -76,7 +76,7 @@ static void _state_idle(void)
 
 static void _state_wait_to_disable(void)
 {
-    if (menuGetValue(MENU_MOTOR_IS_ON) || menuGetValue(MENU_SERVO_IS_ON))
+    if ((menuGetValue(MENU_MOTOR_IS_ON) || menuGetValue(MENU_SERVO_IS_ON)) && backendIsConnected())
     {
         _change_state(STATE_IDLE);
         return;

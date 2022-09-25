@@ -236,7 +236,7 @@ float measure_get_temperature(void)
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 28 + 130;
+    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 36 + 130;
     LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
     return temp;
 #endif

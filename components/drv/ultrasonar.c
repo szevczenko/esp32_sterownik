@@ -45,7 +45,7 @@ static void sonar_task(void *arg)
     {
         // Read data from the UART
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, read_buff, sizeof(read_buff), 20 / portTICK_RATE_MS);
-        //printf("[SONAR] Read data size %d\n\r", len);
+        // printf("[SONAR] Read data size %d\n\r", len);
         for (int i = 0; i < len; i++)
         {
             if ((read_buff[i] == 0xFF) && (i + 2 < len))
@@ -60,7 +60,7 @@ static void sonar_task(void *arg)
                 }
 
                 distance = distance / FILTERED_TABLE_SIZE;
-                //printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
+                printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
             }
         }
 

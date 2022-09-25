@@ -16,7 +16,7 @@
 #include "oled.h"
 
 #define MODULE_NAME                 "[START] "
-#define DEBUG_LVL                   PRINT_DEBUG
+#define DEBUG_LVL                   PRINT_INFO
 
 #if CONFIG_DEBUG_MENU_BACKEND
 #define LOG(_lvl, ...) \
@@ -853,6 +853,7 @@ static bool menu_enter_cb(void *arg)
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
+    backendEnterMenuStart();
 
     ctx.error_flag = 0;
     return true;
@@ -1442,6 +1443,12 @@ static bool menu_process(void *arg)
 
 static void timerCallback(void *pv)
 {
+    printf("%s\n\r", __func__);
+    if (backendIsEmergencyDisable() || ctx.state == STATE_ERROR)
+    {
+        return;
+    }
+
     ctx.data.servo_vibro_on = true;
 }
 
@@ -1469,6 +1476,8 @@ void menuStartSetError(error_type_t error)
     LOG(PRINT_DEBUG, "%s %d", __func__, error);
     ctx.error_dev = error;
     change_state(STATE_ERROR);
+    ctx.data.motor_on = false;
+    ctx.data.servo_vibro_on = false;
 }
 
 void menuStartResetError(void)

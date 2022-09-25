@@ -96,6 +96,7 @@ static bool menu_button_init_cb(void *arg)
     menu->button.down.fall_callback = menu_button_down_callback;
     menu->button.up.fall_callback = menu_button_up_callback;
     menu->button.enter.fall_callback = menu_button_enter_callback;
+    menu->button.motor_on.fall_callback = menu_button_enter_callback;
     menu->button.exit.fall_callback = menu_button_exit_callback;
     return true;
 }

@@ -30,6 +30,7 @@ typedef struct
 	motorState state;
 	motorState last_state;
 	uint8_t error_code;
+	uint8_t pwm;
 	float pwm_value;
 	TickType_t timeout;
 	uint8_t try_cnt;
