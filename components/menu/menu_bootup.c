@@ -46,6 +46,7 @@ typedef struct
     char ap_name[33];
     uint32_t timeout_con;
     bool system_connected;
+    bool exit_req;
     char buff[128];
 } menu_start_context_t;
 
@@ -140,10 +141,10 @@ static void _show_wait_connection(void)
 static void bootup_wait_connect(void)
 {
     /* Wait to connect wifi */
-    ctx.timeout_con = MS2ST(10000) + xTaskGetTickCount();
+    ctx.timeout_con = MS2ST(5000) + xTaskGetTickCount();
     do
     {
-        if (ctx.timeout_con < xTaskGetTickCount())
+        if (ctx.timeout_con < xTaskGetTickCount() || ctx.exit_req)
         {
             ctx.error_msg = dictionary_get_string(DICT_TIMEOUT_CONNECT);
             ctx.error_flag = 1;
@@ -155,10 +156,10 @@ static void bootup_wait_connect(void)
         osDelay(50);
     } while (wifiDrvTryingConnect());
 
-    ctx.timeout_con = MS2ST(10000) + xTaskGetTickCount();
+    ctx.timeout_con = MS2ST(5000) + xTaskGetTickCount();
     do
     {
-        if (ctx.timeout_con < xTaskGetTickCount())
+        if (ctx.timeout_con < xTaskGetTickCount() || ctx.exit_req)
         {
             ctx.error_msg = dictionary_get_string(DICT_TIMEOUT_SERVER);
             ctx.error_flag = 1;
@@ -292,6 +293,8 @@ static bool menu_exit_cb(void *arg)
         NULL_ERROR_MSG();
         return false;
     }
+
+    ctx.exit_req = true;
 
     return true;
 }

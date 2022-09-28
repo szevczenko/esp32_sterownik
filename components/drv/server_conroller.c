@@ -279,7 +279,7 @@ static void state_idle(void)
 
 static void state_working(void)
 {
-    ctx.system_on = (uint8_t)menuGetValue(MENU_START_SYSTEM);
+    ctx.system_on = (bool)menuGetValue(MENU_START_SYSTEM);
     ctx.servo_value = (uint8_t)menuGetValue(MENU_SERVO);
     ctx.motor_value = (uint8_t)menuGetValue(MENU_MOTOR);
     ctx.motor_on = (uint16_t)menuGetValue(MENU_MOTOR_IS_ON);
@@ -418,6 +418,8 @@ static void state_motor_regulation(void)
 
 static void state_emergency_disable(void)
 {
+    // Tą linijke usunąć jeżeli niepotrzebne wyłączenie przekaźnika w trybie STOP
+    ctx.system_on = 0;
     ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
     ctx.servo_value = 0;
     ctx.motor_value = 0;
