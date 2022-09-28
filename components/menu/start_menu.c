@@ -1424,7 +1424,7 @@ static bool menu_process(void *arg)
         break;
     }
 
-    if (backendIsEmergencyDisable() || ctx.state == STATE_ERROR)
+    if (backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected())
     {
         MOTOR_LED_SET_GREEN(0);
         SERVO_VIBRO_LED_SET_GREEN(0);

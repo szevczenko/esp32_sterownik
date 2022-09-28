@@ -175,6 +175,7 @@ static bool menu_button_init_cb(void *arg)
     menu->button.down.fall_callback = menu_button_down_callback;
     menu->button.up.fall_callback = menu_button_up_callback;
     menu->button.enter.fall_callback = menu_button_enter_callback;
+    menu->button.motor_on.fall_callback = menu_button_enter_callback;
     menu->button.exit.fall_callback = menu_button_exit_callback;
     return true;
 }
@@ -329,6 +330,8 @@ static void menu_wifi_find_devices(void)
 
 static void menu_wifi_show_list(menu_token_t *menu)
 {
+    static char buff[128];
+
     if (ctx.devices_count == 0)
     {
         if (ctx.scan_req)
@@ -345,8 +348,8 @@ static void menu_wifi_show_list(menu_token_t *menu)
     if (ctx.connect_req)
     {
         ctx.connect_req = false;
-        oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_TRY_CONNECT_TO), OLED_FONT_SIZE_11);
-        oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT, ctx.devices_list[menu->position], OLED_FONT_SIZE_11);
+        sprintf(buff, "%s\n%s", dictionary_get_string(DICT_TRY_CONNECT_TO), ctx.devices_list[menu->position]);
+        oled_printFixed(2, MENU_HEIGHT, buff, OLED_FONT_SIZE_11);
         change_state(ST_WIFI_DEVICE_TRY_CONNECT);
         return;
     }

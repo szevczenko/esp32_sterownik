@@ -32,35 +32,34 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Try connect to:\n",
         "Соединение c:\n",
         "Łączę się do:\n",
-        "Try connect to:\n"
+        "Ich verbinde\nmich mit:\n"
     },
     [DICT_WAIT_CONNECTION_S_S_S] = 
     {
         "Wait connection%s%s%s",
         "Ожидание соединения%s%s%s",
         "Oczekuję na \npołączenie%s%s%s",
-		"Verbindung warten"
+		"Verbindung warten%s%s%s"
     },
     [DICT_CONNECTED_TRY_READ_DATA] = 
     {
         "Connected\n Try read data",
         "Подключено\n Попытка чтения данных",
         "Połączono\n Próbuję odczytać dane",
-		"Verbunden,Data lesen"
-		
+		"Verbunden, Data lesen"
     },
     [DICT_READ_DATA_FROM_S] = 
     {
         "Reading data from:\n%s",
         "Чтение данных из:\n%s",
         "Odczytywanie danych z:\n%s",
-		"Data lesen"
+		"Data lesen:\n%s"
     },
     [DICT_SYSTEM_READY_TO_START] = 
     { 
         "System ready to start",
         "Система готова к запуску",
-        "System gotowy do uruchomienia",
+        "    System gotowy\n      do uruchomienia",
 		"System ist startbereit"
     },
     /* MENU */
@@ -69,7 +68,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Settings",
         "Настройки",
         "USTAWIENIA",
-		"Settings"
+		"Einstellungen"
     },
     [DICT_START] =
     { 
@@ -97,7 +96,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Low battery",
         "низкий заряд батареи",
         "Niski poziom baterii",
-		"Niedriger Batteriestatus"
+		"Niedriger\nBatteriestatus"
     },
     [DICT_MENU] =
     { 
@@ -133,7 +132,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "  Power off",
         "  Выключение",
         "  Wyłączanie",
-		"  Ausschalten"
+		"Ausschalten"
     },
     /* SETTINGS */
     [DICT_BOOTING] =
@@ -197,7 +196,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Motor err calib",
         "Рег. ошибка двигателя",
         "Reg. błędu silnika",
-		"Motorfehler Kalib"
+		"Motorkalibrierung"
     },
     [DICT_SERVO_CLOSE] =
     { 
@@ -274,16 +273,16 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "\nDevice not \nconnected",
         "\nустройство не \nподключено",
-        "\nUrządzenie \nniepołączone",
-		"Gerät nicht verbunden"
+        "\n      Urządzenie \n        niepołączone",
+		"\n      Gerät nicht\n        verbunden"
     },
     /* WIFI */
     [DICT_WAIT_TO_WIFI_INIT] =
     { 
         "Wait to wifi init",
         "Дождитесь инициализации wifi",
-        "Poczekaj na uruchomienie Wi-Fi",
-		"Warten Sie auf den Start des Wi-Fi"
+        "Poczekaj na\nuruchomienie Wi-Fi",
+		"Warten Sie auf\nden Start des Wi-Fi"
     },
     [DICT_SCANNING_DEVICES] =
     { 
@@ -297,28 +296,28 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Click enter to scanning",
         "Нажмите Enter для сканирования",
         "Kliknij Enter, aby wyszukać",
-		"Klicken Sie zum Scannen auf Enter"
+		"Klicken Sie zum\nScannen auf Enter"
     },
     [DICT_FIND_DEVICES] =
     { 
         "Find Devices",
         "Найти устройства",
-        "Znajdź urządzenia",
+        "Szukam urządzeń",
 		"Geräte finden"
     },
     [DICT_DEVICE_NOT_FOUND] =
     { 
         "Device not found",
         "Устройство не найдено",
-        "Urządzenie nie zostało znalezione",
-		"Gerät nicht gefunden"
+        "\n             Urządzenie nie\n         zostało znalezione",
+		"\n               Gerät nicht\n               gefunden"
     },
     [DICT_TRY_CONNECT_TO] =
     { 
         "Try connect to",
         "Попробуйте подключиться к",
         "Próba połączenia z\n",
-		"Versuchen Sie eine Verbindung zu"
+		"Versuchen Sie eine\nVerbindung zu"
     },
     [DICT_WAIT_TO_CONNECT] =
     { 
@@ -346,7 +345,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "ERROR CONNECT",
         "Ошибка подключения",
         "Bląd połączenia",
-		"FEHLERHAFTE VERBINDUNG"
+		"       FEHLERHAFTE\n       VERBINDUNG"
     },
     [DICT_CONNECTED_TO] =
     { 
@@ -446,14 +445,14 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Motor not \nconnected",
         "он не \nопределяет двигатель",
         "          Nie wykryto\n                    silnika",
-		"Motor nicht verbunden"
+		"          Motor nicht\n          verbunden"
     },
     [DICT_VIBRO_NOT_CONNECTED] =
     { 
         "Vibro not\nconnected",
         "Двигатель вибратора\nне подключен",
         "  Silnik wibratora     nie podłączony",
-		"Vibro nicht verbunden"
+		"          Vibro nicht\n          verbunden"
     },
     [DICT_VIBRO_OVERCURRENT] =
     { 
@@ -488,21 +487,21 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Lost connection with server",
         "потеря связи с сервером",
         "Utacono połączenie \n z serwerem",
-		"Verbindung zum Server unterbrochen"
+		"Verbindung zum\nServer unterbrochen"
     },
     [DICT_TIMEOUT_CONNECT] =
     { 
         "Timeout connect",
         "Время ожидания \n подключения",
         "Przekroczono limit \n czasu połączenia",
-		"Zeitüberschreitung verbinden"
+		"    Zeitüberschreitung\n        verbinden"
     },
     [DICT_TIMEOUT_SERVER] =
     { 
         "Timeout server",
         "Сервер тайм-аута",
         "Przekroczono czas \n odpowiedzi serwera",
-		"Zeitüberschreitung Server"
+		"  Zeitüberschreitung\n         Server"
     },
 };
 
