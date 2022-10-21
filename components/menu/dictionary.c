@@ -191,6 +191,13 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
         "Okres",
 		"Zeitspanne"
     },
+    [DICT_BRIGHTNESS] = 
+    {
+        "Brightness",
+        "Яркость",
+        "Jasność",
+        "Helligkeit"
+    },
     [DICT_MOTOR_ERROR_CALIBRATION] =
     { 
         "Motor err calib",

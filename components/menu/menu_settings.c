@@ -10,6 +10,7 @@
 #include "menu_backend.h"
 #include "menu_settings.h"
 #include "fast_add.h"
+#include "led.h"
 
 #define MODULE_NAME    "[SETTING] "
 #define DEBUG_LVL      PRINT_INFO
@@ -32,6 +33,7 @@ typedef enum
 {
     PARAM_BOOTUP_MENU,
     PARAM_BUZZER,
+    PARAM_BRIGHTNESS,
     PARAM_LANGUAGE,
     PARAM_POWER_ON_MIN,
     PARAM_PERIOD,
@@ -115,6 +117,13 @@ static void set_motor_error_calibration(uint32_t value);
 static void get_max_motor_error_calibration(uint32_t *value);
 static void exit_motor_error_calibration(void);
 
+static void get_brightness(uint32_t *value);
+static void set_brightness(uint32_t value);
+static void get_max_brightness(uint32_t *value);
+static void get_min_brightness(uint32_t *value);
+static void enter_brightness(void);
+static void exit_brightness(void);
+
 static const char *language[] =
 {
     [MENU_LANGUAGE_ENGLISH] = "English",
@@ -131,6 +140,15 @@ static parameters_t parameters_list[] =
     .get_value      = get_bootup,
     .set_value      = set_bootup,
     .get_max_value  = get_max_bootup},
+    [PARAM_BRIGHTNESS] = 
+    {.name_dict     = DICT_BRIGHTNESS,
+    .unit_type      = UNIT_INT,
+    .get_value      = get_brightness,
+    .set_value      = set_brightness,
+    .get_max_value  = get_max_brightness,
+    .get_min_value  = get_min_brightness,
+    .enter          = enter_brightness,
+    .exit           = exit_brightness},
     [PARAM_BUZZER] =
     {.name_dict     = DICT_BUZZER,
     .unit_type      = UNIT_ON_OFF,
@@ -423,6 +441,40 @@ static void set_bootup(uint32_t value)
 static void set_buzzer(uint32_t value)
 {
     menuSetValue(MENU_BUZZER, value);
+}
+
+static void get_brightness(uint32_t *value)
+{
+    *value = menuGetValue(MENU_BRIGHTNESS);
+}
+
+static void set_brightness(uint32_t value)
+{
+    menuSetValue(MENU_BRIGHTNESS, value);
+    MOTOR_LED_SET_RED(1);
+    SERVO_VIBRO_LED_SET_GREEN(1);
+}
+
+static void get_max_brightness(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_BRIGHTNESS);
+}
+
+static void get_min_brightness(uint32_t *value)
+{
+    *value = 1;
+}
+
+static void enter_brightness(void)
+{
+    MOTOR_LED_SET_RED(1);
+    SERVO_VIBRO_LED_SET_GREEN(1);
+}
+
+static void exit_brightness(void)
+{
+    MOTOR_LED_SET_RED(0);
+    SERVO_VIBRO_LED_SET_GREEN(0);
 }
 
 static void menu_button_up_callback(void *arg)

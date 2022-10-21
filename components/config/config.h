@@ -7,6 +7,7 @@
 #include "esp_system.h"
 #include "lwip/arch.h"
 #include "driver/gpio.h"
+#include "led.h"
 
 #ifndef SSD1306_I2C_PORT
 #define SSD1306_I2C_PORT		I2C_NUM_0
@@ -86,20 +87,20 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// LED
-// #define MOTOR_LED_RED                         GPIO_NUM_25
-// #define SERVO_VIBRO_LED_RED                   GPIO_NUM_26
-// #define MOTOR_LED_GREEN                       GPIO_NUM_15
-// #define SERVO_VIBRO_LED_GREEN                 GPIO_NUM_12
-
 #define MOTOR_LED_RED                         GPIO_NUM_15
 #define SERVO_VIBRO_LED_RED                   GPIO_NUM_12
 #define MOTOR_LED_GREEN                       GPIO_NUM_25
 #define SERVO_VIBRO_LED_GREEN                 GPIO_NUM_26
 
-#define MOTOR_LED_SET_RED(x)            gpio_set_level(MOTOR_LED_RED, x);
-#define SERVO_VIBRO_LED_SET_RED(x)      gpio_set_level(SERVO_VIBRO_LED_RED, x);
-#define MOTOR_LED_SET_GREEN(x)          gpio_set_level(MOTOR_LED_GREEN, x);
-#define SERVO_VIBRO_LED_SET_GREEN(x)    gpio_set_level(SERVO_VIBRO_LED_GREEN, x);
+// #define MOTOR_LED_SET_RED(x)            gpio_set_level(MOTOR_LED_RED, x);
+// #define SERVO_VIBRO_LED_SET_RED(x)      gpio_set_level(SERVO_VIBRO_LED_RED, x);
+// #define MOTOR_LED_SET_GREEN(x)          gpio_set_level(MOTOR_LED_GREEN, x);
+// #define SERVO_VIBRO_LED_SET_GREEN(x)    gpio_set_level(SERVO_VIBRO_LED_GREEN, x);
+
+#define MOTOR_LED_SET_RED(x)            set_motor_red_led(x);
+#define SERVO_VIBRO_LED_SET_RED(x)      set_servo_red_led(x);
+#define MOTOR_LED_SET_GREEN(x)          set_motor_green_led(x);
+#define SERVO_VIBRO_LED_SET_GREEN(x)    set_servo_green_led(x);
 
 //////////////////////////////////////  END  //////////////////////////////////////////////
 

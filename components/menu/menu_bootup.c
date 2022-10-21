@@ -299,6 +299,19 @@ static bool menu_exit_cb(void *arg)
     return true;
 }
 
+static void menu_button_exit_callback(void *arg)
+{
+    menu_token_t *menu = arg;
+
+    if (menu == NULL)
+    {
+        NULL_ERROR_MSG();
+        return;
+    }
+
+    ctx.exit_req = true;
+}
+
 static bool menu_button_init_cb(void *arg)
 {
     menu_token_t *menu = arg;
@@ -308,6 +321,10 @@ static bool menu_button_init_cb(void *arg)
         NULL_ERROR_MSG();
         return false;
     }
+
+    menu->button.enter.fall_callback = menu_button_exit_callback;
+    menu->button.motor_on.fall_callback = menu_button_exit_callback;
+    menu->button.exit.fall_callback = menu_button_exit_callback;
 
     return true;
 }
