@@ -41,7 +41,7 @@ typedef enum
 
 typedef struct 
 {
-	char * name;
+	enum dictionary_phrase name_dict;
 	char * unit;
 	uint32_t value;
 	unit_type_t unit_type;
@@ -57,12 +57,12 @@ static void get_conection(uint32_t *value);
 
 static parameters_t parameters_list[] = 
 {
-	[PARAM_CURRENT] 	= { .name = "Current", .unit = "A", .unit_type = UNIT_DOUBLE, .get_value = get_current},
-	[PARAM_VOLTAGE] 	= { .name = "Voltage", .unit = "V", .unit_type = UNIT_DOUBLE, .get_value = get_voltage},
-	[PARAM_SILOS]		= { .name = "Silos", .unit = "%", .unit_type = UNIT_INT, .get_value = get_silos},
-	[PARAM_SIGNAL] 		= { .name = "Signal", .unit = "", .unit_type = UNIT_INT, .get_value = get_signal},
-	[PARAM_TEMEPRATURE] = { .name = "Temp", .unit = "\"C", .unit_type = UNIT_INT, .get_value = get_temp},
-	[PARAM_CONECTION] 	= { .name = "Connect", .unit = "", .unit_type = UNIT_BOOL, .get_value = get_conection}
+	[PARAM_CURRENT] 	= { .name_dict = DICT_CURRENT, 	.unit = "A", 	.unit_type = UNIT_DOUBLE, 	.get_value = get_current},
+	[PARAM_VOLTAGE] 	= { .name_dict = DICT_VOLTAGE, 	.unit = "V", 	.unit_type = UNIT_DOUBLE, 	.get_value = get_voltage},
+	[PARAM_SILOS]		= { .name_dict = DICT_SILOS, 	.unit = "%", 	.unit_type = UNIT_INT, 		.get_value = get_silos},
+	[PARAM_SIGNAL] 		= { .name_dict = DICT_SIGNAL, 	.unit = "", 	.unit_type = UNIT_INT, 		.get_value = get_signal},
+	[PARAM_TEMEPRATURE] = { .name_dict = DICT_TEMP, 	.unit = "\"C", 	.unit_type = UNIT_INT, 		.get_value = get_temp},
+	[PARAM_CONECTION] 	= { .name_dict = DICT_CONNECT, 	.unit = "", 	.unit_type = UNIT_BOOL, 	.get_value = get_conection}
 };
 
 static scrollBar_t scrollBar = {
@@ -72,7 +72,7 @@ static scrollBar_t scrollBar = {
 
 static void get_current(uint32_t *value)
 {
-	*value = menuGetValue(MENU_CURRENT_MOTOR) / 10;
+	*value = menuGetValue(MENU_CURRENT_MOTOR) * 100;
 }
 
 static void get_voltage(uint32_t *value)
@@ -129,17 +129,6 @@ static void menu_button_down_callback(void * arg)
 	if (menu->position < PARAM_TOP - 1) 
 	{
 		menu->position++;
-	}
-}
-
-static void menu_button_enter_callback(void * arg)
-{
-	menu_token_t *menu = arg;
-
-	if (menu == NULL || menu->menu_list == NULL || menu->menu_list[menu->position] == NULL)
-	{
-		NULL_ERROR_MSG();
-		return;
 	}
 }
 
@@ -200,15 +189,15 @@ static bool menu_exit_cb(void * arg)
 	return true;
 }
 
-static bool menu_process(void * arg)
+static bool _disconnected_process(menu_token_t *menu)
+{
+	menuPrintfInfo(dictionary_get_string(DICT_DEVICE_NOT_CONNECTED));
+	return true;
+}
+
+static bool _connected_process(menu_token_t *menu)
 {
 	static char buff[64];
-	menu_token_t *menu = arg;
-	if (menu == NULL)
-	{
-		NULL_ERROR_MSG();
-		return false;
-	}
 
 	for(int i = 0; i < PARAM_TOP; i++)
 	{
@@ -217,10 +206,6 @@ static bool menu_process(void * arg)
 			parameters_list[i].get_value(&parameters_list[i].value);
 		}
 	}
-
-	ssd1306_Fill(Black);
-	ssd1306_SetCursor(2, 0);
-	ssd1306_WriteString(menu->name, Font_11x18, White);
 
 	if (menu->line.end - menu->line.start != MAX_LINE - 1)
 	{
@@ -246,26 +231,25 @@ static bool menu_process(void * arg)
 	int line = 0;
 	do
 	{
-		ssd1306_SetCursor(2, MENU_HEIGHT + LINE_HEIGHT*line);
 		int pos = line + menu->line.start;
 		
 		if (parameters_list[pos].unit_type == UNIT_DOUBLE)
 		{
-			sprintf(buff, "%s: %.2f %s", parameters_list[pos].name, (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
+			sprintf(buff, "%s:      %.2f %s", dictionary_get_string(parameters_list[pos].name_dict), (float)parameters_list[pos].value / 100.0, parameters_list[pos].unit);
 		}
 		else
 		{
-			sprintf(buff, "%s: %d %s", parameters_list[pos].name, parameters_list[pos].value, parameters_list[pos].unit);
+			sprintf(buff, "%s:      %d %s", dictionary_get_string(parameters_list[pos].name_dict), parameters_list[pos].value, parameters_list[pos].unit);
 		}
 		
 		if (line + menu->line.start == menu->position)
 		{
 			ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT*line, LINE_HEIGHT);
-			ssd1306_WriteString(buff, Font_7x10, Black);
+			oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT*line, buff, OLED_FONT_SIZE_11);
 		}
 		else
 		{
-			ssd1306_WriteString(buff, Font_7x10, White);
+			oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT*line, buff, OLED_FONT_SIZE_11);
 		}
 		line++;
 	} while (line + menu->line.start != PARAM_TOP && line < MAX_LINE);
@@ -273,7 +257,37 @@ static bool menu_process(void * arg)
 	scrollBar.all_line = PARAM_TOP - 1;
 	ssdFigureDrawScrollBar(&scrollBar);
 
+	MOTOR_LED_SET_GREEN(menuGetValue(MENU_MOTOR_IS_ON));
+    SERVO_VIBRO_LED_SET_GREEN(menuGetValue(MENU_SERVO_IS_ON));
+
 	return true;
+}
+
+static bool menu_process(void * arg)
+{
+	menu_token_t *menu = arg;
+	bool ret = false;
+	if (menu == NULL)
+	{
+		NULL_ERROR_MSG();
+		return false;
+	}
+
+	oled_clearScreen();
+	oled_setGLCDFont(OLED_FONT_SIZE_16);
+    oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
+    oled_setGLCDFont(OLED_FONT_SIZE_11);
+
+	if (cmdClientIsConnected())
+	{
+		ret = _connected_process(menu);
+	}
+	else
+	{
+		ret = _disconnected_process(menu);
+	}
+
+	return ret;
 }
 
 void menuInitParametersMenu(menu_token_t *menu)

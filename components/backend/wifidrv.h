@@ -3,12 +3,19 @@
 
 #include "config.h"
 
-#ifndef WIFI_AP_NAME
-#define WIFI_AP_NAME "Zefir"
+#define WIFI_SOLARKA_NAME "SOLA"
+#define WIFI_SIEWNIK_NAME "SIEW"
+
+#if CONFIG_DEVICE_SIEWNIK
+#define WIFI_AP_NAME WIFI_SIEWNIK_NAME
+#endif
+
+#if CONFIG_DEVICE_SOLARKA
+#define WIFI_AP_NAME WIFI_SOLARKA_NAME
 #endif
 
 #ifndef WIFI_AP_PASSWORD
-#define WIFI_AP_PASSWORD "12345678"
+#define WIFI_AP_PASSWORD "SuperTrudne1!-_"
 #endif
 
 typedef struct

@@ -1,6 +1,7 @@
 #ifndef _MENU_H_
 #define _MENU_H_
 #include "stdint.h"
+#include "dictionary.h"
 
 #define LAST_BUTTON_UP 			true
 #define LAST_BUTTON_DOWN 		false
@@ -57,7 +58,7 @@ typedef struct
 typedef struct menu_token
 {
 	int token;
-	char *name;
+	enum dictionary_phrase name_dict;
 	char *help;
 	menu_token_type_t arg_type;
 	struct menu_token **menu_list;

@@ -10,7 +10,7 @@
 #include "but.h"
 #include "fast_add.h"
 #include "ssd1306.h"
-#include "ssd1306_tests.h"
+#include "intf/i2c/ssd1306_i2c.h"
 #include "menu.h"
 #include "keepalive.h"
 #include "menu_param.h"
@@ -30,51 +30,64 @@
 #include "sleep_e.h"
 #include "server_controller.h"
 #include "power_on.h"
+#include "error_solarka.h"
+#include "oled.h"
 
-uint16_t test_value;
-static gpio_config_t io_conf;
-static uint32_t blink_pin = GPIO_NUM_23;
-
-portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
 extern void ultrasonar_start(void);
 
-static int i2cInit(void)
+static gpio_config_t io_conf;
+static uint32_t blink_pin = GPIO_NUM_23;
+portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED;
+
+static bool check_i2c_communication(void)
 {
-    int i2c_master_port = SSD1306_I2C_PORT;
-    i2c_config_t conf;
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = I2C_EXAMPLE_MASTER_SDA_IO;
-    conf.sda_pullup_en = 1;
-    conf.scl_io_num = I2C_EXAMPLE_MASTER_SCL_IO;
-    conf.scl_pullup_en = 1;
-    conf.master.clk_speed = 100000;
-    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, conf.mode, 0, 0 ,0));
-    ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
-    return ESP_OK;
+    ssd1306_i2cInitEx(I2C_EXAMPLE_MASTER_SCL_IO, I2C_EXAMPLE_MASTER_SDA_IO, SSD1306_I2C_ADDR);
+    uint8_t s_i2c_addr = 0x3C;
+    int ret;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( s_i2c_addr << 1 ) | I2C_MASTER_WRITE, 0x1);
+    i2c_master_write_byte(cmd, 0x00, 0x1);
+    i2c_master_stop(cmd);
+    ret = i2c_master_cmd_begin(I2C_NUM_1, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    printf("I2C TEST %d\n\r", ret);
+    return ret == ESP_OK;
 }
 
-void debug_function_name(const char * name) 
-{
-}
-
-void debug_last_task(char * task_name) 
-{
-}
-
-void debug_last_out_task(char * task_name) 
+void debug_function_name(const char *name)
 {
 }
 
-static void checkDevType(void) {
-    i2cInit();
+void debug_last_task(char *task_name)
+{
+}
+
+void debug_last_out_task(char *task_name)
+{
+}
+
+void graphic_init(void)
+{
+    sh1106_128x64_init();
+    ssd1306_clearScreen();
+    ssd1306_fillScreen(0x00);
+    ssd1306_flipHorizontal(1);
+    ssd1306_flipVertical(1);
+    oled_init();
+}
+
+static void checkDevType(void)
+{
     pcf8574_init();
-    int read_i2c_value = -1;
-    read_i2c_value = ssd1306_WriteCommand(0xAE); //display off
-    if (read_i2c_value == ESP_OK) {
-        config.dev_type = T_DEV_TYPE_CLIENT;
+    bool read_i2c_value = check_i2c_communication();
+    if (read_i2c_value)
+    {
+        config.wifi_type = T_WIFI_TYPE_CLIENT;
     }
-    else {
-        config.dev_type = T_DEV_TYPE_SERVER;
+    else
+    {
+        config.wifi_type = T_WIFI_TYPE_SERVER;
     }
 }
 
@@ -82,40 +95,34 @@ void app_main()
 {
     configInit();
     checkDevType();
-    
-    if (config.dev_type != T_DEV_TYPE_SERVER)
-    {
-        battery_init();
-        osDelay(10);
 
-        // Inicjalizacja diod
-        io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = GPIO_MODE_OUTPUT;
-        io_conf.pin_bit_mask = (1 << MOTOR_LED_RED) | (1 << MOTOR_LED_GREEN) | (1 << SERVO_VIBRO_LED_RED) | (1 << SERVO_VIBRO_LED_GREEN);
-        io_conf.pull_down_en = 0;
-        io_conf.pull_up_en = 1;
-        gpio_config(&io_conf);
+    if (config.wifi_type != T_WIFI_TYPE_SERVER)
+    {
+        graphic_init();
+        battery_init();
+        init_leds();
+        osDelay(10);
 
         buzzer_init();
         power_on_init();
-
+        
         /* Wait to measure voltage */
-        while(!battery_is_measured())
+        while (!battery_is_measured())
         {
             osDelay(10);
         }
-        float voltage = battery_get_voltage();
 
-        ssd1306_Init();
+        float voltage = battery_get_voltage();
         power_on_enable_system();
         init_buttons();
+        menuParamInit();
 
         if (voltage > 3.2)
         {
             init_menu(MENU_DRV_NORMAL_INIT);
             wifiDrvInit();
             keepAliveStartTask();
-            menuParamInit();
+            dictionary_init();
             fastProcessStartTask();
             power_on_start_task();
             // init_sleep();
@@ -126,22 +133,27 @@ void app_main()
             power_on_disable_system();
         }
     }
-    else {
-
+    else
+    {
         wifiDrvInit();
         keepAliveStartTask();
         menuParamInit();
 
-        #if CONFIG_DEVICE_SOLARKA
-        vibro_init();
-        #endif
-        #if CONFIG_DEVICE_SIEWNIK
+        //#if CONFIG_DEVICE_SIEWNIK
         measure_start();
-        #endif
+        //#endif
         srvrControllStart();
         ultrasonar_start();
         //WYLACZONE
+
+#if CONFIG_DEVICE_SIEWNIK
         errorSiewnikStart();
+#endif
+
+#if CONFIG_DEVICE_SOLARKA
+        errorSolarkaStart();
+#endif
+
         //LED on
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
@@ -153,19 +165,19 @@ void app_main()
     }
 
     config_printf(PRINT_DEBUG, PRINT_DEBUG, "[MENU] ------------START SYSTEM-------------");
-    while(1)
+    while (1)
     {
         vTaskDelay(MS2ST(250));
-        if (config.dev_type == T_DEV_TYPE_SERVER && !cmdServerIsWorking())
+        if ((config.wifi_type == T_WIFI_TYPE_SERVER) && !cmdServerIsWorking())
         {
-           gpio_set_level(blink_pin, 0);
+            gpio_set_level(blink_pin, 0);
         }
 
         vTaskDelay(MS2ST(750));
 
-        if (config.dev_type == T_DEV_TYPE_SERVER)
+        if (config.wifi_type == T_WIFI_TYPE_SERVER)
         {
-           gpio_set_level(blink_pin, 1);
+            gpio_set_level(blink_pin, 1);
         }
     }
 }

@@ -1,8 +1,8 @@
-#ifndef _ERROR_H_
-#define _ERROR_H_
+#ifndef _ERROR_SOLARKA_H_
+#define _ERROR_SOLARKA_H_
 #include "config.h"
 
-#if CONFIG_DEVICE_SIEWNIK
+#if CONFIG_DEVICE_SOLARKA
 #define ERROR_CRITICAL_VOLTAGE 800
 #define ERROR_M_TIME_EXIT 2000
 
@@ -42,16 +42,8 @@ typedef enum
 	/*ERR_S_EXIT */
 }err_servo_t;
 
-void error_event(void * arg);
-float errorGetMotorVal(void);
-void error_init(void);
-void error_deinit(void);
-void error_led_blink(void);
-
-void error_servo_timer(void);
-
-void errorSiewnikStart(void);
-void errorSiewnikErrorReset(void);
+void errorSolarkaStart(void);
+void errorSolarkaErrorReset(void);
 
 #endif //#if CONFIG_DEVICE_SIEWNIK
 

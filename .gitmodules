@@ -1,0 +1,3 @@
+[submodule "components/oled"]
+	path = components/oled
+	url = https://github.com/lexus2k/ssd1306.git

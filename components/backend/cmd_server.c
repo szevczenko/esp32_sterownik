@@ -17,18 +17,18 @@
 #include "configCmd.h"
 #include "menu_param.h"
 
-#define MODULE_NAME "[CMD Srv] "
-#define DEBUG_LVL PRINT_WARNING
+#define MODULE_NAME     "[CMD Srv] "
+#define DEBUG_LVL       PRINT_WARNING
 
 #if CONFIG_DEBUG_CMD_SERVER
-#define LOG(_lvl, ...)                                      \
+#define LOG(_lvl, ...) \
     debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
 #else
 #define LOG(PRINT_INFO, ...)
 #endif
 
-#define MAX_VALUE(OLD_V, NEW_VAL) NEW_VAL > OLD_V ? NEW_VAL : OLD_V
-#define PAYLOAD_SIZE 256
+#define MAX_VALUE(OLD_V, NEW_VAL)    NEW_VAL > OLD_V ? NEW_VAL : OLD_V
+#define PAYLOAD_SIZE    256
 
 enum state_t
 {
@@ -414,7 +414,7 @@ int cmdServerSendDataWaitResp(uint8_t *buff, uint32_t len, uint8_t *buff_rx, uin
                 return FALSE;
             }
 
-            if (buff_rx != 0 && ctx.responce_buff_len <= sizeof(ctx.responce_buff))
+            if ((buff_rx != 0) && (ctx.responce_buff_len <= sizeof(ctx.responce_buff)))
             {
                 memcpy(buff_rx, ctx.responce_buff, ctx.responce_buff_len);
             }
@@ -436,6 +436,7 @@ int cmdServerSendDataWaitResp(uint8_t *buff, uint32_t len, uint8_t *buff_rx, uin
             return TRUE;
         }
     }
+
     return FALSE;
 }
 
