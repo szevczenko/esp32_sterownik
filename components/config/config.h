@@ -50,8 +50,8 @@
 #define TIMEOUT                               -2
 #endif
 
-#define CONFIG_DEVICE_SIEWNIK                 FALSE
-#define CONFIG_DEVICE_SOLARKA                 TRUE
+#define CONFIG_DEVICE_SIEWNIK                 TRUE
+#define CONFIG_DEVICE_SOLARKA                 FALSE
 
 #define T_WIFI_TYPE_SERVER                     1
 #define T_WIFI_TYPE_CLIENT                     2
