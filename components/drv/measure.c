@@ -12,7 +12,7 @@
 #include "ultrasonar.h"
 
 #define MODULE_NAME    "[Meas] "
-#define DEBUG_LVL      PRINT_INFO
+#define DEBUG_LVL      PRINT_DEBUG
 
 #if CONFIG_DEBUG_MEASURE
 #define LOG(_lvl, ...) \
@@ -236,7 +236,30 @@ float measure_get_temperature(void)
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 36 + 130;
+    int temp = ((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 25 -26;
+     if((measure_get_filtered_value(MEAS_CH_TEMP)>=1000)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=1200)){
+    temp=temp/1.1;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=1200)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=1400)){
+    temp=temp/1.3;
+    }else  if((measure_get_filtered_value(MEAS_CH_TEMP)>=1400)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=1550)){
+    temp=temp/1.5;
+    }else  if((measure_get_filtered_value(MEAS_CH_TEMP)>=1550)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=1750)){
+    temp=temp/1.6;
+    }else  if((measure_get_filtered_value(MEAS_CH_TEMP)>=1750)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=1900)){
+    temp=temp/1.7;
+    }else  if((measure_get_filtered_value(MEAS_CH_TEMP)>=1900)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2000)){
+    temp=temp/1.5;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=1900)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2050)){
+    temp=temp/1.4;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2050)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2250)){
+    temp=temp/1.35;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2250)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2350)){
+    temp=temp/1.30;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2350)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2450)){
+    temp=temp/1.2;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2450)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2550)){
+    temp=temp/1.1;}
+
     LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
     return temp;
 #endif
