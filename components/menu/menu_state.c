@@ -72,7 +72,14 @@ static scrollBar_t scrollBar = {
 
 static void get_current(uint32_t *value)
 {
-	*value = menuGetValue(MENU_CURRENT_MOTOR) * 100;
+	if (config.dev_type == T_DEV_TYPE_SOLARKA)
+	{
+		*value = menuGetValue(MENU_CURRENT_MOTOR) * 100;
+	}
+	else
+	{
+		*value = menuGetValue(MENU_CURRENT_MOTOR);
+	}
 }
 
 static void get_voltage(uint32_t *value)

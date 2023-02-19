@@ -271,7 +271,7 @@ float measure_get_current(enum_meas_ch type, float resistor)
     LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
     uint32_t adc = measure_get_filtered_value(type) <
         motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
-    float current = (float)adc / 1.1 /* Amp */;
+    float current = (float)adc * 10 /* mAmp */;
     LOG(PRINT_DEBUG, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
 #endif
 

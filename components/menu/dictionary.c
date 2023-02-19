@@ -174,7 +174,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "Servo error",
         "Ошибка сервопривода",
-        "Błąd serwomechanizmu",
+        "Błąd serwo",
 		"Servofehler"
     },
     [DICT_VIBRO_ERR] =
@@ -209,14 +209,14 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     { 
         "Servo close",
         "Сервопривод закрыть",
-        "Serwomechanizm zamknięty",
+        "Serwo zamknięty",
 		"Servo schließen"
     },
     [DICT_SERVO_OPEN] =
     { 
         "Servo open",
         "открытый сервопривод",
-        "Serwomechanizm otwarty",
+        "Serwo otwarty",
 		"Servo geöffnet"
     },
     [DICT_ON] =
@@ -414,9 +414,9 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     },
     [DICT_SERVO] =
     { 
-        "servo",
+        "Servo",
         "Серво",
-        "Serwo"
+        "Serwo",
 		"Servo"
     },
     [DICT_TARGET_NOT_CONNECTED] =

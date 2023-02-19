@@ -13,8 +13,8 @@
 #include "error_solarka.h"
 #include "measure.h"
 
-#define MODULE_NAME       "[Srvr Ctrl] "
-#define DEBUG_LVL         PRINT_INFO
+#define MODULE_NAME "[Srvr Ctrl] "
+#define DEBUG_LVL PRINT_INFO
 
 #if CONFIG_DEBUG_SERVER_CONTROLLER
 #define LOG(_lvl, ...) \
@@ -23,11 +23,11 @@
 #define LOG(PRINT_INFO, ...)
 #endif
 
-#define SYSTEM_ON_PIN     15
+#define SYSTEM_ON_PIN 15
 
-#define MOTOR_PWM_PIN     27
-#define SERVO_PWM_PIN     26
-#define MOTOR_PWM_PIN2    25
+#define MOTOR_PWM_PIN 27
+#define SERVO_PWM_PIN 26
+#define MOTOR_PWM_PIN2 25
 
 typedef enum
 {
@@ -70,16 +70,15 @@ typedef struct
 
 static server_conroller_ctx ctx;
 static char *state_name[] =
-{
-    [STATE_INIT] = "STATE_INIT",
-    [STATE_IDLE] = "STATE_IDLE",
-    [STATE_WORKING] = "STATE_WORKING",
-    [STATE_SERVO_OPEN_REGULATION] = "STATE_SERVO_OPEN_REGULATION",
-    [STATE_SERVO_CLOSE_REGULATION] = "STATE_SERVO_CLOSE_REGULATION",
-    [STATE_MOTOR_REGULATION] = "STATE_MOTOR_REGULATION",
-    [STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
-    [STATE_ERROR] = "STATE_ERROR"
-};
+    {
+        [STATE_INIT] = "STATE_INIT",
+        [STATE_IDLE] = "STATE_IDLE",
+        [STATE_WORKING] = "STATE_WORKING",
+        [STATE_SERVO_OPEN_REGULATION] = "STATE_SERVO_OPEN_REGULATION",
+        [STATE_SERVO_CLOSE_REGULATION] = "STATE_SERVO_CLOSE_REGULATION",
+        [STATE_MOTOR_REGULATION] = "STATE_MOTOR_REGULATION",
+        [STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
+        [STATE_ERROR] = "STATE_ERROR"};
 
 static void change_state(state_t state)
 {
@@ -150,7 +149,7 @@ static void set_working_data(void)
         }
 
         mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_GEN_A, duty);
-        mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
+        mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_1); // call this each time, if operator was previously in low/high state
     }
     else
     {
@@ -167,9 +166,9 @@ static void set_working_data(void)
 #if CONFIG_DEVICE_SOLARKA
     if (vibro_is_on() && ctx.servo_on)
     {
-        //ToDo napiecie 2 progi
+        // ToDo napiecie 2 progi
         mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_GEN_A, 99.99);
-        mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_GEN_A, MCPWM_DUTY_MODE_1); //call this each time, if operator was previously in low/high state
+        mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_GEN_A, MCPWM_DUTY_MODE_1); // call this each time, if operator was previously in low/high state
     }
     else
     {
@@ -181,7 +180,7 @@ static void set_working_data(void)
     float duty = (float)ctx.servo_pwm * 100 / 19999.0;
     LOG(PRINT_DEBUG, "duty servo %f %d %d", duty, ctx.servo_value, ctx.servo_pwm);
     mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
-    mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
+    mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, MCPWM_DUTY_MODE_0); // call this each time, if operator was previously in low/high state
 #endif
 }
 
@@ -198,9 +197,9 @@ static void state_init(void)
 
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, MOTOR_PWM_PIN);
 
-    pwm_config.frequency = 2000;                                                     //frequency = 1000Hz
-    pwm_config.cmpr_a = 0;                                                            //duty cycle of PWMxA = 60.0%
-    pwm_config.cmpr_b = 0;                                                            //duty cycle of PWMxb = 50.0%
+    pwm_config.frequency = 2000; // frequency = 1000Hz
+    pwm_config.cmpr_a = 0;       // duty cycle of PWMxA = 60.0%
+    pwm_config.cmpr_b = 0;       // duty cycle of PWMxb = 50.0%
     pwm_config.counter_mode = MCPWM_DOWN_COUNTER;
 
 #if CONFIG_DEVICE_SOLARKA
@@ -208,15 +207,16 @@ static void state_init(void)
 #endif
 
 #if CONFIG_DEVICE_SIEWNIK
-    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_1;
+    pwm_config.frequency = 16000;
 #endif
 
-    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config); //Configure PWM0A & PWM0B with above settings
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config); // Configure PWM0A & PWM0B with above settings
 
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM2A, MOTOR_PWM_PIN2);
-    pwm_config.frequency = 2000;                         //frequency = 1000Hz
-    pwm_config.cmpr_a = 0;                                //duty cycle of PWMxA = 60.0%
-    pwm_config.cmpr_b = 0;                                //duty cycle of PWMxb = 50.0%
+    pwm_config.frequency = 2000; // frequency = 1000Hz
+    pwm_config.cmpr_a = 0;       // duty cycle of PWMxA = 60.0%
+    pwm_config.cmpr_b = 0;       // duty cycle of PWMxb = 50.0%
     pwm_config.counter_mode = MCPWM_DOWN_COUNTER;
 
 #if CONFIG_DEVICE_SOLARKA
@@ -224,10 +224,11 @@ static void state_init(void)
 #endif
 
 #if CONFIG_DEVICE_SIEWNIK
-    pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
+    pwm_config.duty_mode = MCPWM_DUTY_MODE_1;
+    pwm_config.frequency = 16000;
 #endif
 
-    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_2, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_2, &pwm_config); // Configure PWM0A & PWM0B with above settings
 
 #if CONFIG_DEVICE_SIEWNIK
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM1A, SERVO_PWM_PIN);
@@ -236,7 +237,7 @@ static void state_init(void)
     pwm_config.cmpr_b = 0;
     pwm_config.counter_mode = MCPWM_UP_COUNTER;
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
-    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);   //Configure PWM0A & PWM0B with above settings
+    mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config); // Configure PWM0A & PWM0B with above settings
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
@@ -291,11 +292,11 @@ static void state_working(void)
     ctx.servo_close_calibration_req = (bool)menuGetValue(MENU_CLOSE_SERVO_REGULATION_FLAG);
 
 #if CONFIG_DEVICE_SOLARKA
-    #if MENU_VIRO_ON_OFF_VERSION
+#if MENU_VIRO_ON_OFF_VERSION
     vibro_config(menuGetValue(MENU_VIBRO_ON_S) * 1000, menuGetValue(MENU_VIBRO_OFF_S) * 1000);
-    #else
+#else
     vibro_config(menuGetValue(MENU_PERIOD) * 1000, menuGetValue(MENU_SERVO));
-    #endif
+#endif
     if (menuGetValue(MENU_SERVO_IS_ON))
     {
         vibro_start();

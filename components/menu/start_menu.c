@@ -15,8 +15,8 @@
 #include "start_menu.h"
 #include "oled.h"
 
-#define MODULE_NAME                 "[START] "
-#define DEBUG_LVL                   PRINT_INFO
+#define MODULE_NAME "[START] "
+#define DEBUG_LVL PRINT_INFO
 
 #if CONFIG_DEBUG_MENU_BACKEND
 #define LOG(_lvl, ...) \
@@ -25,11 +25,11 @@
 #define LOG(PRINT_INFO, ...)
 #endif
 
-#define DEVICE_LIST_SIZE            16
-#define CHANGE_MENU_TIMEOUT_MS      1500
-#define POWER_SAVE_TIMEOUT_MS       30 * 1000
-#define CHANGE_VALUE_DISP_OFFSET    40
-#define MENU_START_OFFSET           42
+#define DEVICE_LIST_SIZE 16
+#define CHANGE_MENU_TIMEOUT_MS 1500
+#define POWER_SAVE_TIMEOUT_MS 30 * 1000
+#define CHANGE_VALUE_DISP_OFFSET 40
+#define MENU_START_OFFSET 42
 
 typedef enum
 {
@@ -76,7 +76,7 @@ typedef struct
     uint32_t timeout_con;
     uint32_t low_silos_ckeck_timeout;
     error_type_t error_dev;
-    
+
 #if MENU_VIRO_ON_OFF_VERSION
     edit_value_t edit_value;
 #endif
@@ -93,39 +93,38 @@ typedef struct
 static menu_start_context_t ctx;
 
 loadBar_t motor_bar =
-{
-    .x      = 40,
-    .y      = 10,
-    .width  = 80,
-    .height = 10,
+    {
+        .x = 40,
+        .y = 10,
+        .width = 80,
+        .height = 10,
 };
 
 loadBar_t servo_bar =
-{
-    .x      = 40,
-    .y      = 40,
-    .width  = 80,
-    .height = 10,
+    {
+        .x = 40,
+        .y = 40,
+        .width = 80,
+        .height = 10,
 };
 
 static char *state_name[] =
-{
-    [STATE_INIT] = "STATE_INIT",
-    [STATE_IDLE] = "STATE_IDLE",
-    [STATE_CHECK_WIFI] = "STATE_CHECK_WIFI",
-    [STATE_START] = "STATE_START",
-    [STATE_READY] = "STATE_READY",
-    [STATE_POWER_SAVE] = "STATE_POWER_SAVE",
-    [STATE_ERROR] = "STATE_ERROR",
-    [STATE_INFO] = "STATE_INFO",
-    [STATE_MOTOR_CHANGE] = "STATE_MOTOR_CHANGE",
-    [STATE_SERVO_VIBRO_CHANGE] = "STATE_SERVO_VIBRO_CHANGE",
-    [STATE_LOW_SILOS] = "STATE_LOW_SILOS",
-    [STATE_STOP] = "STATE_STOP",
-    [STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
-    [STATE_RECONNECT] = "STATE_RECONNECT",
-    [STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT"
-};
+    {
+        [STATE_INIT] = "STATE_INIT",
+        [STATE_IDLE] = "STATE_IDLE",
+        [STATE_CHECK_WIFI] = "STATE_CHECK_WIFI",
+        [STATE_START] = "STATE_START",
+        [STATE_READY] = "STATE_READY",
+        [STATE_POWER_SAVE] = "STATE_POWER_SAVE",
+        [STATE_ERROR] = "STATE_ERROR",
+        [STATE_INFO] = "STATE_INFO",
+        [STATE_MOTOR_CHANGE] = "STATE_MOTOR_CHANGE",
+        [STATE_SERVO_VIBRO_CHANGE] = "STATE_SERVO_VIBRO_CHANGE",
+        [STATE_LOW_SILOS] = "STATE_LOW_SILOS",
+        [STATE_STOP] = "STATE_STOP",
+        [STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
+        [STATE_RECONNECT] = "STATE_RECONNECT",
+        [STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT"};
 
 static void change_state(state_start_menu_t new_state)
 {
@@ -340,8 +339,8 @@ static void menu_button_servo_callback(void *arg)
         return;
     }
 
-    set_change_menu(EDIT_SERVO);
-    xTimerStop(ctx.servo_timer, 0);
+    // set_change_menu(EDIT_SERVO);
+    // xTimerStop(ctx.servo_timer, 0);
     ctx.data.servo_vibro_on = ctx.data.servo_vibro_on ? false : true;
 }
 
@@ -850,6 +849,10 @@ static bool menu_enter_cb(void *arg)
     }
 
     cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
+    ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+    ctx.data.motor_value = menuGetValue(MENU_MOTOR);
+    ctx.data.servo_value = menuGetValue(MENU_SERVO);
+    ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
@@ -917,10 +920,8 @@ static void menu_check_connection(void)
     {
         LOG(PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i);
         osDelay(250);
-        
 
-        if ((cmdClientSetValue(MENU_EMERGENCY_DISABLE, 0, 1000) == TRUE) 
-            && (cmdClientSetValue(MENU_PERIOD, menuGetValue(MENU_PERIOD), 1000) == TRUE))
+        if ((cmdClientSetValue(MENU_EMERGENCY_DISABLE, 0, 1000) == TRUE) && (cmdClientSetValue(MENU_PERIOD, menuGetValue(MENU_PERIOD), 1000) == TRUE))
         {
             break;
         }
@@ -942,6 +943,10 @@ static void menu_start_idle(void)
     if (backendIsConnected())
     {
         cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
+        ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+        ctx.data.motor_value = menuGetValue(MENU_MOTOR);
+        ctx.data.servo_value = menuGetValue(MENU_SERVO);
+        ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
         cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
@@ -1150,7 +1155,7 @@ static void menu_start_error(void)
 
     switch (ctx.error_dev)
     {
-    
+
     case ERROR_SERVO_NOT_CONNECTED:
         oled_printFixed(2, MENU_HEIGHT, dictionary_get_string(DICT_SERVO_NOT_CONNECTED), OLED_FONT_SIZE_16);
         break;
@@ -1217,7 +1222,7 @@ static void menu_start_motor_change(void)
 
     oled_printFixed(0, 0, dictionary_get_string(DICT_MOTOR), OLED_FONT_SIZE_26);
     sprintf(ctx.buff, "%d%%", ctx.data.motor_value);
-    oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26); //Font_16x26
+    oled_printFixed(CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26); // Font_16x26
 
     if (ctx.change_menu_timeout < xTaskGetTickCount())
     {
@@ -1307,7 +1312,7 @@ static void _show_wait_connection(void)
 {
     oled_clearScreen();
     sprintf(ctx.buff, dictionary_get_string(DICT_WAIT_CONNECTION_S_S_S), xTaskGetTickCount() % 400 > 100 ? "." : " ",
-        xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
+            xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " ");
     oled_printFixed(2, 2 * LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_11);
     oled_update();
 }
