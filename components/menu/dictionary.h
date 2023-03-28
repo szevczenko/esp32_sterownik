@@ -50,6 +50,7 @@ enum dictionary_phrase
     DICT_MOTOR_ERROR_CALIBRATION,
     DICT_SERVO_CLOSE,
     DICT_SERVO_OPEN,
+    DICT_SILOS_HEIGHT,
     DICT_ON,
     DICT_OFF,
     /* PARAMETERS */

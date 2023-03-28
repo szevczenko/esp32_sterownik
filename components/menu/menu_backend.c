@@ -176,7 +176,10 @@ static void backent_start(void)
             LOG(PRINT_DEBUG, "No error");
         }
 
-        LOG(PRINT_DEBUG, "Get silos %d ", menuGetValue(MENU_LOW_LEVEL_SILOS));
+        cmdClientGetValue(MENU_LOW_LEVEL_SILOS, NULL, 2000);
+        cmdClientGetValue(MENU_SILOS_LEVEL, NULL, 2000);
+        cmdClientGetValue(MENU_SILOS_SENSOR_IS_CONECTED, NULL, 2000);
+        LOG(PRINT_INFO, "Get silos %d ", menuGetValue(MENU_LOW_LEVEL_SILOS));
     }
 
     ctx.get_data_cnt++;

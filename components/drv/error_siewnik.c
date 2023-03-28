@@ -43,6 +43,9 @@ struct error_siewnik_ctx
     TickType_t motor_not_connected_timer;
     bool motor_find_not_connected;
 
+    TickType_t temperature_error_timer;
+    bool temperature_find_overcurrent;
+
     bool is_error_reset;
 };
 
@@ -80,6 +83,17 @@ static void _reset_error(void)
     ctx.motor_find_overcurrent = false;
 }
 
+static bool _is_overcurrent(float motor_current)
+{
+    float max_current = 0.1 * menuGetValue(MENU_MOTOR) + 2;
+    float calibration = ((float)menuGetValue(MENU_ERROR_MOTOR_CALIBRATION) - 50.0) * (float)menuGetValue(MENU_MOTOR) / 100.0;
+    float overcurrent = max_current + calibration;
+
+    LOG(PRINT_INFO, "Motor current %.2f overcurrent %.2f calib_val %d calib %.2f", motor_current, overcurrent, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION), calibration);
+
+    return motor_current > overcurrent;
+}
+
 static void _state_init(void)
 {
     _change_state(STATE_IDLE);
@@ -102,57 +116,97 @@ static void _state_working(void)
     }
 
     /* Motor error overcurrent */
-    uint32_t motor_current = menuGetValue(MENU_CURRENT_MOTOR);
-    // LOG(PRINT_INFO, "Motor current %d", motor_current);
-    // if (motor_current > 15000)
-    // {
-    //  if (!ctx.motor_find_overcurrent)
-    //  {
-    //      LOG(PRINT_INFO, "find motor overcurrent");
-    //      ctx.motor_find_overcurrent = true;
-    //      ctx.motor_error_timer = MS2ST(5000) + xTaskGetTickCount();
-    //  }
-    //  else
-    //  {
-    //      if (ctx.motor_error_timer < xTaskGetTickCount())
-    //      {
-    //          _change_state(STATE_ERROR_MOTOR_CURRENT);
-    //      }
-    //  }
-    // }
-    // else
-    // {
-    //  if (ctx.motor_find_overcurrent)
-    //  {
-    //      LOG(PRINT_INFO, "reset motor overcurrent");
-    //  }
-    //  ctx.motor_find_overcurrent = false;
-    // }
 
-    // /* Motor error not connected */
-    // if (menuGetValue(MENU_MOTOR_IS_ON) && menuGetValue(MENU_MOTOR) > 0 && motor_current < 100)
+    LOG(PRINT_DEBUG, "Error motor %d, servo %d", menuGetValue(MENU_ERROR_MOTOR), menuGetValue(MENU_ERROR_SERVO));
+
+    float motor_current = (float)menuGetValue(MENU_CURRENT_MOTOR) / 100;
+
+    if (motor_current > 45)
+    {
+        _change_state(STATE_ERROR_MOTOR_CURRENT);
+    }
+
+    if (_is_overcurrent(motor_current) && menuGetValue(MENU_ERROR_MOTOR))
+    {
+        if (!ctx.motor_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "find motor overcurrent");
+            ctx.motor_find_overcurrent = true;
+            ctx.motor_error_timer = MS2ST(2500) + xTaskGetTickCount();
+        }
+        else
+        {
+            if (ctx.motor_error_timer < xTaskGetTickCount())
+            {
+                _change_state(STATE_ERROR_MOTOR_CURRENT);
+            }
+        }
+    }
+    else
+    {
+        if (ctx.motor_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "reset motor overcurrent");
+        }
+
+        ctx.motor_find_overcurrent = false;
+    }
+
+    uint32_t temperature = menuGetValue(MENU_TEMPERATURE);
+    LOG(PRINT_DEBUG, "Temperature %d", temperature);
+    if (temperature > 105 && menuGetValue(MENU_ERROR_MOTOR))
+    {
+        if (!ctx.temperature_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "find temperature");
+            ctx.temperature_find_overcurrent = true;
+            ctx.temperature_error_timer = MS2ST(1500) + xTaskGetTickCount();
+        }
+        else
+        {
+            if (ctx.temperature_error_timer < xTaskGetTickCount())
+            {
+                _change_state(STATE_ERROR_TEMPERATURE);
+            }
+        }
+    }
+    else
+    {
+        if (ctx.temperature_find_overcurrent)
+        {
+            LOG(PRINT_INFO, "reset temperature overcurrent");
+        }
+
+        ctx.temperature_find_overcurrent = false;
+    }
+
+    /* Motor error not connected */
+    // check_measure = measure_get_filtered_value(MEAS_CH_CHECK_MOTOR);
+    // LOG(PRINT_DEBUG, "Motor %d", check_measure);
+    // if (!menuGetValue(MENU_MOTOR_IS_ON) && check_measure < 100 && srvrControllIsWorking() && menuGetValue(MENU_ERROR_MOTOR))
     // {
-    //  if (!ctx.motor_find_not_connected)
-    //  {
-    //      LOG(PRINT_INFO, "find motor not connected");
-    //      ctx.motor_find_not_connected = true;
-    //      ctx.motor_not_connected_timer = MS2ST(250) + xTaskGetTickCount();
-    //  }
-    //  else
-    //  {
-    //      if (ctx.motor_not_connected_timer < xTaskGetTickCount())
-    //      {
-    //          _change_state(STATE_ERROR_MOTOR_NOT_CONNECTED);
-    //      }
-    //  }
+    //     if (!ctx.motor_find_not_connected)
+    //     {
+    //         LOG(PRINT_INFO, "find motor not connected");
+    //         ctx.motor_find_not_connected = true;
+    //         ctx.motor_not_connected_timer = MS2ST(1250) + xTaskGetTickCount();
+    //     }
+    //     else
+    //     {
+    //         if (ctx.motor_not_connected_timer < xTaskGetTickCount())
+    //         {
+    //             _change_state(STATE_ERROR_MOTOR_NOT_CONNECTED);
+    //         }
+    //     }
     // }
     // else
     // {
-    //  if (ctx.motor_find_not_connected)
-    //  {
-    //      LOG(PRINT_INFO, "reset motor not connected");
-    //  }
-    //  ctx.motor_find_not_connected = false;
+    //     if (ctx.motor_find_not_connected)
+    //     {
+    //         LOG(PRINT_INFO, "reset motor not connected");
+    //     }
+
+    //     ctx.motor_find_not_connected = false;
     // }
 }
 
@@ -188,6 +242,11 @@ static void _state_error_motor_not_connected(void)
 
 static void _state_error_servo(void)
 {
+    if (ctx.is_error_reset)
+    {
+        _reset_error();
+        _change_state(STATE_IDLE);
+    }
 }
 
 static void _state_wait_reset_error(void)

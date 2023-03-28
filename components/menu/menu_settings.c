@@ -12,8 +12,8 @@
 #include "fast_add.h"
 #include "led.h"
 
-#define MODULE_NAME    "[SETTING] "
-#define DEBUG_LVL      PRINT_INFO
+#define MODULE_NAME "[SETTING] "
+#define DEBUG_LVL PRINT_INFO
 
 #if CONFIG_DEBUG_MENU_BACKEND
 #define LOG(_lvl, ...) \
@@ -38,10 +38,12 @@ typedef enum
     PARAM_POWER_ON_MIN,
     PARAM_PERIOD,
     PARAM_MOTOR_ERROR,
+    PARAM_SERVO_ERROR,
     PARAM_VIBRO_ERROR,
     PARAM_MOTOR_ERROR_CALIBRATION,
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
+    PARAM_SILOS_HEIGHT,
     PARAM_TOP,
 } parameters_type_t;
 
@@ -56,10 +58,11 @@ typedef enum
 typedef struct
 {
     enum dictionary_phrase name_dict;
+    parameters_type_t param_type;
     uint32_t value;
     uint32_t max_value;
     uint32_t min_value;
-    const char * unit_name;
+    const char *unit_name;
     unit_type_t unit_type;
     void (*get_value)(uint32_t *value);
     void (*get_max_value)(uint32_t *value);
@@ -79,6 +82,11 @@ static void enter_servo_close_calibration(void);
 static void exit_servo_close_calibration(void);
 static void enter_servo_open_calibration(void);
 static void exit_servo_open_calibration(void);
+
+static void get_silos_height(uint32_t *value);
+static void set_silos_height(uint32_t value);
+static void get_max_silos_height(uint32_t *value);
+static void get_min_silos_height(uint32_t *value);
 
 static void get_bootup(uint32_t *value);
 static void get_buzzer(uint32_t *value);
@@ -125,109 +133,191 @@ static void enter_brightness(void);
 static void exit_brightness(void);
 
 static const char *language[] =
-{
-    [MENU_LANGUAGE_ENGLISH] = "English",
-    [MENU_LANGUAGE_RUSSIAN] = "Russian",
-    [MENU_LANGUAGE_POLISH]  = "Polski",
-    [MENU_LANGUAGE_GERMANY] = "Germany",
+    {
+        [MENU_LANGUAGE_ENGLISH] = "English",
+        [MENU_LANGUAGE_RUSSIAN] = "Russian",
+        [MENU_LANGUAGE_POLISH] = "Polski",
+        [MENU_LANGUAGE_GERMANY] = "Germany",
 };
 
-static parameters_t parameters_list[] =
-{
-    [PARAM_BOOTUP_MENU] =
-    {.name_dict     = DICT_BOOTING,
-    .unit_type      = UNIT_ON_OFF,
-    .get_value      = get_bootup,
-    .set_value      = set_bootup,
-    .get_max_value  = get_max_bootup},
-    [PARAM_BRIGHTNESS] = 
-    {.name_dict     = DICT_BRIGHTNESS,
-    .unit_type      = UNIT_INT,
-    .get_value      = get_brightness,
-    .set_value      = set_brightness,
-    .get_max_value  = get_max_brightness,
-    .get_min_value  = get_min_brightness,
-    .enter          = enter_brightness,
-    .exit           = exit_brightness},
-    [PARAM_BUZZER] =
-    {.name_dict     = DICT_BUZZER,
-    .unit_type      = UNIT_ON_OFF,
-    .get_value      = get_buzzer,
-    .set_value      = set_buzzer,
-    .get_max_value  = get_max_buzzer},
-    [PARAM_LANGUAGE] =
-    {.name_dict     = DICT_LANGUAGE,
-    .unit_type      = UNIT_LANGUAGE,
-    .get_value      = get_language,
-    .set_value      = set_language,
-    .get_max_value  = get_max_language},
-    [PARAM_POWER_ON_MIN] =
-    {.name_dict     = DICT_IDLE_TIME,
-    .unit_type      = UNIT_INT,
-    .unit_name      = "[min]",
-    .get_value      = get_power_on_min,
-    .set_value      = set_power_on_min,
-    .get_max_value  = get_max_power_on_min,
-    .get_min_value  = get_min_power_on_min},
+static parameters_t *parameters_list;
+static uint32_t parameters_size;
 
-    [PARAM_MOTOR_ERROR] =
-    {.name_dict     = DICT_MOTOR_ERR,
-    .unit_type      = UNIT_ON_OFF,
-    .get_value      = get_motor_error,
-    .set_value      = set_motor_error,
-    .get_max_value  = get_max_motor_error,
-    .exit           = exit_motor_error},
+static parameters_t parameters_list_siewnik[] =
+    {
+        {.param_type = PARAM_BOOTUP_MENU,
+         .name_dict = DICT_BOOTING,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_bootup,
+         .set_value = set_bootup,
+         .get_max_value = get_max_bootup},
 
-    [PARAM_VIBRO_ERROR] =
-    {.name_dict     = DICT_VIBRO_ERR,
-    .unit_type      = UNIT_ON_OFF,
-    .get_value      = get_servo_error,
-    .set_value      = set_servo_error,
-    .get_max_value  = get_max_servo_error,
-    .exit           = exit_servo_error},
+        {.param_type = PARAM_BRIGHTNESS,
+         .name_dict = DICT_BRIGHTNESS,
+         .unit_type = UNIT_INT,
+         .get_value = get_brightness,
+         .set_value = set_brightness,
+         .get_max_value = get_max_brightness,
+         .get_min_value = get_min_brightness,
+         .enter = enter_brightness,
+         .exit = exit_brightness},
 
-    [PARAM_PERIOD] =
-    {.name_dict     = DICT_PERIOD,
-    .unit_type      = UNIT_INT,
-    .unit_name      = "[s]",
-    .get_value      = get_period,
-    .set_value      = set_period,
-    .get_max_value  = get_max_period,
-    .exit           = exit_period,
-    .get_min_value  = get_min_period},
+        {.param_type = PARAM_BUZZER,
+         .name_dict = DICT_BUZZER,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_buzzer,
+         .set_value = set_buzzer,
+         .get_max_value = get_max_buzzer},
 
-    [PARAM_MOTOR_ERROR_CALIBRATION] =
-    {.name_dict     = DICT_MOTOR_ERROR_CALIBRATION,
-    .unit_type      = UNIT_INT,
-    .get_value      = get_motor_error_calibration,
-    .set_value      = set_motor_error_calibration,
-    .get_max_value  = get_max_motor_error_calibration,
-    .exit           = exit_motor_error_calibration},
+        {.param_type = PARAM_LANGUAGE,
+         .name_dict = DICT_LANGUAGE,
+         .unit_type = UNIT_LANGUAGE,
+         .get_value = get_language,
+         .set_value = set_language,
+         .get_max_value = get_max_language},
 
-    [PARAM_SERVO_CLOSE_CALIBRATION] =
-    {.name_dict     = DICT_SERVO_CLOSE,
-    .unit_type      = UNIT_INT,
-    .get_value      = get_servo_close_calibration,
-    .set_value      = set_servo_close_calibration,
-    .get_max_value  = get_max_servo_close_calibration,
-    .enter          = enter_servo_close_calibration,
-    .exit           = exit_servo_close_calibration},
+        {.param_type = PARAM_POWER_ON_MIN,
+         .name_dict = DICT_IDLE_TIME,
+         .unit_type = UNIT_INT,
+         .unit_name = "[min]",
+         .get_value = get_power_on_min,
+         .set_value = set_power_on_min,
+         .get_max_value = get_max_power_on_min,
+         .get_min_value = get_min_power_on_min},
 
-    [PARAM_SERVO_OPEN_CALIBRATION] =
-    {.name_dict     = DICT_SERVO_OPEN,
-    .unit_type      = UNIT_INT,
-    .get_value      = get_servo_open_calibration,
-    .set_value      = set_servo_open_calibration,
-    .get_max_value  = get_max_servo_open_calibration,
-    .enter          = enter_servo_open_calibration,
-    .exit           = exit_servo_open_calibration},
+        {.param_type = PARAM_MOTOR_ERROR,
+         .name_dict = DICT_MOTOR_ERR,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_motor_error,
+         .set_value = set_motor_error,
+         .get_max_value = get_max_motor_error,
+         .exit = exit_motor_error},
+
+        {.param_type = PARAM_SERVO_ERROR,
+         .name_dict = DICT_SERVO_ERR,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_servo_error,
+         .set_value = set_servo_error,
+         .get_max_value = get_max_servo_error,
+         .exit = exit_servo_error},
+
+        {.param_type = PARAM_MOTOR_ERROR_CALIBRATION,
+         .name_dict = DICT_MOTOR_ERROR_CALIBRATION,
+         .unit_type = UNIT_INT,
+         .get_value = get_motor_error_calibration,
+         .set_value = set_motor_error_calibration,
+         .get_max_value = get_max_motor_error_calibration,
+         .exit = exit_motor_error_calibration},
+
+        {.param_type = PARAM_SERVO_CLOSE_CALIBRATION,
+         .name_dict = DICT_SERVO_CLOSE,
+         .unit_type = UNIT_INT,
+         .get_value = get_servo_close_calibration,
+         .set_value = set_servo_close_calibration,
+         .get_max_value = get_max_servo_close_calibration,
+         .enter = enter_servo_close_calibration,
+         .exit = exit_servo_close_calibration},
+
+        {.param_type = PARAM_SERVO_OPEN_CALIBRATION,
+         .name_dict = DICT_SERVO_OPEN,
+         .unit_type = UNIT_INT,
+         .get_value = get_servo_open_calibration,
+         .set_value = set_servo_open_calibration,
+         .get_max_value = get_max_servo_open_calibration,
+         .enter = enter_servo_open_calibration,
+         .exit = exit_servo_open_calibration},
+
+        {.param_type = PARAM_SILOS_HEIGHT,
+         .name_dict = DICT_SILOS_HEIGHT,
+         .unit_type = UNIT_INT,
+         .get_value = get_silos_height,
+         .set_value = set_silos_height,
+         .get_max_value = get_max_silos_height,
+         .get_min_value = get_min_silos_height,
+         .unit_name = "[cm]"},
+};
+
+static parameters_t parameters_list_solarka[] =
+    {
+
+        {.param_type = PARAM_BOOTUP_MENU,
+         .name_dict = DICT_BOOTING,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_bootup,
+         .set_value = set_bootup,
+         .get_max_value = get_max_bootup},
+
+        {.param_type = PARAM_BRIGHTNESS,
+         .name_dict = DICT_BRIGHTNESS,
+         .unit_type = UNIT_INT,
+         .get_value = get_brightness,
+         .set_value = set_brightness,
+         .get_max_value = get_max_brightness,
+         .get_min_value = get_min_brightness,
+         .enter = enter_brightness,
+         .exit = exit_brightness},
+
+        {.param_type = PARAM_BUZZER,
+         .name_dict = DICT_BUZZER,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_buzzer,
+         .set_value = set_buzzer,
+         .get_max_value = get_max_buzzer},
+
+        {.param_type = PARAM_LANGUAGE,
+         .name_dict = DICT_LANGUAGE,
+         .unit_type = UNIT_LANGUAGE,
+         .get_value = get_language,
+         .set_value = set_language,
+         .get_max_value = get_max_language},
+        {.param_type = PARAM_POWER_ON_MIN,
+         .name_dict = DICT_IDLE_TIME,
+         .unit_type = UNIT_INT,
+         .unit_name = "[min]",
+         .get_value = get_power_on_min,
+         .set_value = set_power_on_min,
+         .get_max_value = get_max_power_on_min,
+         .get_min_value = get_min_power_on_min},
+
+        {.param_type = PARAM_MOTOR_ERROR,
+         .name_dict = DICT_MOTOR_ERR,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_motor_error,
+         .set_value = set_motor_error,
+         .get_max_value = get_max_motor_error,
+         .exit = exit_motor_error},
+
+        {.param_type = PARAM_VIBRO_ERROR,
+         .name_dict = DICT_VIBRO_ERR,
+         .unit_type = UNIT_ON_OFF,
+         .get_value = get_servo_error,
+         .set_value = set_servo_error,
+         .get_max_value = get_max_servo_error,
+         .exit = exit_servo_error},
+
+        {.param_type = PARAM_PERIOD,
+         .name_dict = DICT_PERIOD,
+         .unit_type = UNIT_INT,
+         .unit_name = "[s]",
+         .get_value = get_period,
+         .set_value = set_period,
+         .get_max_value = get_max_period,
+         .exit = exit_period,
+         .get_min_value = get_min_period},
+
+        {.param_type = PARAM_MOTOR_ERROR_CALIBRATION,
+         .name_dict = DICT_MOTOR_ERROR_CALIBRATION,
+         .unit_type = UNIT_INT,
+         .get_value = get_motor_error_calibration,
+         .set_value = set_motor_error_calibration,
+         .get_max_value = get_max_motor_error_calibration,
+         .exit = exit_motor_error_calibration},
 };
 
 static scrollBar_t scrollBar =
-{
-    .line_max = MAX_LINE,
-    .y_start  = MENU_HEIGHT
-};
+    {
+        .line_max = MAX_LINE,
+        .y_start = MENU_HEIGHT};
 
 static menu_state_t _state;
 
@@ -261,6 +351,27 @@ static void set_servo_open_calibration(uint32_t value)
 {
     LOG(PRINT_DEBUG, "%s: %d", __func__, value);
     cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION, value);
+}
+
+static void get_silos_height(uint32_t *value)
+{
+    *value = menuGetValue(MENU_SILOS_HEIGHT);
+}
+
+static void set_silos_height(uint32_t value)
+{
+    LOG(PRINT_DEBUG, "%s: %d", __func__, value);
+    cmdClientSetValueWithoutResp(MENU_SILOS_HEIGHT, value);
+}
+
+static void get_max_silos_height(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_SILOS_HEIGHT);
+}
+
+static void get_min_silos_height(uint32_t *value)
+{
+    *value = 10;
 }
 
 static void enter_servo_close_calibration(void)
@@ -554,7 +665,7 @@ static void menu_button_down_callback(void *arg)
     }
 
     menu->last_button = LAST_BUTTON_DOWN;
-    
+
     if (config.dev_type == T_DEV_TYPE_SOLARKA)
     {
         if (menu->position < PARAM_SERVO_CLOSE_CALIBRATION - 1)
@@ -564,7 +675,7 @@ static void menu_button_down_callback(void *arg)
     }
     else
     {
-        if (menu->position < PARAM_TOP - 1)
+        if (menu->position < parameters_size - 1)
         {
             menu->position++;
         }
@@ -604,7 +715,7 @@ static void menu_button_plus_callback(void *arg)
         return;
     }
 
-    if (menu->position >= PARAM_TOP)
+    if (menu->position >= parameters_size)
     {
         return;
     }
@@ -635,7 +746,7 @@ static void menu_button_plus_time_cb(void *arg)
         return;
     }
 
-    if (menu->position >= PARAM_TOP)
+    if (menu->position >= parameters_size)
     {
         return;
     }
@@ -653,7 +764,7 @@ static void menu_button_minus_time_cb(void *arg)
         return;
     }
 
-    if (menu->position >= PARAM_TOP)
+    if (menu->position >= parameters_size)
     {
         return;
     }
@@ -663,7 +774,7 @@ static void menu_button_minus_time_cb(void *arg)
 
 static void menu_button_m_p_pull_cb(void *arg)
 {
-    for (int i = 0; i < PARAM_TOP; i++)
+    for (int i = 0; i < parameters_size; i++)
     {
         fastProcessStop(&parameters_list[i].value);
     }
@@ -679,7 +790,7 @@ static void menu_button_minus_callback(void *arg)
         return;
     }
 
-    if (menu->position >= PARAM_TOP)
+    if (menu->position >= parameters_size)
     {
         return;
     }
@@ -704,9 +815,9 @@ static void menu_button_enter_callback(void *arg)
         return;
     }
 
-    if (menu->position >= PARAM_TOP)
+    if (menu->position >= parameters_size)
     {
-        LOG(PRINT_INFO, "Error settings: menu->position >= PARAM_TOP");
+        LOG(PRINT_INFO, "Error settings: menu->position >= parameters_size");
         return;
     }
 
@@ -761,6 +872,11 @@ static void menu_button_exit_callback(void *arg)
     menuSaveParameters();
     if (_state == MENU_EDIT_PARAMETERS)
     {
+        if (parameters_list[menu->position].set_value != NULL)
+        {
+            parameters_list[menu->position].set_value(parameters_list[menu->position].value);
+        }
+
         if (parameters_list[menu->position].exit != NULL)
         {
             parameters_list[menu->position].exit();
@@ -804,6 +920,17 @@ static bool menu_button_init_cb(void *arg)
     menu->button.down_plus.fall_callback = menu_button_plus_callback;
     menu->button.down_plus.timer_callback = menu_button_plus_time_cb;
     menu->button.down_plus.rise_callback = menu_button_m_p_pull_cb;
+
+    if (config.dev_type == T_DEV_TYPE_SIEWNIK)
+    {
+        parameters_list = parameters_list_siewnik;
+        parameters_size = sizeof(parameters_list_siewnik) / sizeof(parameters_list_siewnik[0]);
+    }
+    else
+    {
+        parameters_list = parameters_list_solarka;
+        parameters_size = sizeof(parameters_list_solarka) / sizeof(parameters_list_solarka[0]);
+    }
 
     return true;
 }
@@ -852,57 +979,57 @@ static bool menu_process(void *arg)
     switch (_state)
     {
     case MENU_LIST_PARAMETERS:
-       {
-           oled_setGLCDFont(OLED_FONT_SIZE_16);
-           oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
-           oled_setGLCDFont(OLED_FONT_SIZE_11);
+    {
+        oled_setGLCDFont(OLED_FONT_SIZE_16);
+        oled_printFixed(2, 0, dictionary_get_string(menu->name_dict), OLED_FONT_SIZE_16);
+        oled_setGLCDFont(OLED_FONT_SIZE_11);
 
-           if (menu->line.end - menu->line.start != MAX_LINE - 1)
-           {
-               menu->line.start = menu->position;
-               menu->line.end = menu->line.start + MAX_LINE - 1;
-           }
+        if (menu->line.end - menu->line.start != MAX_LINE - 1)
+        {
+            menu->line.start = menu->position;
+            menu->line.end = menu->line.start + MAX_LINE - 1;
+        }
 
-           if ((menu->position < menu->line.start) || (menu->position > menu->line.end))
-           {
-               if (menu->last_button == LAST_BUTTON_UP)
-               {
-                   menu->line.start = menu->position;
-                   menu->line.end = menu->line.start + MAX_LINE - 1;
-               }
-               else
-               {
-                   menu->line.end = menu->position;
-                   menu->line.start = menu->line.end - MAX_LINE + 1;
-               }
+        if ((menu->position < menu->line.start) || (menu->position > menu->line.end))
+        {
+            if (menu->last_button == LAST_BUTTON_UP)
+            {
+                menu->line.start = menu->position;
+                menu->line.end = menu->line.start + MAX_LINE - 1;
+            }
+            else
+            {
+                menu->line.end = menu->position;
+                menu->line.start = menu->line.end - MAX_LINE + 1;
+            }
 
-               LOG(PRINT_INFO, "menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n",
-                   menu->line.start, menu->line.end, menu->position, menu->last_button);
-           }
+            LOG(PRINT_INFO, "menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n",
+                menu->line.start, menu->line.end, menu->position, menu->last_button);
+        }
 
-           int line = 0;
-           do
-           {
-               int pos = line + menu->line.start;
-               sprintf(buff, "%s", dictionary_get_string(parameters_list[pos].name_dict));
-               if (line + menu->line.start == menu->position)
-               {
-                   ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
-                   oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, buff, OLED_FONT_SIZE_11);
-               }
-               else
-               {
-                   oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, buff, OLED_FONT_SIZE_11);
-               }
+        int line = 0;
+        do
+        {
+            int pos = line + menu->line.start;
+            sprintf(buff, "%s", dictionary_get_string(parameters_list[pos].name_dict));
+            if (line + menu->line.start == menu->position)
+            {
+                ssdFigureFillLine(MENU_HEIGHT + LINE_HEIGHT * line, LINE_HEIGHT);
+                oled_printFixedBlack(2, MENU_HEIGHT + LINE_HEIGHT * line, buff, OLED_FONT_SIZE_11);
+            }
+            else
+            {
+                oled_printFixed(2, MENU_HEIGHT + LINE_HEIGHT * line, buff, OLED_FONT_SIZE_11);
+            }
 
-               line++;
-           } while (line + menu->line.start != PARAM_TOP && line < MAX_LINE);
+            line++;
+        } while (line + menu->line.start != parameters_size && line < MAX_LINE);
 
-           scrollBar.actual_line = menu->position;
-           scrollBar.all_line = PARAM_TOP - 1;
-           ssdFigureDrawScrollBar(&scrollBar);
-       }
-       break;
+        scrollBar.actual_line = menu->position;
+        scrollBar.all_line = parameters_size - 1;
+        ssdFigureDrawScrollBar(&scrollBar);
+    }
+    break;
 
     case MENU_EDIT_PARAMETERS:
         oled_printFixed(2, 0, dictionary_get_string(parameters_list[menu->position].name_dict), OLED_FONT_SIZE_16);
@@ -910,23 +1037,22 @@ static bool menu_process(void *arg)
         {
         case UNIT_INT:
             sprintf(buff, "%d %s", parameters_list[menu->position].value, parameters_list[menu->position].unit_name != NULL ? parameters_list[menu->position].unit_name : "");
-            oled_printFixed(30,MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_ON_OFF:
-            sprintf(buff, "%s", parameters_list[menu->position].value ? dictionary_get_string(
-                DICT_ON) : dictionary_get_string(DICT_OFF));
-            oled_printFixed(20 ,MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            sprintf(buff, "%s", parameters_list[menu->position].value ? dictionary_get_string(DICT_ON) : dictionary_get_string(DICT_OFF));
+            oled_printFixed(20, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_BOOL:
             sprintf(buff, "%s", parameters_list[menu->position].value ? "1" : "0");
-            oled_printFixed(30,MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_LANGUAGE:
             sprintf(buff, "%s", language[parameters_list[menu->position].value]);
-            oled_printFixed(30,MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
         default:
             break;
