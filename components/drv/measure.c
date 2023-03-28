@@ -24,20 +24,21 @@
 static adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static adc_atten_t atten = ADC_ATTEN_DB_11;
 
-#define ADC_IN_CH                          ADC_CHANNEL_6
-#define ADC_MOTOR_CH                       ADC_CHANNEL_7
-#define ADC_SERVO_CH                       ADC_CHANNEL_4
-#define ADC_12V_CH                         ADC_CHANNEL_5
-#define ADC_CE_CH                          ADC_CHANNEL_0
+#define ADC_IN_CH ADC_CHANNEL_6
+#define ADC_MOTOR_CH ADC_CHANNEL_7
+#define ADC_SERVO_CH ADC_CHANNEL_4
+#define ADC_12V_CH ADC_CHANNEL_5
+#define ADC_CE_CH ADC_CHANNEL_0
 
 #ifndef ADC_REFRES
-#define ADC_REFRES                         4096
+#define ADC_REFRES 4096
 #endif
 
-#define DEFAULT_VREF                       1100 //Use adc2_vref_to_gpio() to obtain a better estimate
-#define NO_OF_SAMPLES                      64   //Multisampling
+#define DEFAULT_VREF 1100 // Use adc2_vref_to_gpio() to obtain a better estimate
+#define NO_OF_SAMPLES 64  // Multisampling
 
-#define DEFAULT_MOTOR_CALIBRATION_VALUE    1830
+#define DEFAULT_MOTOR_CALIBRATION_VALUE 1830
+#define SILOS_START_MEASURE 100
 
 typedef struct
 {
@@ -51,19 +52,19 @@ typedef struct
 } meas_data_t;
 
 static meas_data_t meas_data[MEAS_CH_LAST] =
-{
-    [MEAS_CH_IN] =          {.unit = 1, .channel = ADC_IN_CH,     .ch_name         = "MEAS_CH_IN"         },
-    [MEAS_CH_MOTOR] =       {.unit = 1, .channel = ADC_MOTOR_CH,  .ch_name         = "MEAS_CH_MOTOR"      },
-    [MEAS_CH_12V] =         {.unit = 1, .channel = ADC_12V_CH,    .ch_name         = "MEAS_CH_12V"        },
+    {
+        [MEAS_CH_IN] = {.unit = 1, .channel = ADC_IN_CH, .ch_name = "MEAS_CH_IN"},
+        [MEAS_CH_MOTOR] = {.unit = 1, .channel = ADC_MOTOR_CH, .ch_name = "MEAS_CH_MOTOR"},
+        [MEAS_CH_12V] = {.unit = 1, .channel = ADC_12V_CH, .ch_name = "MEAS_CH_12V"},
 #if CONFIG_DEVICE_SIEWNIK
-    [MEAS_CH_SERVO] =       {.unit = 1, .channel = ADC_SERVO_CH,  .ch_name         = "MEAS_CH_SERVO"      },
-    [MEAS_CH_TEMP] =        {.unit = 1, .channel = ADC_CE_CH,     .ch_name         = "MEAS_CH_TEMP"       },
+        [MEAS_CH_SERVO] = {.unit = 1, .channel = ADC_SERVO_CH, .ch_name = "MEAS_CH_SERVO"},
+        [MEAS_CH_TEMP] = {.unit = 1, .channel = ADC_CE_CH, .ch_name = "MEAS_CH_TEMP"},
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    [MEAS_CH_TEMP] =        {.unit = 1, .channel = ADC_CHANNEL_4, .ch_name         = "MEAS_CH_TEMP"       },
-    [MEAS_CH_CHECK_VIBRO] = {.unit = 1, .channel = ADC_CHANNEL_0, .ch_name         = "MEAS_CH_CHECK_VIBRO"},
-    [MEAS_CH_CHECK_MOTOR] = {.unit = 1, .channel = ADC_CHANNEL_3, .ch_name         = "MEAS_CH_CHECK_MOTOR"},
+        [MEAS_CH_TEMP] = {.unit = 1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_TEMP"},
+        [MEAS_CH_CHECK_VIBRO] = {.unit = 1, .channel = ADC_CHANNEL_0, .ch_name = "MEAS_CH_CHECK_VIBRO"},
+        [MEAS_CH_CHECK_MOTOR] = {.unit = 1, .channel = ADC_CHANNEL_3, .ch_name = "MEAS_CH_CHECK_MOTOR"},
 #endif
 };
 
@@ -120,7 +121,7 @@ static void _read_adc_values(void)
     for (uint8_t ch = 0; ch < MEAS_CH_LAST; ch++)
     {
         meas_data[ch].adc = 0;
-        //Multisampling
+        // Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++)
         {
             if (meas_data[ch].unit == ADC_UNIT_1)
@@ -147,9 +148,6 @@ static void _read_adc_values(void)
     }
 }
 
-#define SILOS_START_MEASURE    100
-#define SILOS_LOW              600
-
 static void measure_process(void *arg)
 {
     (void)arg;
@@ -162,21 +160,36 @@ static void measure_process(void *arg)
         // LOG(PRINT_INFO, "%s %d", meas_data[MEAS_CH_CHECK_VIBRO].ch_name, meas_data[MEAS_CH_CHECK_VIBRO].filtered_adc);
         // LOG(PRINT_INFO, "%s %d", meas_data[MEAS_CH_CHECK_MOTOR].ch_name, meas_data[MEAS_CH_CHECK_MOTOR].filtered_adc);
 
-        uint32_t silos_distance = ultrasonar_get_distance() >
-            SILOS_START_MEASURE ? ultrasonar_get_distance() - SILOS_START_MEASURE : 0;
-        if (silos_distance > SILOS_LOW)
+        if (ultrasonar_is_connected())
         {
-            silos_distance = SILOS_LOW;
+            uint32_t silos_height = menuGetValue(MENU_SILOS_HEIGHT) * 10;
+            uint32_t silos_distance = ultrasonar_get_distance() >
+                                              SILOS_START_MEASURE
+                                          ? ultrasonar_get_distance() - SILOS_START_MEASURE
+                                          : 0;
+            if (silos_distance > silos_height)
+            {
+                silos_distance = silos_height;
+            }
+
+            int silos_percent = (silos_height - silos_distance) * 100 / silos_height;
+            if ((silos_percent < 0) || (silos_percent > 100))
+            {
+                silos_percent = 0;
+            }
+            uint32_t silos_is_low = silos_percent < 10;
+            LOG(PRINT_INFO, "Silos %d %d", silos_percent, silos_is_low);
+            menuSetValue(MENU_LOW_LEVEL_SILOS, silos_is_low);
+            menuSetValue(MENU_SILOS_LEVEL, (uint32_t)silos_percent);
+            menuSetValue(MENU_SILOS_SENSOR_IS_CONECTED, 1);
+        }
+        else
+        {
+            menuSetValue(MENU_SILOS_SENSOR_IS_CONECTED, 0);
+            menuSetValue(MENU_LOW_LEVEL_SILOS, 0);
+            menuSetValue(MENU_SILOS_LEVEL, 0);
         }
 
-        int silos_percent = (SILOS_LOW - silos_distance) * 100 / SILOS_LOW;
-        if ((silos_percent < 0) || (silos_percent > 100))
-        {
-            silos_percent = 0;
-        }
-
-        menuSetValue(MENU_LOW_LEVEL_SILOS, silos_percent < 10);
-        menuSetValue(MENU_SILOS_LEVEL, (uint32_t)silos_percent);
         menuSetValue(MENU_VOLTAGE_ACCUM, (uint32_t)(accum_get_voltage() * 10000.0));
         menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_CH_MOTOR, 0.1)));
         menuSetValue(MENU_TEMPERATURE, (uint32_t)(measure_get_temperature()));
@@ -199,11 +212,11 @@ void measure_start(void)
     xTaskCreate(measure_process, "measure_process", 4096, NULL, 10, NULL);
 #if CONFIG_DEVICE_SIEWNIK
     servoCalibrationTimer = xTimerCreate("servoCalibrationTimer", 1000 / portTICK_RATE_MS, pdFALSE, (void *)0,
-            measure_get_servo_calibration);
+                                         measure_get_servo_calibration);
 #endif
 
     motorCalibrationTimer = xTimerCreate("motorCalibrationTimer", 1000 / portTICK_RATE_MS, pdFALSE, (void *)0,
-            measure_get_motor_calibration);
+                                         measure_get_motor_calibration);
 
     init_measure();
 }
@@ -270,7 +283,9 @@ float measure_get_current(enum_meas_ch type, float resistor)
 #if CONFIG_DEVICE_SIEWNIK
     LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
     uint32_t adc = measure_get_filtered_value(type) <
-        motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
+                           motor_calibration_meas
+                       ? 0
+                       : measure_get_filtered_value(type) - motor_calibration_meas;
     float current = (float)adc * 10 /* mAmp */;
     LOG(PRINT_DEBUG, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
 #endif
@@ -278,12 +293,14 @@ float measure_get_current(enum_meas_ch type, float resistor)
 #if CONFIG_DEVICE_SOLARKA
     LOG(PRINT_DEBUG, "Adc %d calib %d", measure_get_filtered_value(type), motor_calibration_meas);
     uint32_t adc = measure_get_filtered_value(type) <
-        motor_calibration_meas ? 0 : measure_get_filtered_value(type) - motor_calibration_meas;
+                           motor_calibration_meas
+                       ? 0
+                       : measure_get_filtered_value(type) - motor_calibration_meas;
 
     float voltage = menuGetValue(MENU_VOLTAGE_ACCUM) / 100.0;
     float correction = (14.2 - voltage) * 100;
     float current_meas = (float)adc * 0.92;
-    float current = current_meas/* + correction*//* Amp */;
+    float current = current_meas /* + correction*/ /* Amp */;
     LOG(PRINT_DEBUG, "voltage %f correction %f current_meas %f current %f", voltage, correction, current_meas, current);
     LOG(PRINT_DEBUG, "Adc %d calib %d curr %f", adc, motor_calibration_meas, current);
 #endif

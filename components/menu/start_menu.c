@@ -219,7 +219,7 @@ static bool _check_low_silos_flag(void)
 {
     uint32_t flag = menuGetValue(MENU_LOW_LEVEL_SILOS);
 
-    // LOG(PRINT_INFO, "------SILOS FLAG %d---------", flag);
+    LOG(PRINT_INFO, "------SILOS FLAG %d---------", flag);
     if (flag > 0)
     {
         if (ctx.low_silos_ckeck_timeout < xTaskGetTickCount())
@@ -856,6 +856,7 @@ static bool menu_enter_cb(void *arg)
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
+    cmdClientSetValueWithoutResp(MENU_SILOS_HEIGHT, menuGetValue(MENU_SILOS_HEIGHT));
     backendEnterMenuStart();
 
     ctx.error_flag = 0;
@@ -950,6 +951,7 @@ static void menu_start_idle(void)
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
         cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
+        cmdClientSetValueWithoutResp(MENU_SILOS_HEIGHT, menuGetValue(MENU_SILOS_HEIGHT));
         change_state(STATE_START);
     }
     else
@@ -1097,6 +1099,24 @@ static void menu_start_ready(void)
         {
             drawServo(10, 35, 0);
         }
+
+        if (menuGetValue(MENU_SILOS_SENSOR_IS_CONECTED))
+        {
+            uint32_t silos_level = menuGetValue(MENU_SILOS_LEVEL);
+            sprintf(str, "%d", menuGetValue(MENU_SILOS_LEVEL));
+            if (silos_level > 99)
+            {
+                oled_printFixed(10, 10, str, OLED_FONT_SIZE_11);
+            }
+            else if (silos_level < 100 && silos_level > 9)
+            {
+                oled_printFixed(14, 10, str, OLED_FONT_SIZE_11);
+            }
+            else if (silos_level < 10)
+            {
+                oled_printFixed(18, 10, str, OLED_FONT_SIZE_11);
+            }
+        }
     }
     backendEnterMenuStart();
 }
@@ -1134,7 +1154,7 @@ static void menu_start_low_silos(void)
 
     oled_clearScreen();
     oled_printFixed(2, 2, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
-    oled_printFixed(2, 32, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
+    oled_printFixed(2, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
 }
 
 static void menu_start_error(void)

@@ -43,6 +43,7 @@ typedef enum
     PARAM_MOTOR_ERROR_CALIBRATION,
     PARAM_SERVO_CLOSE_CALIBRATION,
     PARAM_SERVO_OPEN_CALIBRATION,
+    PARAM_SILOS_HEIGHT,
     PARAM_TOP,
 } parameters_type_t;
 
@@ -81,6 +82,11 @@ static void enter_servo_close_calibration(void);
 static void exit_servo_close_calibration(void);
 static void enter_servo_open_calibration(void);
 static void exit_servo_open_calibration(void);
+
+static void get_silos_height(uint32_t *value);
+static void set_silos_height(uint32_t value);
+static void get_max_silos_height(uint32_t *value);
+static void get_min_silos_height(uint32_t *value);
 
 static void get_bootup(uint32_t *value);
 static void get_buzzer(uint32_t *value);
@@ -220,6 +226,15 @@ static parameters_t parameters_list_siewnik[] =
          .get_max_value = get_max_servo_open_calibration,
          .enter = enter_servo_open_calibration,
          .exit = exit_servo_open_calibration},
+
+        {.param_type = PARAM_SILOS_HEIGHT,
+         .name_dict = DICT_SILOS_HEIGHT,
+         .unit_type = UNIT_INT,
+         .get_value = get_silos_height,
+         .set_value = set_silos_height,
+         .get_max_value = get_max_silos_height,
+         .get_min_value = get_min_silos_height,
+         .unit_name = "[cm]"},
 };
 
 static parameters_t parameters_list_solarka[] =
@@ -336,6 +351,27 @@ static void set_servo_open_calibration(uint32_t value)
 {
     LOG(PRINT_DEBUG, "%s: %d", __func__, value);
     cmdClientSetValueWithoutResp(MENU_OPEN_SERVO_REGULATION, value);
+}
+
+static void get_silos_height(uint32_t *value)
+{
+    *value = menuGetValue(MENU_SILOS_HEIGHT);
+}
+
+static void set_silos_height(uint32_t value)
+{
+    LOG(PRINT_DEBUG, "%s: %d", __func__, value);
+    cmdClientSetValueWithoutResp(MENU_SILOS_HEIGHT, value);
+}
+
+static void get_max_silos_height(uint32_t *value)
+{
+    *value = menuGetMaxValue(MENU_SILOS_HEIGHT);
+}
+
+static void get_min_silos_height(uint32_t *value)
+{
+    *value = 10;
 }
 
 static void enter_servo_close_calibration(void)

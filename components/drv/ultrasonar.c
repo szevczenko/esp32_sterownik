@@ -16,6 +16,7 @@ static uint16_t read_data;
 static uint32_t distance;
 static uint16_t filtered_tab[FILTERED_TABLE_SIZE];
 static uint32_t tab_iterator;
+static bool silos_is_connected;
 
 static void uart_init(void)
 {
@@ -43,9 +44,10 @@ static void sonar_task(void *arg)
 {
     while (1)
     {
+        bool is_correct_readed = false;
         // Read data from the UART
         int len = uart_read_bytes(ECHO_UART_PORT_NUM, read_buff, sizeof(read_buff), 20 / portTICK_RATE_MS);
-        // printf("[SONAR] Read data size %d\n\r", len);
+
         for (int i = 0; i < len; i++)
         {
             if ((read_buff[i] == 0xFF) && (i + 2 < len))
@@ -60,12 +62,18 @@ static void sonar_task(void *arg)
                 }
 
                 distance = distance / FILTERED_TABLE_SIZE;
-                printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
+                // printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
+                is_correct_readed = true;
             }
         }
-
+        silos_is_connected = is_correct_readed;
         osDelay(100);
     }
+}
+
+bool ultrasonar_is_connected(void)
+{
+    return silos_is_connected;
 }
 
 uint32_t ultrasonar_get_distance(void)
