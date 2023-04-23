@@ -177,7 +177,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Motor err calib",
             "Рег. ошибка двигателя",
             "Reg. błędu silnika",
-            "Motorkalibrierung"},
+            "Motorkalib."},
     [DICT_SERVO_CLOSE] =
         {
             "Servo close",
@@ -195,17 +195,17 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Silos height",
             "Высота",
             "Wysokość zbiornika",
-            "Silos height"},
+            "Tankhöle"},
     [DICT_ON] =
         {
             "ON",
-            "Активировано",
+            "Вкл.",
             "Włączony",
             "Auf"},
     [DICT_OFF] =
         {
             "OFF",
-            "Выключенный",
+            "Выкл.",
             "Wyłączony",
             "Aus"},
     /* PARAMETERS */

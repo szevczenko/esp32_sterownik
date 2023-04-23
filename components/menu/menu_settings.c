@@ -1032,27 +1032,27 @@ static bool menu_process(void *arg)
     break;
 
     case MENU_EDIT_PARAMETERS:
-        oled_printFixed(2, 0, dictionary_get_string(parameters_list[menu->position].name_dict), OLED_FONT_SIZE_16);
+        oled_printFixed(2, 8, dictionary_get_string(parameters_list[menu->position].name_dict), OLED_FONT_SIZE_11);
         switch (parameters_list[menu->position].unit_type)
         {
         case UNIT_INT:
             sprintf(buff, "%d %s", parameters_list[menu->position].value, parameters_list[menu->position].unit_name != NULL ? parameters_list[menu->position].unit_name : "");
-            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_ON_OFF:
             sprintf(buff, "%s", parameters_list[menu->position].value ? dictionary_get_string(DICT_ON) : dictionary_get_string(DICT_OFF));
-            oled_printFixed(20, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(20, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_BOOL:
             sprintf(buff, "%s", parameters_list[menu->position].value ? "1" : "0");
-            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_LANGUAGE:
             sprintf(buff, "%s", language[parameters_list[menu->position].value]);
-            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
             break;
         default:
             break;

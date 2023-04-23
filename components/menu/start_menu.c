@@ -1088,9 +1088,9 @@ static void menu_start_ready(void)
     else
     {
         servo_bar.fill = ctx.data.servo_value;
-        sprintf(str, "%d", servo_bar.fill);
+        sprintf(str, "%d%%", servo_bar.fill);
         ssdFigureDrawLoadBar(&servo_bar);
-        oled_printFixed(80, 52, str, OLED_FONT_SIZE_11);
+        oled_printFixed(70, 52, str, OLED_FONT_SIZE_11);
         if (ctx.data.servo_vibro_on)
         {
             drawServo(10, 35, ctx.data.servo_value);
@@ -1153,8 +1153,8 @@ static void menu_start_low_silos(void)
     }
 
     oled_clearScreen();
-    oled_printFixed(2, 2, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
-    oled_printFixed(2, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
+    oled_printFixed(25, 2, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
+    oled_printFixed(30, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
 }
 
 static void menu_start_error(void)
