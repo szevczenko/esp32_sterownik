@@ -98,12 +98,14 @@ static void count_working_data(void)
 {
     ctx.motor_pwm = dcmotor_process(&ctx.motorD1, ctx.motor_value);
     ctx.motor_pwm2 = dcmotor_process(&ctx.motorD2, ctx.motor_value);
-
+#if CONFIG_DEVICE_SIEWNIK
     if (ctx.servo_new_value != ctx.servo_value)
     {
         ctx.servo_new_value = ctx.servo_value;
         ctx.servo_set_timer = xTaskGetTickCount() + MS2ST(750);
+        errorSiewnikServoChangeState();
     }
+#endif
 
     if (ctx.motor_on)
     {

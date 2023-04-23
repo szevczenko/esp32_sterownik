@@ -52,6 +52,7 @@ void error_servo_timer(void);
 
 void errorSiewnikStart(void);
 void errorSiewnikErrorReset(void);
+void errorSiewnikServoChangeState(void);
 
 #endif //#if CONFIG_DEVICE_SIEWNIK
 
