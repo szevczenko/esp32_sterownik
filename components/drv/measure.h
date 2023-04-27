@@ -47,5 +47,6 @@ uint32_t measure_get_filtered_value(enum_meas_ch type);
 float measure_get_current(enum_meas_ch type, float resistor);
 float accum_get_voltage(void);
 float measure_get_temperature(void);
+float measure_get_servo_voltage(void);
 
 #endif

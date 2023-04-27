@@ -90,7 +90,8 @@ static void _reset_error(void)
     ctx.motor_error_timer = 0;
     ctx.motor_find_overcurrent = false;
     ctx.servo_find_overcurrent = false;
-    ctx.servo_blocking_error_timer = MS2ST(5000) + xTaskGetTickCount();
+    ctx.servo_blocking_error_timer = MS2ST(2000) + xTaskGetTickCount();
+    ctx.servo_try_counter = 0;
 }
 
 static bool _is_overcurrent(float motor_current)
@@ -104,17 +105,16 @@ static bool _is_overcurrent(float motor_current)
     return motor_current > overcurrent;
 }
 
-static bool _is_servo_overcurrent(float servo_current)
+static bool _is_servo_overcurrent(float servo_voltage)
 {
     if (ctx.servo_blocking_error_timer < xTaskGetTickCount())
     {
-        float max_current = 0.1 * menuGetValue(MENU_SERVO) + 2;
-        float calibration = ((float)menuGetValue(MENU_ERROR_SERVO_CALIBRATION) - 50.0) * (float)menuGetValue(MENU_SERVO) / 100.0;
-        float overcurrent = max_current + calibration;
+        float calibration = ((float)menuGetValue(MENU_ERROR_SERVO_CALIBRATION) - 50.0) * 10;
+        float overvoltage_mv = 500;
 
-        LOG(PRINT_INFO, "Servo current %.2f overcurrent %.2f calib_val %d calib %.2f", servo_current, overcurrent, menuGetValue(MENU_ERROR_SERVO_CALIBRATION), calibration);
+        LOG(PRINT_INFO, "Servo current %.2f overcurrent %.2f calib_val %d calib %.2f", servo_voltage, overvoltage_mv, menuGetValue(MENU_ERROR_SERVO_CALIBRATION), calibration);
 
-        return servo_current > overcurrent;
+        return servo_voltage > overvoltage_mv;
     }
     return false;
 }
@@ -177,20 +177,15 @@ static void _state_working(void)
         ctx.motor_find_overcurrent = false;
     }
 
-    float servo_current = (float)menuGetValue(MENU_CURRENT_SERVO) / 100;
+    float servo_voltage = (float)menuGetValue(MENU_VOLTAGE_SERVO);
 
-    if (servo_current > 45)
-    {
-        _change_state(STATE_ERROR_SERVO_CURRENT);
-    }
-
-    if (_is_servo_overcurrent(servo_current) && menuGetValue(MENU_ERROR_SERVO))
+    if (_is_servo_overcurrent(servo_voltage) && menuGetValue(MENU_ERROR_SERVO))
     {
         if (!ctx.servo_find_overcurrent)
         {
             LOG(PRINT_INFO, "find servo overcurrent");
             ctx.servo_find_overcurrent = true;
-            ctx.servo_overcurrent_timer = xTaskGetTickCount() + MS2ST(2500);
+            ctx.servo_overcurrent_timer = xTaskGetTickCount() + MS2ST(1000);
         }
         else
         {
@@ -198,7 +193,7 @@ static void _state_working(void)
             {
                 if (ctx.servo_try_counter < 3)
                 {
-                    ctx.servo_blocking_error_timer = MS2ST(5000) + xTaskGetTickCount();
+                    ctx.servo_blocking_error_timer = MS2ST(2000) + xTaskGetTickCount();
                     ctx.servo_error_reset_timer = xTaskGetTickCount() + MS2ST(20000);
                     ctx.servo_try_counter++;
                     /* Send to servo try information */
@@ -206,7 +201,7 @@ static void _state_working(void)
                 }
                 else
                 {
-                    _change_state(STATE_ERROR_SERVO_CURRENT);
+                    _change_state(STATE_ERROR_SERVO);
                     ctx.servo_try_counter = 0;
                 }
             }
@@ -228,7 +223,7 @@ static void _state_working(void)
     }
 
     uint32_t temperature = menuGetValue(MENU_TEMPERATURE);
-    LOG(PRINT_DEBUG, "Temperature %d", temperature);
+    LOG(PRINT_INFO, "Temperature %d", temperature);
     if (temperature > 105 && menuGetValue(MENU_ERROR_MOTOR))
     {
         if (!ctx.temperature_find_overcurrent)
@@ -397,7 +392,7 @@ void errorSiewnikErrorReset(void)
 
 void errorSiewnikServoChangeState(void)
 {
-    ctx.servo_blocking_error_timer = MS2ST(5000) + xTaskGetTickCount();
+    ctx.servo_blocking_error_timer = MS2ST(2000) + xTaskGetTickCount();
     ctx.servo_error_reset_timer = xTaskGetTickCount() + MS2ST(20000);
     ctx.servo_try_counter = 0;
 }

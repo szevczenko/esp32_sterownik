@@ -849,10 +849,10 @@ static bool menu_enter_cb(void *arg)
     }
 
     cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
-    ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+    ctx.data.motor_on = 0;
     ctx.data.motor_value = menuGetValue(MENU_MOTOR);
     ctx.data.servo_value = menuGetValue(MENU_SERVO);
-    ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+    ctx.data.servo_vibro_on = 0;
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
@@ -907,8 +907,8 @@ static void menu_check_connection(void)
 
     ctx.data.motor_value = menuGetValue(MENU_MOTOR);
     ctx.data.servo_value = menuGetValue(MENU_SERVO);
-    ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
-    ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+    ctx.data.motor_on = 0;
+    ctx.data.servo_vibro_on = 0;
 #if MENU_VIRO_ON_OFF_VERSION
     if (menuGetValue(MENU_VIBRO_ON_S) == 0)
     {
@@ -944,10 +944,10 @@ static void menu_start_idle(void)
     if (backendIsConnected())
     {
         cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
-        ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+        ctx.data.motor_on = 0;
         ctx.data.motor_value = menuGetValue(MENU_MOTOR);
         ctx.data.servo_value = menuGetValue(MENU_SERVO);
-        ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+        ctx.data.servo_vibro_on = 0;
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
         cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));

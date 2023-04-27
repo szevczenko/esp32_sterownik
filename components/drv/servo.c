@@ -27,11 +27,13 @@ static uint8_t try_count = 0;
 
 void servo_set_pwm_val(uint8_t value)
 {
+    if (value > 100)
+    {
+        value = 100;
+    }
     int min = 2000 + (50 - menuGetValue(MENU_CLOSE_SERVO_REGULATION)) * 10;
     int max = 1275 + (50 - menuGetValue(MENU_OPEN_SERVO_REGULATION)) * 10;
     uint16_t pwm = (uint16_t)((float)(max - min) * (float)value / (float)99 + (float)min);
-
-    //printf("REG: close %d, open %d, pwm %d\n", min, max, pwm);
     servoD.pwm_value = pwm;
 }
 
@@ -160,7 +162,7 @@ static void servo_try_process(void)
 
     if (try_count == 0)
     {
-        timeout = xTaskGetTickCount() + MS2ST(250);
+        timeout = xTaskGetTickCount() + MS2ST(50);
         try_count++;
         servo_set_pwm_val(servoD.value + try_count);
     }
@@ -168,9 +170,9 @@ static void servo_try_process(void)
     {
         if ((timeout < xTaskGetTickCount()) && (timeout != 0))
         {
-            timeout = xTaskGetTickCount() + MS2ST(250);
+            timeout = xTaskGetTickCount() + MS2ST(50);
             try_count++;
-            servo_set_pwm_val(servoD.value + try_count * 8 /*dark_menu_get_value(MENU_TRY_OPEN_CALIBRATION) */);
+            servo_set_pwm_val(servoD.value + try_count * 8);
         }
     }
     else
@@ -181,8 +183,6 @@ static void servo_try_process(void)
         servoD.state = servoD.last_state;
         servoD.try_cnt++;
     }
-
-    printf("SERVO_TRY %d\n", servoD.value + try_count);
 }
 
 static void servo_exit_try(void)
@@ -234,8 +234,6 @@ uint16_t servo_process(uint8_t value)
 
     case SERVO_TRY:
         servo_try_process();
-        return servoD.value + try_count * 8;
-
         break;
 
     case SERVO_ERROR_PROCESS:
