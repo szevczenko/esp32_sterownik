@@ -224,7 +224,7 @@ static void _state_working(void)
 
     uint32_t temperature = menuGetValue(MENU_TEMPERATURE);
     LOG(PRINT_INFO, "Temperature %d", temperature);
-    if (temperature > 105 && menuGetValue(MENU_ERROR_MOTOR))
+    if (temperature > 90 && menuGetValue(MENU_ERROR_MOTOR))
     {
         if (!ctx.temperature_find_overcurrent)
         {

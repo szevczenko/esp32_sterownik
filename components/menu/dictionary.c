@@ -33,10 +33,10 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Ich verbinde\nmich mit:\n"},
     [DICT_WAIT_CONNECTION_S_S_S] =
         {
-            "Wait connection%s%s%s",
-            "Ожидание соединения%s%s%s",
-            "Oczekuję na \npołączenie%s%s%s",
-            "Verbindung warten%s%s%s"},
+            "         Wait connection%s%s%s",
+            "               Ожидание \n             соединения%s%s%s",
+            "              Oczekuję na \n                połączenie%s%s%s",
+            "     Verbindung warten%s%s%s"},
     [DICT_CONNECTED_TRY_READ_DATA] =
         {
             "Connected\n Try read data",
@@ -248,10 +248,10 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Verbindung"},
     [DICT_DEVICE_NOT_CONNECTED] =
         {
-            "\nDevice not \nconnected",
-            "\nустройство не \nподключено",
-            "\n      Urządzenie \n        niepołączone",
-            "\n      Gerät nicht\n        verbunden"},
+            "\n               Device not \n                connected",
+            "\n           устройство не \n             подключено",
+            "\n                Urządzenie \n              niepołączone",
+            "\n                Gerät nicht\n                verbunden"},
     /* WIFI */
     [DICT_WAIT_TO_WIFI_INIT] =
         {
@@ -273,16 +273,16 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Klicken Sie zum\nScannen auf Enter"},
     [DICT_FIND_DEVICES] =
         {
-            "Find Devices",
-            "Найти устройства",
-            "Szukam urządzeń",
-            "Geräte finden"},
+            "\n              Find Devices",
+            "\n      Найти устройства",
+            "\n         Szukam urządzeń",
+            "\n              Geräte finden"},
     [DICT_DEVICE_NOT_FOUND] =
         {
-            "Device not found",
-            "Устройство не найдено",
+            "\n           Device not found",
+            "\n Устройство не найдено",
             "\n             Urządzenie nie\n         zostało znalezione",
-            "\n               Gerät nicht\n               gefunden"},
+            "\n               Gerät nicht\n                gefunden"},
     [DICT_TRY_CONNECT_TO] =
         {
             "Try connect to",
@@ -309,7 +309,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Warten auf Server"},
     [DICT_ERROR_CONNECT] =
         {
-            "ERROR CONNECT",
+            "\n\n     ERROR CONNECT",
             "Ошибка подключения",
             "Bląd połączenia",
             "       FEHLERHAFTE\n       VERBINDUNG"},
@@ -334,10 +334,10 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Ladegerät verbinden"},
     [DICT_CHECK_CONNECTION] =
         {
-            "Check connection",
-            "Проверка соединения",
-            "Sprawdzanie połączenia",
-            "Verbindung prüfen"},
+            "   Check connection",
+            " Проверка соединения",
+            " Sprawdzanie połączenia",
+            " Verbindung prüfen"},
     [DICT_VIBRO_ON] =
         {
             "Vibro",
@@ -354,10 +354,10 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Vibrator aus"},
     [DICT_LOW] =
         {
-            "Empty",
-            "Пустой",
-            "Pusty",
-            "Niedrig"},
+            "           Empty    \n                  Silos",
+            "         Пустой   \n           Силосы   ",
+            "              Pusty     \n            zbiornik \n               ",
+            "        Niedrig \n                  Silos"},
     [DICT_MOTOR] =
         {
             "Motor",
@@ -414,10 +414,10 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Vibro gesperrt"},
     [DICT_MOTOR_OVERCURRENT] =
         {
-            "Motor\novercurrent",
-            "Мотор\nзаблокированный",
+            "                  Motor\n           overcurrent",
+            "          Мотор\nзаблокированны",
             "                   Silnik\n         Zablokowany",
-            "Motor gesperrt"},
+            "             Motor \n         gesperrt"},
     [DICT_TEMPERATURE_IS_HIGH] =
         {
             "Temperature \nis high",
@@ -432,9 +432,9 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Unbekannter Fehler"},
     [DICT_LOST_CONNECTION_WITH_SERVER] =
         {
-            "Lost connection with server",
+            "       Lost connection \n          with server",
             "потеря связи с сервером",
-            "Utacono połączenie \n z serwerem",
+            " \n   Utacono połączenie \n         z serwerem",
             "Verbindung zum\nServer unterbrochen"},
     [DICT_TIMEOUT_CONNECT] =
         {

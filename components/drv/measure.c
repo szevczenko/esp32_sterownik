@@ -247,7 +247,31 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 float measure_get_temperature(void)
 {
 #if CONFIG_DEVICE_SIEWNIK
-    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
+    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 31 + 100;
+ if((measure_get_filtered_value(MEAS_CH_TEMP)>=2100)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2300)){
+    temp=temp/1.1;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2300)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2400)){
+    temp=temp;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2400)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2550)){
+    temp=temp*1.1;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2550)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2570)){
+    temp=temp*1.2;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2570)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2600)){
+    temp=temp*1.3;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2600)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2650)){
+    temp=temp*1.4;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2650)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2800)){
+    temp=temp*1.6;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2800)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2820)){
+    temp=temp*1.9;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2820)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2900)){
+    temp=temp*2.1;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2900)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=3000)){
+    temp=temp*2.5;}
+
+if((measure_get_filtered_value(MEAS_CH_TEMP)>=3000)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=4000)){
+    temp=0;}
+
     LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
     return temp;
 #endif
