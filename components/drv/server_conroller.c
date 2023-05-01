@@ -98,12 +98,14 @@ static void count_working_data(void)
 {
     ctx.motor_pwm = dcmotor_process(&ctx.motorD1, ctx.motor_value);
     ctx.motor_pwm2 = dcmotor_process(&ctx.motorD2, ctx.motor_value);
-
+#if CONFIG_DEVICE_SIEWNIK
     if (ctx.servo_new_value != ctx.servo_value)
     {
         ctx.servo_new_value = ctx.servo_value;
         ctx.servo_set_timer = xTaskGetTickCount() + MS2ST(750);
+        errorSiewnikServoChangeState();
     }
+#endif
 
     if (ctx.motor_on)
     {
@@ -127,7 +129,7 @@ static void count_working_data(void)
 
 static void set_working_data(void)
 {
-    //#if CONFIG_DEVICE_SIEWNIK
+    // #if CONFIG_DEVICE_SIEWNIK
 
     if (ctx.system_on)
     {
@@ -178,6 +180,10 @@ static void set_working_data(void)
 
 #if CONFIG_DEVICE_SIEWNIK
     float duty = (float)ctx.servo_pwm * 100 / 19999.0;
+    if ((menuGetValue(MENU_MACHINE_ERRORS) & (1 << ERROR_SERVO_OVER_CURRENT)) || (ctx.state == STATE_IDLE))
+    {
+        duty = 99.99;
+    }
     LOG(PRINT_DEBUG, "duty servo %f %d %d", duty, ctx.servo_value, ctx.servo_pwm);
     mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, duty);
     mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_GEN_A, MCPWM_DUTY_MODE_0); // call this each time, if operator was previously in low/high state
@@ -269,6 +275,7 @@ static void state_idle(void)
     {
         measure_meas_calibration_value();
         count_working_data();
+        ctx.system_on = (bool)menuGetValue(MENU_START_SYSTEM);
         set_working_data();
         osDelay(1000);
         change_state(STATE_WORKING);
@@ -335,7 +342,7 @@ static void state_working(void)
         return;
     }
 
-    osDelay(100);
+    osDelay(50);
 }
 
 static void state_servo_open_regulation(void)
@@ -420,7 +427,7 @@ static void state_motor_regulation(void)
 static void state_emergency_disable(void)
 {
     // Tą linijke usunąć jeżeli niepotrzebne wyłączenie przekaźnika w trybie STOP
-    ctx.system_on = 0;
+   // ctx.system_on = 0;
     ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
     ctx.servo_value = 0;
     ctx.motor_value = 0;

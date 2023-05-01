@@ -849,10 +849,10 @@ static bool menu_enter_cb(void *arg)
     }
 
     cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
-    ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+    ctx.data.motor_on = 0;
     ctx.data.motor_value = menuGetValue(MENU_MOTOR);
     ctx.data.servo_value = menuGetValue(MENU_SERVO);
-    ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+    ctx.data.servo_vibro_on = 0;
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
@@ -907,8 +907,8 @@ static void menu_check_connection(void)
 
     ctx.data.motor_value = menuGetValue(MENU_MOTOR);
     ctx.data.servo_value = menuGetValue(MENU_SERVO);
-    ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
-    ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+    ctx.data.motor_on = 0;
+    ctx.data.servo_vibro_on = 0;
 #if MENU_VIRO_ON_OFF_VERSION
     if (menuGetValue(MENU_VIBRO_ON_S) == 0)
     {
@@ -944,10 +944,10 @@ static void menu_start_idle(void)
     if (backendIsConnected())
     {
         cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
-        ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+        ctx.data.motor_on = 0;
         ctx.data.motor_value = menuGetValue(MENU_MOTOR);
         ctx.data.servo_value = menuGetValue(MENU_SERVO);
-        ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+        ctx.data.servo_vibro_on = 0;
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
         cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
         cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
@@ -1088,9 +1088,9 @@ static void menu_start_ready(void)
     else
     {
         servo_bar.fill = ctx.data.servo_value;
-        sprintf(str, "%d", servo_bar.fill);
+        sprintf(str, "%d%%", servo_bar.fill);
         ssdFigureDrawLoadBar(&servo_bar);
-        oled_printFixed(80, 52, str, OLED_FONT_SIZE_11);
+        oled_printFixed(70, 52, str, OLED_FONT_SIZE_11);
         if (ctx.data.servo_vibro_on)
         {
             drawServo(10, 35, ctx.data.servo_value);
@@ -1153,8 +1153,8 @@ static void menu_start_low_silos(void)
     }
 
     oled_clearScreen();
-    oled_printFixed(2, 2, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
-    oled_printFixed(2, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
+    oled_printFixed(5, 6, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
+   // oled_printFixed(24, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
 }
 
 static void menu_start_error(void)

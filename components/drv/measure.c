@@ -12,7 +12,7 @@
 #include "ultrasonar.h"
 
 #define MODULE_NAME    "[Meas] "
-#define DEBUG_LVL      PRINT_DEBUG
+#define DEBUG_LVL      PRINT_INFO
 
 #if CONFIG_DEBUG_MEASURE
 #define LOG(_lvl, ...) \
@@ -77,11 +77,11 @@ static TimerHandle_t motorCalibrationTimer;
 
 #if CONFIG_DEVICE_SIEWNIK
 static TimerHandle_t servoCalibrationTimer;
-static uint32_t calibration_value;
+static uint32_t servo_calibration_value;
 static void measure_get_servo_calibration(TimerHandle_t xTimer)
 {
-    calibration_value = measure_get_filtered_value(MEAS_CH_SERVO);
-    LOG(PRINT_INFO, "MEASURE SERVO Calibration value = %d", calibration_value);
+    servo_calibration_value = measure_get_filtered_value(MEAS_CH_SERVO);
+    LOG(PRINT_INFO, "MEASURE SERVO Calibration value = %d", servo_calibration_value);
 }
 
 #endif
@@ -114,6 +114,9 @@ static uint32_t filtered_value(uint32_t *tab, uint8_t size)
 void init_measure(void)
 {
     motor_calibration_meas = DEFAULT_MOTOR_CALIBRATION_VALUE;
+    #if CONFIG_DEVICE_SIEWNIK
+    servo_calibration_value = 2300;
+    #endif
 }
 
 static void _read_adc_values(void)
@@ -193,6 +196,7 @@ static void measure_process(void *arg)
         menuSetValue(MENU_VOLTAGE_ACCUM, (uint32_t)(accum_get_voltage() * 10000.0));
         menuSetValue(MENU_CURRENT_MOTOR, (uint32_t)(measure_get_current(MEAS_CH_MOTOR, 0.1)));
         menuSetValue(MENU_TEMPERATURE, (uint32_t)(measure_get_temperature()));
+        menuSetValue(MENU_VOLTAGE_SERVO, (uint32_t)(measure_get_servo_voltage() * 1000.0));
         /* DEBUG */
         // menuPrintParameter(MENU_VOLTAGE_ACCUM);
         // menuPrintParameter(MENU_CURRENT_MOTOR);
@@ -207,15 +211,15 @@ void measure_start(void)
     adc1_config_channel_atten(ADC_CHANNEL_5, atten);
     adc1_config_channel_atten(ADC_CHANNEL_6, atten);
     adc1_config_channel_atten(ADC_CHANNEL_7, atten);
-    adc2_config_channel_atten((adc2_channel_t)ADC_CHANNEL_5, atten);
+    adc2_config_channel_atten((adc2_channel_t)ADC_CHANNEL_6, atten);
 
     xTaskCreate(measure_process, "measure_process", 4096, NULL, 10, NULL);
 #if CONFIG_DEVICE_SIEWNIK
-    servoCalibrationTimer = xTimerCreate("servoCalibrationTimer", 1000 / portTICK_RATE_MS, pdFALSE, (void *)0,
+    servoCalibrationTimer = xTimerCreate("servoCalibrationTimer", MS2ST(1000), pdFALSE, (void *)0,
                                          measure_get_servo_calibration);
 #endif
 
-    motorCalibrationTimer = xTimerCreate("motorCalibrationTimer", 1000 / portTICK_RATE_MS, pdFALSE, (void *)0,
+    motorCalibrationTimer = xTimerCreate("motorCalibrationTimer", MS2ST(1000), pdFALSE, (void *)0,
                                          measure_get_motor_calibration);
 
     init_measure();
@@ -243,7 +247,31 @@ uint32_t measure_get_filtered_value(enum_meas_ch type)
 float measure_get_temperature(void)
 {
 #if CONFIG_DEVICE_SIEWNIK
-    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 82 + 41;
+    int temp = -((int)measure_get_filtered_value(MEAS_CH_TEMP)) / 31 + 100;
+ if((measure_get_filtered_value(MEAS_CH_TEMP)>=2100)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2300)){
+    temp=temp/1.1;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2300)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2400)){
+    temp=temp;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2400)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2550)){
+    temp=temp*1.1;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2550)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2570)){
+    temp=temp*1.2;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2570)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2600)){
+    temp=temp*1.3;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2600)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2650)){
+    temp=temp*1.4;
+    }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2650)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2800)){
+    temp=temp*1.6;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2800)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2820)){
+    temp=temp*1.9;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2820)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=2900)){
+    temp=temp*2.1;
+     }else if((measure_get_filtered_value(MEAS_CH_TEMP)>=2900)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=3000)){
+    temp=temp*2.5;}
+
+if((measure_get_filtered_value(MEAS_CH_TEMP)>=3000)&&(measure_get_filtered_value(MEAS_CH_TEMP)<=4000)){
+    temp=0;}
+
     LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
     return temp;
 #endif
@@ -276,6 +304,21 @@ float measure_get_temperature(void)
     LOG(PRINT_DEBUG, "Temperature %d %d", measure_get_filtered_value(MEAS_CH_TEMP), temp);
     return temp;
 #endif
+}
+
+float measure_get_servo_voltage(void)
+{
+    #if CONFIG_DEVICE_SIEWNIK
+    uint32_t adc = measure_get_filtered_value(MEAS_CH_SERVO) >
+                           servo_calibration_value
+                       ? 0
+                       : servo_calibration_value - measure_get_filtered_value(MEAS_CH_SERVO);
+    float voltage = (float)adc * 5 / servo_calibration_value /* mAmp */;
+    LOG(PRINT_DEBUG, "Servo: Adc %d calib %d voltage %f", adc, servo_calibration_value, voltage);
+    return voltage;
+    #else
+    return 0;
+    #endif
 }
 
 float measure_get_current(enum_meas_ch type, float resistor)
