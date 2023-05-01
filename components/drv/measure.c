@@ -12,7 +12,7 @@
 #include "ultrasonar.h"
 
 #define MODULE_NAME    "[Meas] "
-#define DEBUG_LVL      PRINT_INFO
+#define DEBUG_LVL      PRINT_WARNING
 
 #if CONFIG_DEBUG_MEASURE
 #define LOG(_lvl, ...) \
@@ -59,6 +59,7 @@ static meas_data_t meas_data[MEAS_CH_LAST] =
 #if CONFIG_DEVICE_SIEWNIK
         [MEAS_CH_SERVO] = {.unit = 1, .channel = ADC_SERVO_CH, .ch_name = "MEAS_CH_SERVO"},
         [MEAS_CH_TEMP] = {.unit = 1, .channel = ADC_CE_CH, .ch_name = "MEAS_CH_TEMP"},
+        [MEAS_CH_CHECK_SERVO] = {.unit = 2, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_CHECK_SERVO"},
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
@@ -211,7 +212,7 @@ void measure_start(void)
     adc1_config_channel_atten(ADC_CHANNEL_5, atten);
     adc1_config_channel_atten(ADC_CHANNEL_6, atten);
     adc1_config_channel_atten(ADC_CHANNEL_7, atten);
-    adc2_config_channel_atten((adc2_channel_t)ADC_CHANNEL_6, atten);
+    adc2_config_channel_atten((adc2_channel_t)ADC_CHANNEL_4, atten);
 
     xTaskCreate(measure_process, "measure_process", 4096, NULL, 10, NULL);
 #if CONFIG_DEVICE_SIEWNIK
