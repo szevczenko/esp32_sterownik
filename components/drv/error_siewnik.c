@@ -12,7 +12,7 @@
 
 #if CONFIG_DEVICE_SIEWNIK
 #define MODULE_NAME "[Err_siew] "
-#define DEBUG_LVL PRINT_INFO
+#define DEBUG_LVL PRINT_WARNING
 
 #if CONFIG_DEBUG_ERROR_SIEWNIK
 #define LOG(_lvl, ...) \

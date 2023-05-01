@@ -5,11 +5,11 @@
 #include "driver/gpio.h"
 #include "config.h"
 
-#define ECHO_UART_PORT_NUM     UART_NUM_1
-#define RX_PIN                 16
-#define TX_PIN                 17
+#define ECHO_UART_PORT_NUM UART_NUM_1
+#define RX_PIN 16
+#define TX_PIN 17
 
-#define FILTERED_TABLE_SIZE    32
+#define FILTERED_TABLE_SIZE 16
 
 static uint8_t read_buff[1024];
 static uint16_t read_data;
@@ -17,18 +17,19 @@ static uint32_t distance;
 static uint16_t filtered_tab[FILTERED_TABLE_SIZE];
 static uint32_t tab_iterator;
 static bool silos_is_connected;
+static uint8_t bad_read_data_count;
 
 static void uart_init(void)
 {
     uart_config_t uart_config =
-    {
-        .baud_rate  = 9600,
-        .data_bits  = UART_DATA_8_BITS,
-        .parity     = UART_PARITY_DISABLE,
-        .stop_bits  = UART_STOP_BITS_1,
-        .flow_ctrl  = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_APB,
-    };
+        {
+            .baud_rate = 9600,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+            .source_clk = UART_SCLK_APB,
+        };
     int intr_alloc_flags = 0;
 
 #if CONFIG_UART_ISR_IN_IRAM
@@ -54,6 +55,11 @@ static void sonar_task(void *arg)
             {
                 read_data = (read_buff[i + 1] << 8) | (read_buff[i + 2]);
 
+                if (read_data > 3100)
+                {
+                    continue;
+                }
+
                 i += 2;
                 filtered_tab[tab_iterator++ % FILTERED_TABLE_SIZE] = read_data;
                 for (uint32_t j = 0; j < FILTERED_TABLE_SIZE; j++)
@@ -62,11 +68,24 @@ static void sonar_task(void *arg)
                 }
 
                 distance = distance / FILTERED_TABLE_SIZE;
-                // printf("[SONAR] Read data %d %x %x %x %x\n\r", distance, read_buff[i], read_buff[i + 1], read_buff[i + 2], read_buff[i + 3]);
+                printf("[SONAR] Read data %d\n\r", read_data);
                 is_correct_readed = true;
             }
         }
-        silos_is_connected = is_correct_readed;
+        if (is_correct_readed)
+        {
+            silos_is_connected = is_correct_readed;
+            bad_read_data_count = 0;
+        }
+        else
+        {
+            if (bad_read_data_count++ > 5)
+            {
+                silos_is_connected = is_correct_readed;
+            }
+        }
+        
+        
         osDelay(100);
     }
 }

@@ -231,6 +231,10 @@ static bool _check_low_silos_flag(void)
             return true;
         }
     }
+    else
+    {
+        ctx.low_silos_ckeck_timeout = MS2ST(10000) + xTaskGetTickCount();
+    }
 
     return false;
 }
