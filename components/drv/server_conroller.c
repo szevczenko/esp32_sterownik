@@ -427,7 +427,7 @@ static void state_motor_regulation(void)
 static void state_emergency_disable(void)
 {
     // Tą linijke usunąć jeżeli niepotrzebne wyłączenie przekaźnika w trybie STOP
-    ctx.system_on = 0;
+   // ctx.system_on = 0;
     ctx.emergency_disable = (bool)menuGetValue(MENU_EMERGENCY_DISABLE);
     ctx.servo_value = 0;
     ctx.motor_value = 0;

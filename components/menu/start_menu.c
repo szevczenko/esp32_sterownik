@@ -1153,8 +1153,8 @@ static void menu_start_low_silos(void)
     }
 
     oled_clearScreen();
-    oled_printFixed(25, 2, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
-    oled_printFixed(30, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
+    oled_printFixed(5, 6, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
+   // oled_printFixed(24, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
 }
 
 static void menu_start_error(void)
