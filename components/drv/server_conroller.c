@@ -140,7 +140,7 @@ static void set_working_data(void)
         gpio_set_level(SYSTEM_ON_PIN, 0);
     }
 
-    LOG(PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
+    LOG(PRINT_INFO, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value);
     if (ctx.motor_on)
     {
         float duty = (float)ctx.motor_pwm;

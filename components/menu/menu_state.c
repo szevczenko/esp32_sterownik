@@ -59,7 +59,7 @@ static parameters_t parameters_list[] =
 {
 	[PARAM_CURRENT] 	= { .name_dict = DICT_CURRENT, 	.unit = "A", 	.unit_type = UNIT_DOUBLE, 	.get_value = get_current},
 	[PARAM_VOLTAGE] 	= { .name_dict = DICT_VOLTAGE, 	.unit = "V", 	.unit_type = UNIT_DOUBLE, 	.get_value = get_voltage},
-	[PARAM_SILOS]		= { .name_dict = DICT_SILOS, 	.unit = "%", 	.unit_type = UNIT_INT, 		.get_value = get_silos},
+	[PARAM_SILOS]		= { .name_dict = DICT_SILOS, 	.unit = "l", 	.unit_type = UNIT_INT, 		.get_value = get_silos},
 	[PARAM_SIGNAL] 		= { .name_dict = DICT_SIGNAL, 	.unit = "", 	.unit_type = UNIT_INT, 		.get_value = get_signal},
 	[PARAM_TEMEPRATURE] = { .name_dict = DICT_TEMP, 	.unit = "\"C", 	.unit_type = UNIT_INT, 		.get_value = get_temp},
 	[PARAM_CONECTION] 	= { .name_dict = DICT_CONNECT, 	.unit = "", 	.unit_type = UNIT_BOOL, 	.get_value = get_conection}

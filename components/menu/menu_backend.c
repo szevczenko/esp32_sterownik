@@ -12,8 +12,8 @@
 #include "cmd_client.h"
 #include "start_menu.h"
 
-#define MODULE_NAME    "[M BACK] "
-#define DEBUG_LVL      PRINT_INFO
+#define MODULE_NAME "[M BACK] "
+#define DEBUG_LVL PRINT_INFO
 
 #if CONFIG_DEBUG_MENU_BACKEND
 #define LOG(_lvl, ...) \
@@ -27,6 +27,7 @@ typedef enum
     STATE_INIT,
     STATE_IDLE,
     STATE_START,
+    STATE_EXIT_START,
     STATE_MENU_PARAMETERS,
     STATE_ERROR_CHECK,
     STATE_EMERGENCY_DISABLE,
@@ -54,15 +55,15 @@ typedef struct
 static menu_start_context_t ctx;
 
 static char *state_name[] =
-{
-    [STATE_INIT] = "STATE_INIT",
-    [STATE_IDLE] = "STATE_IDLE",
-    [STATE_START] = "STATE_START",
-    [STATE_MENU_PARAMETERS] = "STATE_MENU_PARAMETERS",
-    [STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
-    [STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
-    [STATE_EMERGENCY_DISABLE_EXIT] = "STATE_EMERGENCY_DISABLE_EXIT"
-};
+    {
+        [STATE_INIT] = "STATE_INIT",
+        [STATE_IDLE] = "STATE_IDLE",
+        [STATE_START] = "STATE_START",
+        [STATE_EXIT_START] = "STATE_EXIT_START",
+        [STATE_MENU_PARAMETERS] = "STATE_MENU_PARAMETERS",
+        [STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
+        [STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
+        [STATE_EMERGENCY_DISABLE_EXIT] = "STATE_EMERGENCY_DISABLE_EXIT"};
 
 static void change_state(state_backend_t new_state)
 {
@@ -98,8 +99,8 @@ static void _send_emergency_msg(void)
 
     bool ret =
         (cmdClientSetValue(MENU_EMERGENCY_DISABLE, 1,
-            2000) > 0) && (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 2000) > 0) && (cmdClientSetValue(MENU_SERVO_IS_ON, 0,
-            2000) > 0);
+                           2000) > 0) &&
+        (cmdClientSetValue(MENU_MOTOR_IS_ON, 0, 2000) > 0) && (cmdClientSetValue(MENU_SERVO_IS_ON, 0, 2000) > 0);
 
     LOG(PRINT_INFO, "%s %d", __func__, ret);
     if (ret)
@@ -161,53 +162,20 @@ static bool _check_error(void)
     return false;
 }
 
-static void backent_start(void)
+static void backend_send_control_data(void)
 {
-    if (ctx.get_data_cnt % 20 == 0)
-    {
-        bool errors = _check_error() > 0;
-        if (errors)
-        {
-            LOG(PRINT_INFO, "Error detected on machine");
-        }
-        else
-        {
-            menuStartResetError();
-            LOG(PRINT_DEBUG, "No error");
-        }
-
-        cmdClientGetValue(MENU_LOW_LEVEL_SILOS, NULL, 2000);
-        cmdClientGetValue(MENU_SILOS_LEVEL, NULL, 2000);
-        cmdClientGetValue(MENU_SILOS_SENSOR_IS_CONECTED, NULL, 2000);
-        LOG(PRINT_INFO, "Get silos %d ", menuGetValue(MENU_LOW_LEVEL_SILOS));
-    }
-
-    ctx.get_data_cnt++;
-
-    if (ctx.menu_param_is_active)
-    {
-        change_state(STATE_MENU_PARAMETERS);
-        return;
-    }
-
-    if (!ctx.menu_start_is_active)
-    {
-        change_state(STATE_IDLE);
-        return;
-    }
-
     struct menu_data *data = menuStartGetData();
 
     if (ctx.send_all_data)
     {
         if (cmdClientSetValue(MENU_MOTOR, data->motor_value, 1000) == TRUE &&
-                cmdClientSetValue(MENU_SERVO, data->servo_value, 1000) == TRUE &&
+            cmdClientSetValue(MENU_SERVO, data->servo_value, 1000) == TRUE &&
 #if MENU_VIRO_ON_OFF_VERSION
-                cmdClientSetValue(MENU_VIBRO_OFF_S, data->vibro_off_s, 1000) == TRUE &&
-                cmdClientSetValue(MENU_VIBRO_ON_S, data->vibro_on_s, 1000) == TRUE &&
+            cmdClientSetValue(MENU_VIBRO_OFF_S, data->vibro_off_s, 1000) == TRUE &&
+            cmdClientSetValue(MENU_VIBRO_ON_S, data->vibro_on_s, 1000) == TRUE &&
 #endif
-                cmdClientSetValue(MENU_MOTOR_IS_ON, data->motor_on, 1000) == TRUE &&
-                cmdClientSetValue(MENU_SERVO_IS_ON, data->servo_vibro_on, 1000) == TRUE)
+            cmdClientSetValue(MENU_MOTOR_IS_ON, data->motor_on, 1000) == TRUE &&
+            cmdClientSetValue(MENU_SERVO_IS_ON, data->servo_vibro_on, 1000) == TRUE)
         {
             ctx.send_all_data = false;
             ctx.sended_data.motor_value = data->motor_value;
@@ -267,9 +235,53 @@ static void backent_start(void)
         {
             ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
         }
-    } 
+    }
+}
+
+static void backend_start(void)
+{
+    if (ctx.get_data_cnt % 20 == 0)
+    {
+        bool errors = _check_error() > 0;
+        if (errors)
+        {
+            LOG(PRINT_INFO, "Error detected on machine");
+        }
+        else
+        {
+            menuStartResetError();
+            LOG(PRINT_DEBUG, "No error");
+        }
+
+        cmdClientGetValue(MENU_LOW_LEVEL_SILOS, NULL, 2000);
+        cmdClientGetValue(MENU_SILOS_LEVEL, NULL, 2000);
+        cmdClientGetValue(MENU_SILOS_SENSOR_IS_CONECTED, NULL, 2000);
+        LOG(PRINT_INFO, "Get silos %d ", menuGetValue(MENU_LOW_LEVEL_SILOS));
+    }
+
+    ctx.get_data_cnt++;
+
+    if (ctx.menu_param_is_active)
+    {
+        change_state(STATE_MENU_PARAMETERS);
+        return;
+    }
+
+    if (!ctx.menu_start_is_active)
+    {
+        change_state(STATE_EXIT_START);
+        return;
+    }
+
+    backend_send_control_data();
 
     osDelay(10);
+}
+
+static void backend_exit_start(void)
+{
+    backend_send_control_data();
+    change_state(STATE_IDLE);
 }
 
 static void backend_menu_parameters(void)
@@ -376,7 +388,11 @@ static void menu_task(void *arg)
             break;
 
         case STATE_START:
-            backent_start();
+            backend_start();
+            break;
+
+        case STATE_EXIT_START:
+            backend_exit_start();
             break;
 
         case STATE_MENU_PARAMETERS:

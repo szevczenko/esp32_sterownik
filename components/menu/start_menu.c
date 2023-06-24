@@ -68,6 +68,7 @@ typedef struct
     state_start_menu_t last_state;
     bool error_flag;
     bool exit_wait_flag;
+    bool enter_parameters_menu;
     int error_code;
     const char *error_msg;
     const char *info_msg;
@@ -241,6 +242,7 @@ static bool _check_low_silos_flag(void)
 
 static void menu_enter_parameters_callback(void *arg)
 {
+    ctx.enter_parameters_menu = true;
     enterMenuParameters();
 }
 
@@ -853,10 +855,17 @@ static bool menu_enter_cb(void *arg)
     }
 
     cmdClientSetValueWithoutResp(MENU_START_SYSTEM, 1);
-    ctx.data.motor_on = 0;
+
     ctx.data.motor_value = menuGetValue(MENU_MOTOR);
     ctx.data.servo_value = menuGetValue(MENU_SERVO);
-    ctx.data.servo_vibro_on = 0;
+    ctx.data.motor_on = menuGetValue(MENU_MOTOR_IS_ON);
+    ctx.data.servo_vibro_on = menuGetValue(MENU_SERVO_IS_ON);
+    if (!ctx.enter_parameters_menu)
+    {
+        ctx.data.motor_on = 0;
+        ctx.data.servo_vibro_on = 0;
+    }
+
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR, menuGetValue(MENU_ERROR_MOTOR));
     cmdClientSetValueWithoutResp(MENU_ERROR_SERVO, menuGetValue(MENU_ERROR_SERVO));
     cmdClientSetValueWithoutResp(MENU_ERROR_MOTOR_CALIBRATION, menuGetValue(MENU_ERROR_MOTOR_CALIBRATION));
@@ -864,12 +873,19 @@ static bool menu_enter_cb(void *arg)
     backendEnterMenuStart();
 
     ctx.error_flag = 0;
+    ctx.enter_parameters_menu = false;
     return true;
 }
 
 static bool menu_exit_cb(void *arg)
 {
     debug_function_name(__func__);
+
+    if (!ctx.enter_parameters_menu)
+    {
+        ctx.data.motor_on = 0;
+        ctx.data.servo_vibro_on = 0;
+    }
 
     backendExitMenuStart();
 
@@ -1158,7 +1174,7 @@ static void menu_start_low_silos(void)
 
     oled_clearScreen();
     oled_printFixed(5, 6, dictionary_get_string(DICT_LOW), OLED_FONT_SIZE_26);
-   // oled_printFixed(24, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
+    // oled_printFixed(24, 30, dictionary_get_string(DICT_SILOS), OLED_FONT_SIZE_26);
 }
 
 static void menu_start_error(void)
