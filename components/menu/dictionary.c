@@ -177,7 +177,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Motor err calib",
             "Рег. ошибка двигателя",
             "Reg. błędu silnika",
-            "Motorkalib."},
+            "Motorkalibrierung"},
     [DICT_SERVO_CLOSE] =
         {
             "Servo close",
@@ -195,17 +195,17 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Silos height",
             "Высота",
             "Wysokość zbiornika",
-            "Tankhöle"},
+            "Silos height"},
     [DICT_ON] =
         {
             "ON",
-            "Вкл.",
+            "Активировано",
             "Włączony",
             "Auf"},
     [DICT_OFF] =
         {
             "OFF",
-            "Выкл.",
+            "Выключенный",
             "Wyłączony",
             "Aus"},
     /* PARAMETERS */
@@ -282,7 +282,7 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "\n           Device not found",
             "\n Устройство не найдено",
             "\n             Urządzenie nie\n         zostało znalezione",
-            "\n               Gerät nicht\n                gefunden"},
+            "\n                 Gerät nicht\n                   gefunden"},
     [DICT_TRY_CONNECT_TO] =
         {
             "Try connect to",
@@ -322,29 +322,28 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     /* LOW BATTERY */
     [DICT_LOW_BATTERY] =
         {
-            "LOW BATTERY",
-            "ЗАРЯД БАТАРЕИ",
+            "      LOW BATTERY",
+            "З АРЯД БАТАРЕИ",
             "NISKI POZIOM BATERII",
-            "BATTERIE TIEF"},
+            "   BATTERIE TIEF"},
     [DICT_CONNECT_CHARGER] =
         {
-            "Connect charger",
+            "           Connect charger",
             " Подключить \n зарядное устройство",
-            "Podłącz ładowarkę",
-            "Ladegerät verbinden"},
+            "   Podłącz ładowarkę",
+            "   Ladegerät verbinden"},
     [DICT_CHECK_CONNECTION] =
         {
-            "   Check connection",
+            "             Check connection",
             " Проверка соединения",
             " Sprawdzanie połączenia",
-            " Verbindung prüfen"},
+            "        Verbindung prüfen"},
     [DICT_VIBRO_ON] =
         {
             "Vibro",
             "вибро",
             "Wibro",
             "Vibrator"
-
         },
     [DICT_VIBRO_OFF] =
         {
@@ -390,10 +389,10 @@ static const char *dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
             "Servo nicht verbunden"},
     [DICT_SERVO_OVERCURRENT] =
         {
-            "Servo \novercurrent",
-            "Серво \nзаблокирован",
-            "Servo \nzablokowane",
-            "Servo gesperrt"},
+            "                  Servo \n            overcurrent",
+            "               Серво \n       заблокирован",
+            "                   Servo \n         Zablokowane",
+            "                    Servo \n                gesperrt"},
     [DICT_MOTOR_NOT_CONNECTED] =
         {
             "Motor not \nconnected",
