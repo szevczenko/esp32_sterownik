@@ -666,19 +666,9 @@ static void menu_button_down_callback(void *arg)
 
     menu->last_button = LAST_BUTTON_DOWN;
 
-    if (config.dev_type == T_DEV_TYPE_SOLARKA)
+    if (menu->position < parameters_size - 1)
     {
-        if (menu->position < PARAM_SERVO_CLOSE_CALIBRATION - 1)
-        {
-            menu->position++;
-        }
-    }
-    else
-    {
-        if (menu->position < parameters_size - 1)
-        {
-            menu->position++;
-        }
+        menu->position++;
     }
 
     if (_state == MENU_EDIT_PARAMETERS)
@@ -1037,7 +1027,7 @@ static bool menu_process(void *arg)
         {
         case UNIT_INT:
             sprintf(buff, "%d %s", parameters_list[menu->position].value, parameters_list[menu->position].unit_name != NULL ? parameters_list[menu->position].unit_name : "");
-            oled_printFixed(30, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_ON_OFF:
@@ -1047,12 +1037,12 @@ static bool menu_process(void *arg)
 
         case UNIT_BOOL:
             sprintf(buff, "%s", parameters_list[menu->position].value ? "1" : "0");
-            oled_printFixed(30, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
 
         case UNIT_LANGUAGE:
             sprintf(buff, "%s", language[parameters_list[menu->position].value]);
-            oled_printFixed(30, MENU_HEIGHT + 22, buff, OLED_FONT_SIZE_16);
+            oled_printFixed(30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16);
             break;
         default:
             break;
