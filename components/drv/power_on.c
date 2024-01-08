@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_system.h"
-#include "esp_spi_flash.h"
 #include "config.h"
 #include "menu_drv.h"
 
@@ -34,7 +32,7 @@ enum state_t
     STATE_TOP,
 };
 
-static const char *_state_name[] =
+__attribute__((unused)) static const char *_state_name[] =
 {
     [STATE_IDLE] = "STATE_IDLE",
     [STATE_WAIT_TO_DISABLE] = "STATE_WAIT_TO_DISABLE",

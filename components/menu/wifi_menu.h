@@ -2,6 +2,6 @@
 #define WIFI_MENU_H_
 #include "menu.h"
 
-void menuInitWifiMenu(menu_token_t *menu);
+void menuInitWifiMenu( menu_token_t* menu );
 
 #endif
