@@ -1,0 +1,214 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Terminate All Tasks",
+            "command": "echo ${input:terminate}",
+            "type": "shell",
+            "problemMatcher": []
+        },
+        {
+            "label": "Configure",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py menuconfig",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py menuconfig"
+            }
+        },
+        {
+            "label": "Build",
+            "group": "build",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py build",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py build"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/build"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "Get size",
+            "group": "build",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py size",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py size"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/build"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "Clean",
+            "group": "build",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py clean",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py clean"
+            }
+        },
+        {
+            "label": "Clean (full)",
+            "group": "build",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py fullclean",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py fullclean"
+            }
+        },
+        {
+            "label": "Flash",
+            "group": "test",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py flash",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py flash"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}/build"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "Erase flash",
+            "group": "build",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py erase_flash",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py erase_flash"
+            }
+        },
+        {
+            "label": "Monitor",
+            "group": "test",
+            "type": "shell",
+            "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py monitor",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py monitor"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "OpenOCD Flash",
+            "group": "build",
+            "type": "shell",
+            "command": ". ${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py build & openocd -f interface/ftdi/esp32_devkitj_v1.cfg -f board/esp32s2-kaluga-1",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & idf.py build & openocd -f board/esp32s2-kaluga-1.cfg -c \"program_esp build/main.bin 0x10000 verify exit\""
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(Info |Warn ):(.*)$",
+                    "severity": 1,
+                    "message": 2
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "Info : Listening on port \\d+ for gdb connections"
+                }
+            }
+        },
+        {
+            "label": "OpenOCD",
+            "type": "shell",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & openocd -f board/esp32s2-kaluga-1.cfg"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(Info |Warn ):(.*)$",
+                    "severity": 1,
+                    "message": 2
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "Info : Listening on port \\d+ for gdb connections"
+                }
+            }
+        },
+        {
+            "label": "OpenOCD ESP32",
+            "type": "shell",
+            "windows": {
+                "command": "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51 & openocd -f board/esp32-wrover-kit-3.3v.cfg"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(Info |Warn ):(.*)$",
+                    "severity": 1,
+                    "message": 2
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "Info : Listening on port \\d+ for gdb connections"
+                }
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "terminate",
+            "type": "command",
+            "command": "workbench.action.tasks.terminate",
+            "args": "terminateAll"
+        }
+    ]
+}
+// {
+//     "version": "2.0.0",
+//     "tasks": 
+//     [
+//         {
+//             "label": "openocd",
+//             "type": "shell",
+//             "isBackground": true,
+//             "options": 
+//             {
+//                 "cwd": "C:/projekty/esp_tools/tools/openocd-esp32/v0.11.0-esp32-20220706/openocd-esp32"
+//             },
+//             "command": "bin/openocd.exe -s share/openocd/scripts -f board/esp32-wrover-kit-3.3v.cfg"
+//         }
+//     ]
+// }

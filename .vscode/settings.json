@@ -1,0 +1,14 @@
+// ======================== settings.json ========================
+{
+  "taskExplorer.enableMake": false,
+  "search.exclude": {
+    "**/build": true
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "cmake.configureOnOpen": false,
+  "idf.adapterTargetName": "esp32s2",
+  "files.associations": {
+    "json_parser.h": "c"
+  },
+}
