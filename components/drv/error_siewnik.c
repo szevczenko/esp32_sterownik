@@ -376,7 +376,7 @@ static void _error_task(void *arg)
             break;
         }
 
-        vTaskDelay(200 / portTICK_RATE_MS);
+        vTaskDelay(MS2ST(200));
     } // error_event_timer
 }
 

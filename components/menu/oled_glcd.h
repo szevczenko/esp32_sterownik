@@ -5,10 +5,10 @@
 /** Structure describes font format in memory */
 typedef struct
 {
-    uint16_t first_symbol;  ///< first unicode symbol number
-    uint16_t last_symbol;   ///< last unicode symbol number
-    uint8_t height;         ///< height in pixels
-    uint16_t count;         ///< count symbols in table
+  uint16_t first_symbol;    ///< first unicode symbol number
+  uint16_t last_symbol;    ///< last unicode symbol number
+  uint8_t height;    ///< height in pixels
+  uint16_t count;    ///< count symbols in table
 } oledGLCDInfo;
 
 // /** Structure describes unicode block in font data */

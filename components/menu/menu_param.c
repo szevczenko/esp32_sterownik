@@ -1,65 +1,66 @@
 #include "menu_param.h"
-#include "parse_cmd.h"
+
 #include "menu.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "parse_cmd.h"
 
-#define MODULE_NAME            "[PARAM] "
-#define DEBUG_LVL              PRINT_INFO
+#define MODULE_NAME "[PARAM] "
+#define DEBUG_LVL   PRINT_INFO
 
 #if CONFIG_DEBUG_MENU_BACKEND
-#define LOG(_lvl, ...) \
-    debug_printf(DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__)
+#define LOG( _lvl, ... ) \
+  debug_printf( DEBUG_LVL, _lvl, MODULE_NAME __VA_ARGS__ )
 #else
-#define LOG(PRINT_INFO, ...)
+#define LOG( PRINT_INFO, ... )
 #endif
 
-#define STORAGE_NAMESPACE      "MENU"
-#define PARAMETERS_TAB_SIZE    MENU_LAST_VALUE
+#define STORAGE_NAMESPACE   "MENU"
+#define PARAMETERS_TAB_SIZE MENU_LAST_VALUE
 
 static menuPStruct_t menuParameters[] =
-{
-    [MENU_MOTOR] =                       {.max_value = 100,    .default_value = 0  },
-    [MENU_MOTOR2] =                      {.max_value = 100,    .default_value = 0  },
-    [MENU_SERVO] =                       {.max_value = 100,    .default_value = 0  },
-    [MENU_VIBRO_ON_S] =                  {.max_value = 100,    .default_value = 0  },
-    [MENU_VIBRO_OFF_S] =                 {.max_value = 100,    .default_value = 0  },
-    [MENU_MOTOR_IS_ON] =                 {.max_value = 1,      .default_value = 0  },
-    [MENU_SERVO_IS_ON] =                 {.max_value = 1,      .default_value = 0  },
-    [MENU_VOLTAGE_SERVO] =               {.max_value = 0xFFFF, .default_value = 0  },
-    [MENU_CURRENT_MOTOR] =               {.max_value = 0xFFFF, .default_value = 0  },
-    [MENU_VOLTAGE_ACCUM] =               {.max_value = 0xFFFF, .default_value = 0  },
-    [MENU_TEMPERATURE] =                 {.max_value = 0xFFFF, .default_value = 0  },
-    [MENU_SILOS_LEVEL] =                 {.max_value = 100,    .default_value = 0  },
-    [MENU_SILOS_HEIGHT] =                {.max_value = 300,    .default_value = 60},
-    [MENU_START_SYSTEM] =                {.max_value = 1,      .default_value = 0  },
-    [MENU_BOOTUP_SYSTEM] =               {.max_value = 1,      .default_value = 1  },
-    [MENU_EMERGENCY_DISABLE] =           {.max_value = 1,      .default_value = 0  },
-    [MENU_LOW_LEVEL_SILOS] =             {.max_value = 1,      .default_value = 0  },
-    [MENU_SILOS_SENSOR_IS_CONECTED] =    {.max_value = 1,      .default_value = 0  },
-    [MENU_LANGUAGE] =                    {.max_value = 3,      .default_value = 0  },
-    [MENU_POWER_ON_MIN] =                {.max_value = 100,    .default_value = 30 },
-    [MENU_PERIOD] =                      {.max_value = 180,    .default_value = 10 },
+  {
+    [MENU_MOTOR] = {.max_value = 100,     .default_value = 0  },
+    [MENU_MOTOR2] = { .max_value = 100,    .default_value = 0  },
+    [MENU_SERVO] = { .max_value = 100,    .default_value = 0  },
+    [MENU_VIBRO_ON_S] = { .max_value = 100,    .default_value = 0  },
+    [MENU_VIBRO_OFF_S] = { .max_value = 100,    .default_value = 0  },
+    [MENU_MOTOR_IS_ON] = { .max_value = 1,      .default_value = 0  },
+    [MENU_SERVO_IS_ON] = { .max_value = 1,      .default_value = 0  },
+    [MENU_VOLTAGE_SERVO] = { .max_value = 0xFFFF, .default_value = 0  },
+    [MENU_CURRENT_MOTOR] = { .max_value = 0xFFFF, .default_value = 0  },
+    [MENU_VOLTAGE_ACCUM] = { .max_value = 0xFFFF, .default_value = 0  },
+    [MENU_TEMPERATURE] = { .max_value = 0xFFFF, .default_value = 0  },
+    [MENU_SILOS_LEVEL] = { .max_value = 100,    .default_value = 0  },
+    [MENU_SILOS_HEIGHT] = { .max_value = 300,    .default_value = 60 },
+    [MENU_START_SYSTEM] = { .max_value = 1,      .default_value = 0  },
+    [MENU_BOOTUP_SYSTEM] = { .max_value = 1,      .default_value = 1  },
+    [MENU_EMERGENCY_DISABLE] = { .max_value = 1,      .default_value = 0  },
+    [MENU_LOW_LEVEL_SILOS] = { .max_value = 1,      .default_value = 0  },
+    [MENU_SILOS_SENSOR_IS_CONECTED] = { .max_value = 1,      .default_value = 0  },
+    [MENU_LANGUAGE] = { .max_value = 3,      .default_value = 0  },
+    [MENU_POWER_ON_MIN] = { .max_value = 100,    .default_value = 30 },
+    [MENU_PERIOD] = { .max_value = 180,    .default_value = 10 },
 
-    [MENU_MACHINE_ERRORS] =              {.max_value = 0xFFFF, .default_value = 0  },
+    [MENU_MACHINE_ERRORS] = { .max_value = 0xFFFF, .default_value = 0  },
 
-    [MENU_ERROR_SERVO] =                 {.max_value = 1,      .default_value = 1  },
-    [MENU_ERROR_MOTOR] =                 {.max_value = 1,      .default_value = 1  },
-    [MENU_ERROR_SERVO_CALIBRATION] =     {.max_value = 99,     .default_value = 20 },
-    [MENU_ERROR_MOTOR_CALIBRATION] =     {.max_value = 99,     .default_value = 50 },
-    [MENU_MOTOR_MIN_CALIBRATION] =       {.max_value = 100,    .default_value = 20 },
-    [MENU_MOTOR_MAX_CALIBRATION] =       {.max_value = 100,    .default_value = 100},
-    [MENU_BUZZER] =                      {.max_value = 1,      .default_value = 1  },
-    [MENU_BRIGHTNESS] =                  {.max_value = 10,     .default_value = 10 },
-    [MENU_CLOSE_SERVO_REGULATION_FLAG] = {.max_value = 1,      .default_value = 0  },
-    [MENU_OPEN_SERVO_REGULATION_FLAG] =  {.max_value = 1,      .default_value = 0  },
-    [MENU_CLOSE_SERVO_REGULATION] =      {.max_value = 99,     .default_value = 50 },
-    [MENU_OPEN_SERVO_REGULATION] =       {.max_value = 99,     .default_value = 50 },
-    [MENU_TRY_OPEN_CALIBRATION] =        {.max_value = 10,     .default_value = 8  },
+    [MENU_ERROR_SERVO] = { .max_value = 1,      .default_value = 1  },
+    [MENU_ERROR_MOTOR] = { .max_value = 1,      .default_value = 1  },
+    [MENU_ERROR_SERVO_CALIBRATION] = { .max_value = 99,     .default_value = 20 },
+    [MENU_ERROR_MOTOR_CALIBRATION] = { .max_value = 99,     .default_value = 50 },
+    [MENU_MOTOR_MIN_CALIBRATION] = { .max_value = 100,    .default_value = 20 },
+    [MENU_MOTOR_MAX_CALIBRATION] = { .max_value = 100,    .default_value = 100},
+    [MENU_BUZZER] = { .max_value = 1,      .default_value = 1  },
+    [MENU_BRIGHTNESS] = { .max_value = 10,     .default_value = 10 },
+    [MENU_CLOSE_SERVO_REGULATION_FLAG] = { .max_value = 1,      .default_value = 0  },
+    [MENU_OPEN_SERVO_REGULATION_FLAG] = { .max_value = 1,      .default_value = 0  },
+    [MENU_CLOSE_SERVO_REGULATION] = { .max_value = 99,     .default_value = 50 },
+    [MENU_OPEN_SERVO_REGULATION] = { .max_value = 99,     .default_value = 50 },
+    [MENU_TRY_OPEN_CALIBRATION] = { .max_value = 10,     .default_value = 8  },
 };
 
-static char *parameters_name[] =
-{
+__attribute__( ( unused ) ) static char* parameters_name[] =
+  {
     [MENU_MOTOR] = "MENU_MOTOR",
     [MENU_MOTOR2] = "MENU_MOTOR2",
     [MENU_SERVO] = "MENU_SERVO",
@@ -102,231 +103,231 @@ static char *parameters_name[] =
 
 RTC_NOINIT_ATTR uint32_t menuSaveParameters_data[MENU_LAST_VALUE];
 
-void menuPrintParameters(void)
+void menuPrintParameters( void )
 {
-    for (uint8_t i = 0; i < PARAMETERS_TAB_SIZE; i++)
-    {
-        LOG(PRINT_DEBUG, "%s : %d\n", parameters_name[i], menuSaveParameters_data[i]);
-    }
+  for ( uint8_t i = 0; i < PARAMETERS_TAB_SIZE; i++ )
+  {
+    LOG( PRINT_DEBUG, "%s : %d\n", parameters_name[i], menuSaveParameters_data[i] );
+  }
 }
 
-void menuPrintParameter(menuValue_t val)
+void menuPrintParameter( menuValue_t val )
 {
-    if (val >= MENU_LAST_VALUE)
-    {
-        return;
-    }
+  if ( val >= MENU_LAST_VALUE )
+  {
+    return;
+  }
 
-    LOG(PRINT_DEBUG, "Param: %s : %d", parameters_name[val], menuSaveParameters_data[val]);
+  LOG( PRINT_DEBUG, "Param: %s : %d", parameters_name[val], menuSaveParameters_data[val] );
 }
 
-esp_err_t menuSaveParameters(void)
+esp_err_t menuSaveParameters( void )
 {
-    nvs_handle my_handle;
-    esp_err_t err;
+  nvs_handle my_handle;
+  esp_err_t err;
 
-    // Open
-    err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
-    if (err != ESP_OK)
-    {
-        LOG(PRINT_INFO, "nvs_open error %d", err);
-        nvs_close(my_handle);
-        return err;
-    }
+  // Open
+  err = nvs_open( STORAGE_NAMESPACE, NVS_READWRITE, &my_handle );
+  if ( err != ESP_OK )
+  {
+    LOG( PRINT_INFO, "nvs_open error %d", err );
+    nvs_close( my_handle );
+    return err;
+  }
 
-    err = nvs_set_blob(my_handle, "menu", menuSaveParameters_data, sizeof(menuSaveParameters_data));
+  err = nvs_set_blob( my_handle, "menu", menuSaveParameters_data, sizeof( menuSaveParameters_data ) );
 
-    if (err != ESP_OK)
-    {
-        LOG(PRINT_INFO, "nvs_set_blob error %d", err);
-        nvs_close(my_handle);
-        return err;
-    }
+  if ( err != ESP_OK )
+  {
+    LOG( PRINT_INFO, "nvs_set_blob error %d", err );
+    nvs_close( my_handle );
+    return err;
+  }
 
-    // Commit
-    err = nvs_commit(my_handle);
-    if (err != ESP_OK)
-    {
-        LOG(PRINT_INFO, "nvs_commit error %d", err);
-        nvs_close(my_handle);
-        return err;
-    }
+  // Commit
+  err = nvs_commit( my_handle );
+  if ( err != ESP_OK )
+  {
+    LOG( PRINT_INFO, "nvs_commit error %d", err );
+    nvs_close( my_handle );
+    return err;
+  }
 
-    // Close
-    nvs_close(my_handle);
-    LOG(PRINT_INFO, "menuSaveParameters success");
-    return ESP_OK;
+  // Close
+  nvs_close( my_handle );
+  LOG( PRINT_INFO, "menuSaveParameters success" );
+  return ESP_OK;
 }
 
-esp_err_t menuReadParameters(void)
+esp_err_t menuReadParameters( void )
 {
-    nvs_handle my_handle;
-    esp_err_t err;
+  nvs_handle my_handle;
+  esp_err_t err;
 
-    // Open
-    err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &my_handle);
-    if (err != ESP_OK)
-    {
-        return err;
-    }
+  // Open
+  err = nvs_open( STORAGE_NAMESPACE, NVS_READWRITE, &my_handle );
+  if ( err != ESP_OK )
+  {
+    return err;
+  }
 
-    // Read the size of memory space required for blob
-    size_t required_size = 0;  // value will default to 0, if not set yet in NVS
+  // Read the size of memory space required for blob
+  size_t required_size = 0;    // value will default to 0, if not set yet in NVS
 
-    err = nvs_get_blob(my_handle, "menu", NULL, &required_size);
-    if ((err != ESP_OK) && (err != ESP_ERR_NVS_NOT_FOUND))
-    {
-        nvs_close(my_handle);
-        return err;
-    }
+  err = nvs_get_blob( my_handle, "menu", NULL, &required_size );
+  if ( ( err != ESP_OK ) && ( err != ESP_ERR_NVS_NOT_FOUND ) )
+  {
+    nvs_close( my_handle );
+    return err;
+  }
 
-    // Read previously saved blob if available
-    if (required_size == sizeof(menuSaveParameters_data))
-    {
-        err = nvs_get_blob(my_handle, "menu", menuSaveParameters_data, &required_size);
-        nvs_close(my_handle);
-        return err;
-    }
+  // Read previously saved blob if available
+  if ( required_size == sizeof( menuSaveParameters_data ) )
+  {
+    err = nvs_get_blob( my_handle, "menu", menuSaveParameters_data, &required_size );
+    nvs_close( my_handle );
+    return err;
+  }
 
-    nvs_close(my_handle);
-    return ESP_ERR_NVS_NOT_FOUND;
+  nvs_close( my_handle );
+  return ESP_ERR_NVS_NOT_FOUND;
 }
 
-static void menuSetDefaultForReadValue(void)
+static void menuSetDefaultForReadValue( void )
 {
-    menuSaveParameters_data[MENU_MACHINE_ERRORS] = 0;
-    menuSaveParameters_data[MENU_MOTOR_IS_ON] = 0;
-    menuSaveParameters_data[MENU_SERVO_IS_ON] = 0;
-    menuSaveParameters_data[MENU_START_SYSTEM] = 0;
-    menuSaveParameters_data[MENU_CLOSE_SERVO_REGULATION_FLAG] = 0;
+  menuSaveParameters_data[MENU_MACHINE_ERRORS] = 0;
+  menuSaveParameters_data[MENU_MOTOR_IS_ON] = 0;
+  menuSaveParameters_data[MENU_SERVO_IS_ON] = 0;
+  menuSaveParameters_data[MENU_START_SYSTEM] = 0;
+  menuSaveParameters_data[MENU_CLOSE_SERVO_REGULATION_FLAG] = 0;
 }
 
-void menuSetDefaultValue(void)
+void menuSetDefaultValue( void )
 {
-    for (uint8_t i = 0; i < sizeof(menuSaveParameters_data) / sizeof(uint32_t); i++)
-    {
-        menuSaveParameters_data[i] = menuParameters[i].default_value;
-    }
+  for ( uint8_t i = 0; i < sizeof( menuSaveParameters_data ) / sizeof( uint32_t ); i++ )
+  {
+    menuSaveParameters_data[i] = menuParameters[i].default_value;
+  }
 }
 
-int menuCheckValues(void)
+int menuCheckValues( void )
 {
-    for (uint8_t i = 0; i < sizeof(menuSaveParameters_data) / sizeof(uint32_t); i++)
+  for ( uint8_t i = 0; i < sizeof( menuSaveParameters_data ) / sizeof( uint32_t ); i++ )
+  {
+    if ( menuSaveParameters_data[i] > menuGetMaxValue( i ) )
     {
-        if (menuSaveParameters_data[i] > menuGetMaxValue(i))
-        {
-            return FALSE;
-        }
+      return FALSE;
     }
+  }
 
-    return TRUE;
+  return TRUE;
 }
 
-uint32_t menuGetValue(menuValue_t val)
+uint32_t menuGetValue( menuValue_t val )
 {
-    if (val >= MENU_LAST_VALUE)
-    {
-        return 0;
-    }
+  if ( val >= MENU_LAST_VALUE )
+  {
+    return 0;
+  }
 
-    debug_function_name("menuGetValue");
-    return menuSaveParameters_data[val];
+  debug_function_name( "menuGetValue" );
+  return menuSaveParameters_data[val];
 }
 
-uint32_t menuGetMaxValue(menuValue_t val)
+uint32_t menuGetMaxValue( menuValue_t val )
 {
-    if (val >= MENU_LAST_VALUE)
-    {
-        return 0;
-    }
+  if ( val >= MENU_LAST_VALUE )
+  {
+    return 0;
+  }
 
-    debug_function_name("menuGetMaxValue");
-    return menuParameters[val].max_value;
+  debug_function_name( "menuGetMaxValue" );
+  return menuParameters[val].max_value;
 }
 
-uint32_t menuGetDefaultValue(menuValue_t val)
+uint32_t menuGetDefaultValue( menuValue_t val )
 {
-    if (val >= MENU_LAST_VALUE)
-    {
-        return 0;
-    }
+  if ( val >= MENU_LAST_VALUE )
+  {
+    return 0;
+  }
 
-    debug_function_name("menuGetDefaultValue");
-    return menuParameters[val].default_value;
+  debug_function_name( "menuGetDefaultValue" );
+  return menuParameters[val].default_value;
 }
 
-uint8_t menuSetValue(menuValue_t val, uint32_t value)
+uint8_t menuSetValue( menuValue_t val, uint32_t value )
 {
-    if (val >= MENU_LAST_VALUE)
-    {
-        return FALSE;
-    }
+  if ( val >= MENU_LAST_VALUE )
+  {
+    return FALSE;
+  }
 
-    if (value > menuParameters[val].max_value)
-    {
-        return FALSE;
-    }
+  if ( value > menuParameters[val].max_value )
+  {
+    return FALSE;
+  }
 
-    debug_function_name("menuSetValue");
-    menuSaveParameters_data[val] = value;
-    //ToDo send to Drv
-    return TRUE;
+  debug_function_name( "menuSetValue" );
+  menuSaveParameters_data[val] = value;
+  //ToDo send to Drv
+  return TRUE;
 }
 
-void menuParamGetDataNSize(void **data, uint32_t *size)
+void menuParamGetDataNSize( void** data, uint32_t* size )
 {
-    if ((data == NULL) || (size == NULL))
-    {
-        return;
-    }
+  if ( ( data == NULL ) || ( size == NULL ) )
+  {
+    return;
+  }
 
-    debug_function_name("menuParamGetDataNSize");
-    *data = (void *)menuSaveParameters_data;
-    *size = sizeof(menuSaveParameters_data);
+  debug_function_name( "menuParamGetDataNSize" );
+  *data = (void*) menuSaveParameters_data;
+  *size = sizeof( menuSaveParameters_data );
 }
 
-void menuParamSetDataNSize(void *data, uint32_t size)
+void menuParamSetDataNSize( void* data, uint32_t size )
 {
-    if (data == NULL)
-    {
-        return;
-    }
+  if ( data == NULL )
+  {
+    return;
+  }
 
-    if (sizeof(menuSaveParameters_data) != size)
-    {
-        LOG(PRINT_ERROR, "%s Bad long", __func__);
-        return;
-    }
+  if ( sizeof( menuSaveParameters_data ) != size )
+  {
+    LOG( PRINT_ERROR, "%s Bad long", __func__ );
+    return;
+  }
 
-    memcpy(menuSaveParameters_data, data, size);
+  memcpy( menuSaveParameters_data, data, size );
 }
 
-void menuParamInit(void)
+void menuParamInit( void )
 {
-    int ret_val = 0;
+  int ret_val = 0;
 
-    if ((menuCheckValues() == FALSE) || (menuGetValue(MENU_START_SYSTEM) == 0))
+  if ( ( menuCheckValues() == FALSE ) || ( menuGetValue( MENU_START_SYSTEM ) == 0 ) )
+  {
+    LOG( PRINT_INFO, "menu_param: system not started" );
+    ret_val = menuReadParameters();
+    if ( ret_val != ESP_OK )
     {
-        LOG(PRINT_INFO, "menu_param: system not started");
-        ret_val = menuReadParameters();
-        if (ret_val != ESP_OK)
-        {
-            LOG(PRINT_INFO, "menu_param: menuReadParameters error %d", ret_val);
-            menuSetDefaultValue();
-        }
-        else
-        {
-            LOG(PRINT_INFO, "menu_param: menuReadParameters succes");
-            menuPrintParameters();
-            menuSetDefaultForReadValue();
-        }
+      LOG( PRINT_INFO, "menu_param: menuReadParameters error %d", ret_val );
+      menuSetDefaultValue();
     }
     else
     {
-        LOG(PRINT_INFO, "menu_param: system started");
-        //menuPrintParameters();
+      LOG( PRINT_INFO, "menu_param: menuReadParameters succes" );
+      menuPrintParameters();
+      menuSetDefaultForReadValue();
     }
+  }
+  else
+  {
+    LOG( PRINT_INFO, "menu_param: system started" );
+    //menuPrintParameters();
+  }
 
-    menuSetValue(MENU_MOTOR_IS_ON, 0);
-    menuSetValue(MENU_SERVO_IS_ON, 0);
+  menuSetValue( MENU_MOTOR_IS_ON, 0 );
+  menuSetValue( MENU_SERVO_IS_ON, 0 );
 }

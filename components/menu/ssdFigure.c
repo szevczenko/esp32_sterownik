@@ -451,6 +451,18 @@ bool battery[] =
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
+bool batteryfull[] =
+{
+    1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 bool signal0[] = 
 {
     1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 
@@ -749,7 +761,9 @@ typedef enum
 {
     BATTERY_NORMAL,
     BATTERY_CHARGING,
+    BATTERY_FULL,
     BATTERY_LOW_VOLTAGE,
+
 } battery_state_t;
 
 #define ANIMATION_TIMEOUT    500
@@ -787,6 +801,26 @@ static void _drawBattery(uint8_t x, uint8_t y, uint8_t chrg)
     }
 }
 
+
+static void _drawBatteryfull(uint8_t x, uint8_t y)
+{
+    for (int j = 0; j < 8; j++)
+    {
+        for (int i = 0; i < 13; i++)
+        {
+            if (batteryfull[j * 13 + i])
+            {
+                oled_putPixel(i + x, j + y);
+            }
+
+           
+        }
+    }
+}
+
+
+
+
 void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
 {
     animation_counter_process();
@@ -809,13 +843,21 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
     battery_state_t state = BATTERY_NORMAL;
 
     if (accum_voltage < 3.48)
-    {
+    { 
         state = BATTERY_LOW_VOLTAGE;
     }
 
-    if (is_charging)
-    {
+   
+
+    if (is_charging || accum_voltage > 4.44){
+    if (accum_voltage > 4.42)
+    {   
+        state = BATTERY_FULL;
+    }
+    else
+    {   
         state = BATTERY_CHARGING;
+    }
     }
 
     switch (state)
@@ -827,6 +869,11 @@ void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
     case BATTERY_CHARGING:
         _drawBattery(x, y, x_charge + animation_cnt % (8 - x_charge));
         break;
+
+     case BATTERY_FULL:
+        _drawBatteryfull(x, y);
+        break;
+
 
     case BATTERY_LOW_VOLTAGE:
         if (animation_cnt % 2)

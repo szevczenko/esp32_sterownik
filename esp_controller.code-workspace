@@ -1,0 +1,159 @@
+{
+    "folders": [
+        {
+            "path": "."
+        },
+        {
+            "path": "../esp_idf"
+        },
+        {
+            "path": "../../Espressif/frameworks/esp-idf-v5.1"
+        }
+    ],
+    "settings": {
+        "idf.customExtraVars": "",
+        "terminal.integrated.env.windows": {
+            "IDF_PATH": "${workspaceFolder}/../esp_tools/esp_idf",
+            "PATH": "${env:PATH};${workspaceFolder}/../esp_tools;${workspaceFolder}/../esp_tools/esp_idf;C:\\msys64\\usr\\bin",
+            "OPENOCD_SCRIPTS": "${workspaceFolder}/../esp_tools/tools/openocd-esp32/v0.11.0-esp32-20220706/openocd-esp32/share/openocd/scripts",
+            "CHERE_INVOKING": "1",
+            "PYTHONNOUSERSITE": "True"
+        },
+        "terminal.integrated.profiles.windows": {
+            "esp_idf": {
+                "path": "C:\\WINDOWS\\System32\\cmd.exe",
+                "args": [
+                    "/K",
+                    "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51"
+                ],
+            },
+            "MSYS2 Bash": {
+                "path": "C:\\msys64\\usr\\bin\\bash.exe",
+                "args": [
+                    "--login",
+                    "-i"
+                ],
+                "env": {
+                    "MSYSTEM": "MINGW64",
+                    "CHERE_INVOKING": "1",
+                    "MSYS2_PATH_TYPE": "inherit"
+                }
+            },
+            "CYGWIN Bash": {
+                "path": "C:\\cygwin64\\bin\\bash.exe",
+                "args": [
+                    "--login",
+                    "-i"
+                ],
+                "env": {
+                    "MSYSTEM": "MINGW64",
+                    "CHERE_INVOKING": "1",
+                    "MSYS2_PATH_TYPE": "inherit"
+                }
+            }
+        },
+        "terminal.integrated.defaultProfile.windows": "Command Prompt",
+        "files.associations": {
+            "array": "c",
+            "ranges": "c",
+            "span": "c",
+            "vector": "c",
+            "xstring": "c",
+            "xutility": "c",
+            "string": "c",
+            "string_view": "c",
+            "thread": "c",
+            "xlocale": "c",
+            "nvs.h": "c",
+            "nvs_flash.h": "c",
+            "esp_wps.h": "c",
+            "esp_wifi_types.h": "c",
+            "chrono": "c",
+            "codecvt": "c",
+            "functional": "c",
+            "ratio": "c",
+            "task.h": "c",
+            "freertos.h": "c",
+            "event_groups.h": "c",
+            "queue.h": "c",
+            "errno.h": "c",
+            "tftp_server.h": "c",
+            "lvgl.h": "c",
+            "uart_struct.h": "c",
+            "uart.h": "c",
+            "ow_uart.h": "c",
+            "app_timers.h": "c",
+            "lvgl_spi_conf.h": "c",
+            "ow_esp32.h": "c",
+            "app_events.h": "c",
+            "stddef.h": "c",
+            "config.h": "c",
+            "assert.h": "c",
+            "app_msg_id.h": "c",
+            "app_manager.h": "c",
+            "freertosconfig.h": "c",
+            "network_manager.h": "c",
+            "esp_freertos_hooks.h": "c",
+            "lvgl_helpers.h": "c",
+            "lv_hal.h": "c",
+            "esp_log.h": "c",
+            "lwjson.h": "c",
+            "stdint.h": "c",
+            "socket.h": "c",
+            "app_config.h": "c",
+            "random": "c",
+            "wifidrv.h": "c",
+            "json_parser.h": "c",
+            "select.h": "c",
+            "gpio.h": "c",
+            "esp_wifi.h": "c",
+            "esp_event.h": "c",
+            "esp_netif.h": "c",
+            "xiosbase": "c",
+            "deque": "c",
+            "format": "c",
+            "forward_list": "c",
+            "initializer_list": "c",
+            "list": "c",
+            "map": "c",
+            "regex": "c",
+            "set": "c",
+            "unordered_map": "c",
+            "unordered_set": "c",
+            "xhash": "c",
+            "xtree": "c",
+            "future": "c",
+            "system_error": "c",
+            "esp_http_client.h": "c",
+            "esp_efuse.h": "c",
+            "esp_ota_ops.h": "c",
+            "esp_tls.h": "c",
+            "compare": "c",
+            "tuple": "c",
+            "type_traits": "c",
+            "utility": "c",
+            "netfwd": "c",
+            "bitset": "c",
+            "esp_https_ota.h": "c",
+            "ota_parser.h": "c",
+            "sockets.h": "c",
+            "typeinfo": "c",
+            "*.tcc": "c",
+            "sstream": "c",
+            "esp_crt_bundle.h": "c",
+            "semphr.h": "c",
+            "esp_spi_flash.h": "c",
+            "power_on.h": "c",
+            "esp_adc_cal.h": "c",
+            "adc_oneshot.h": "c",
+            "io.h": "c",
+            "unistd.h": "c",
+            "ringbuff.h": "c"
+        },
+        "cSpell.words": [
+            "Dmytro",
+            "lwjson",
+            "Shevchenko"
+        ],
+    }
+}
