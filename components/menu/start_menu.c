@@ -974,7 +974,7 @@ static void menu_start_idle( void )
   }
   else
   {
-    menuPrintfInfo( "Target not connected.\nGo to DEVICES\nfor connect" );
+    menuPrintfInfo( "   Target not connected.\n        Go to DEVICES\n         for connect" );
   }
 }
 
@@ -1076,66 +1076,87 @@ static void menu_start_ready( void )
         oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
       }
     }
+    if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+    {
+      draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );    //Mariusz
+      if ( menuGetValue( MENU_SILOS_SENSOR_IS_CONECTED ) )
+      {
+        uint32_t silos_level = menuGetValue( MENU_SILOS_LEVEL );
+        sprintf( str, "%ld", menuGetValue( MENU_SILOS_LEVEL ) );
+        if ( silos_level > 99 )
+        {
+          oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
+        }
+        else if ( silos_level < 100 && silos_level > 9 )
+        {
+          oled_printFixed( 14, 10, str, OLED_FONT_SIZE_11 );
+        }
+        else if ( silos_level < 10 )
+        {
+          oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
+        }
+      }
 #if MENU_VIRO_ON_OFF_VERSION
-    /* PERIOD CURSOR */
-    char menu_buff[32];
+      /* PERIOD CURSOR */
+      char menu_buff[32];
 
-    sprintf( menu_buff, "%s: %d [s]", dictionary_get_string( DICT_VIBRO_ON ), ctx.data.vibro_on_s );
+      sprintf( menu_buff, "%s: %d [s]", dictionary_get_string( DICT_VIBRO_ON ), ctx.data.vibro_on_s );
 
-    if ( ctx.edit_value == EDIT_VIBRO_ON_S )
-    {
-      ssdFigureFillLine( MENU_START_OFFSET, LINE_HEIGHT );
-      oled_printFixedBlack( 2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11 );
-    }
+      if ( ctx.edit_value == EDIT_VIBRO_ON_S )
+      {
+        ssdFigureFillLine( MENU_START_OFFSET, LINE_HEIGHT );
+        oled_printFixedBlack( 2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11 );
+      }
+      else
+      {
+        oled_printFixed( 2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11 );
+      }
 
-    /* WORKING TIME CURSOR */
-    sprintf( menu_buff, "%s: %d [s]", dictionary_get_string( DICT_VIBRO_OFF ), ctx.data.vibro_off_s );
-    if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
-    {
-      ssdFigureFillLine( MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT );
-      oled_printFixedBlack( 2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11 );
-    }
+      /* WORKING TIME CURSOR */
+      sprintf( menu_buff, "%s: %d [s]", dictionary_get_string( DICT_VIBRO_OFF ), ctx.data.vibro_off_s );
+      if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
+      {
+        ssdFigureFillLine( MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT );
+        oled_printFixedBlack( 2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11 );
+      }
+      else
+      {
+        oled_printFixed( 2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11 );
+      }
 #else
-    if ( ctx.data.servo_vibro_on )
-    {
-      cnt = ctx.animation_cnt % 4;
-    }
-    else
-    {
-      cnt = 0;
-    }
+      if ( ctx.data.servo_vibro_on )
+      {
+        cnt = ctx.animation_cnt % 4;
+      }
+      else
+      {
+        cnt = 0;
+      }
 
-    drawVibro( 0, 33, cnt );
-    servo_bar.fill = ctx.data.servo_value;
-    sprintf( str, "%d%%", servo_bar.fill );
-    ssdFigureDrawLoadBar( &servo_bar );
-    oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
+      drawVibro( 0, 33, cnt );
+      servo_bar.fill = ctx.data.servo_value;
+      sprintf( str, "%d%%", servo_bar.fill );
+      ssdFigureDrawLoadBar( &servo_bar );
+      oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
 #endif
-  }
-  else
-  {
-    servo_bar.fill = ctx.data.servo_value;
-    sprintf( str, "%d%%", servo_bar.fill );
-    ssdFigureDrawLoadBar( &servo_bar );
-    oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
-    if ( ctx.data.servo_vibro_on )
-    {
-      drawServo( 10, 35, ctx.data.servo_value );
     }
     else
     {
-      drawServo( 10, 35, 0 );
+      servo_bar.fill = ctx.data.servo_value;
+      sprintf( str, "%d%%", servo_bar.fill );
+      ssdFigureDrawLoadBar( &servo_bar );
+      oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
+      if ( ctx.data.servo_vibro_on )
+      {
+        drawServo( 10, 35, ctx.data.servo_value );
+      }
+      else
+      {
+        drawServo( 10, 35, 0 );
+      }
     }
+    backendEnterMenuStart();
   }
-  backendEnterMenuStart();
 }
 
 static void menu_start_power_save( void )
@@ -1255,7 +1276,7 @@ static void menu_start_motor_change( void )
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
     return;
   }
-
+  draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
   sprintf( ctx.buff, "%ld%%", ctx.data.motor_value );
   oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );    // Font_16x26
@@ -1268,6 +1289,7 @@ static void menu_start_motor_change( void )
 
 static void menu_start_vibro_change( void )
 {
+  draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );
   debug_function_name( __func__ );
   if ( !backendIsConnected() )
   {
@@ -1303,6 +1325,7 @@ static void menu_start_vibro_change( void )
   }
   else
   {
+    draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );
     oled_printFixed( 0, 0, dictionary_get_string( DICT_SERVO ), OLED_FONT_SIZE_26 );
     sprintf( ctx.buff, "%ld%%", ctx.data.servo_value );
     oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );

@@ -199,7 +199,7 @@ static void _state_working( void )
   uint32_t check_measure = 0;
   check_measure = measure_get_filtered_value( MEAS_CH_CHECK_VIBRO );
 
-  if ( check_measure > 1300 && menuGetValue( MENU_ERROR_SERVO ) && vibro_is_on() )
+  if ( check_measure > 800 && menuGetValue( MENU_ERROR_SERVO ) && vibro_is_on() )
   {
     if ( !ctx.vibro_find_overcurrent )
     {

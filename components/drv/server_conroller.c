@@ -228,7 +228,7 @@ static void state_init( void )
   mcpwm_init( MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config );    // Configure PWM0A & PWM0B with above settings
 
   mcpwm_gpio_init( MCPWM_UNIT_0, MCPWM2A, MOTOR_PWM_PIN2 );
-  pwm_config.frequency = 2000;    // frequency = 1000Hz
+  pwm_config.frequency = 1000;    // frequency = 1000Hz
   pwm_config.cmpr_a = 0;    // duty cycle of PWMxA = 60.0%
   pwm_config.cmpr_b = 0;    // duty cycle of PWMxb = 50.0%
   pwm_config.counter_mode = MCPWM_DOWN_COUNTER;

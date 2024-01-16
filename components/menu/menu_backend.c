@@ -251,6 +251,8 @@ static void backend_start( void )
       LOG( PRINT_DEBUG, "No error" );
     }
 
+    cmdClientGetValue(MENU_CURRENT_MOTOR, NULL, 2000);
+    cmdClientGetValue(MENU_VOLTAGE_ACCUM, NULL, 2000);
     cmdClientGetValue( MENU_LOW_LEVEL_SILOS, NULL, 2000 );
     cmdClientGetValue( MENU_SILOS_LEVEL, NULL, 2000 );
     cmdClientGetValue( MENU_SILOS_SENSOR_IS_CONECTED, NULL, 2000 );

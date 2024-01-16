@@ -138,7 +138,7 @@ static const char* language[] =
     [MENU_LANGUAGE_ENGLISH] = "English",
     [MENU_LANGUAGE_RUSSIAN] = "Russian",
     [MENU_LANGUAGE_POLISH] = "Polski",
-    [MENU_LANGUAGE_GERMANY] = "Germany",
+    [MENU_LANGUAGE_GERMANY] = "Deutsch",
 };
 
 static parameters_t* parameters_list;

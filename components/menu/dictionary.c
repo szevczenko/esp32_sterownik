@@ -288,7 +288,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     {
                              "Try connect to",
                              "Попробуйте подключиться к",
-                             "Próba połączenia z\n",
+                             "Próba połączenia z:",
                              "Versuchen Sie eine\nVerbindung zu" },
   [DICT_WAIT_TO_CONNECT] =
     {
@@ -312,7 +312,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
     {
                              "\n                Error connect",
                              "\n                     Ошибка \n            подключения",
-                             "\n                      Bląd \n                   połączenia",
+                             "\n                         Bląd \n                  Połączenia",
                              "\n                  Fehlerhafte \n                  Verbindung" },
   [DICT_CONNECTED_TO] =
     {
@@ -338,7 +338,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "         Check connection",
                              "                Проверка \n               соединения",
                              " Sprawdzanie połączenia",
-                             "        Verbindung prüfen" },
+                             "      Verbindung prüfen" },
   [DICT_VIBRO_ON] =
     {
                              "Vibro",
@@ -434,7 +434,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "             Lost connection \n                  with server",
                              "             потеря связи \n                  с сервером",
                              "      Utracono połączenie\n                z serwerem",
-                             "           Verbindung zum\n        Server unterbrochen" },
+                             "          Verbindung zum\n      Server unterbrochen" },
   [DICT_TIMEOUT_CONNECT] =
     {
                              "\n     Timeout connect",
