@@ -1,7 +1,7 @@
 #include "dictionary.h"
 
-#include "config.h"
-#include "menu_param.h"
+#include "app_config.h"
+#include "parameters.h"
 
 static menu_language_t dict_language = MENU_LANGUAGE_ENGLISH;
 
@@ -451,14 +451,14 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
 
 void dictionary_init( void )
 {
-  dictionary_set_language( menuGetValue( MENU_LANGUAGE ) );
+  dictionary_set_language( parameters_getValue( PARAM_LANGUAGE ) );
 }
 
 bool dictionary_set_language( menu_language_t lang )
 {
   if ( lang < LANGUAGE_CNT_SUPPORT )
   {
-    menuSetValue( MENU_LANGUAGE, lang );
+    parameters_setValue( PARAM_LANGUAGE, lang );
     dict_language = lang;
     return true;
   }

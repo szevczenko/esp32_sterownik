@@ -1,9 +1,10 @@
 #ifndef START_MENU_H_
 #define START_MENU_H_
-#include "config.h"
+#include "app_config.h"
 #include "error_siewnik.h"
 #include "error_solarka.h"
-#include "menu.h"
+#include "menu_drv.h"
+
 
 struct menu_data
 {

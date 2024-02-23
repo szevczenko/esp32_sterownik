@@ -1,16 +1,17 @@
 #include "menu_settings.h"
 
+#include "app_config.h"
 #include "cmd_client.h"
-#include "config.h"
 #include "fast_add.h"
 #include "led.h"
-#include "menu.h"
+
 #include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
-#include "menu_param.h"
+#include "parameters.h"
 #include "ssd1306.h"
 #include "ssdFigure.h"
+#include "wifi_menu.h"
 #include "wifidrv.h"
 
 #define MODULE_NAME "[SETTING] "
@@ -32,20 +33,20 @@ typedef enum
 
 typedef enum
 {
-  PARAM_BOOTUP_MENU,
-  PARAM_BUZZER,
-  PARAM_BRIGHTNESS,
-  PARAM_LANGUAGE,
-  PARAM_POWER_ON_MIN,
-  PARAM_PERIOD,
-  PARAM_MOTOR_ERROR,
-  PARAM_SERVO_ERROR,
-  PARAM_VIBRO_ERROR,
-  PARAM_MOTOR_ERROR_CALIBRATION,
-  PARAM_SERVO_CLOSE_CALIBRATION,
-  PARAM_SERVO_OPEN_CALIBRATION,
-  PARAM_SILOS_HEIGHT,
-  PARAM_TOP,
+  SETTINGS_BOOTUP_MENU,
+  SETTINGS_BUZZER,
+  SETTINGS_BRIGHTNESS,
+  SETTINGS_LANGUAGE,
+  SETTINGS_POWER_ON_MIN,
+  SETTINGS_PERIOD,
+  SETTINGS_MOTOR_ERROR,
+  SETTINGS_SERVO_ERROR,
+  SETTINGS_VIBRO_ERROR,
+  SETTINGS_MOTOR_ERROR_CALIBRATION,
+  SETTINGS_SERVO_CLOSE_CALIBRATION,
+  SETTINGS_SERVO_OPEN_CALIBRATION,
+  SETTINGS_SILOS_HEIGHT,
+  SETTINGS_TOP,
 } parameters_type_t;
 
 typedef enum
@@ -146,14 +147,14 @@ static uint32_t parameters_size;
 
 static parameters_t parameters_list_siewnik[] =
   {
-    { .param_type = PARAM_BOOTUP_MENU,
+    { .param_type = SETTINGS_BOOTUP_MENU,
      .name_dict = DICT_BOOTING,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_bootup,
      .set_value = set_bootup,
      .get_max_value = get_max_bootup },
 
-    { .param_type = PARAM_BRIGHTNESS,
+    { .param_type = SETTINGS_BRIGHTNESS,
      .name_dict = DICT_BRIGHTNESS,
      .unit_type = UNIT_INT,
      .get_value = get_brightness,
@@ -163,21 +164,21 @@ static parameters_t parameters_list_siewnik[] =
      .enter = enter_brightness,
      .exit = exit_brightness },
 
-    { .param_type = PARAM_BUZZER,
+    { .param_type = SETTINGS_BUZZER,
      .name_dict = DICT_BUZZER,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_buzzer,
      .set_value = set_buzzer,
      .get_max_value = get_max_buzzer },
 
-    { .param_type = PARAM_LANGUAGE,
+    { .param_type = SETTINGS_LANGUAGE,
      .name_dict = DICT_LANGUAGE,
      .unit_type = UNIT_LANGUAGE,
      .get_value = get_language,
      .set_value = set_language,
      .get_max_value = get_max_language },
 
-    { .param_type = PARAM_POWER_ON_MIN,
+    { .param_type = SETTINGS_POWER_ON_MIN,
      .name_dict = DICT_IDLE_TIME,
      .unit_type = UNIT_INT,
      .unit_name = "[min]",
@@ -186,7 +187,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_power_on_min,
      .get_min_value = get_min_power_on_min },
 
-    { .param_type = PARAM_MOTOR_ERROR,
+    { .param_type = SETTINGS_MOTOR_ERROR,
      .name_dict = DICT_MOTOR_ERR,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_motor_error,
@@ -194,7 +195,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_motor_error,
      .exit = exit_motor_error },
 
-    { .param_type = PARAM_SERVO_ERROR,
+    { .param_type = SETTINGS_SERVO_ERROR,
      .name_dict = DICT_SERVO_ERR,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_servo_error,
@@ -202,7 +203,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_servo_error,
      .exit = exit_servo_error },
 
-    { .param_type = PARAM_MOTOR_ERROR_CALIBRATION,
+    { .param_type = SETTINGS_MOTOR_ERROR_CALIBRATION,
      .name_dict = DICT_MOTOR_ERROR_CALIBRATION,
      .unit_type = UNIT_INT,
      .get_value = get_motor_error_calibration,
@@ -210,7 +211,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_motor_error_calibration,
      .exit = exit_motor_error_calibration },
 
-    { .param_type = PARAM_SERVO_CLOSE_CALIBRATION,
+    { .param_type = SETTINGS_SERVO_CLOSE_CALIBRATION,
      .name_dict = DICT_SERVO_CLOSE,
      .unit_type = UNIT_INT,
      .get_value = get_servo_close_calibration,
@@ -219,7 +220,7 @@ static parameters_t parameters_list_siewnik[] =
      .enter = enter_servo_close_calibration,
      .exit = exit_servo_close_calibration },
 
-    { .param_type = PARAM_SERVO_OPEN_CALIBRATION,
+    { .param_type = SETTINGS_SERVO_OPEN_CALIBRATION,
      .name_dict = DICT_SERVO_OPEN,
      .unit_type = UNIT_INT,
      .get_value = get_servo_open_calibration,
@@ -228,7 +229,7 @@ static parameters_t parameters_list_siewnik[] =
      .enter = enter_servo_open_calibration,
      .exit = exit_servo_open_calibration },
 
-    { .param_type = PARAM_SILOS_HEIGHT,
+    { .param_type = SETTINGS_SILOS_HEIGHT,
      .name_dict = DICT_SILOS_HEIGHT,
      .unit_type = UNIT_INT,
      .get_value = get_silos_height,
@@ -241,14 +242,14 @@ static parameters_t parameters_list_siewnik[] =
 static parameters_t parameters_list_solarka[] =
   {
 
-    { .param_type = PARAM_BOOTUP_MENU,
+    { .param_type = SETTINGS_BOOTUP_MENU,
      .name_dict = DICT_BOOTING,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_bootup,
      .set_value = set_bootup,
      .get_max_value = get_max_bootup },
 
-    { .param_type = PARAM_BRIGHTNESS,
+    { .param_type = SETTINGS_BRIGHTNESS,
      .name_dict = DICT_BRIGHTNESS,
      .unit_type = UNIT_INT,
      .get_value = get_brightness,
@@ -258,20 +259,20 @@ static parameters_t parameters_list_solarka[] =
      .enter = enter_brightness,
      .exit = exit_brightness },
 
-    { .param_type = PARAM_BUZZER,
+    { .param_type = SETTINGS_BUZZER,
      .name_dict = DICT_BUZZER,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_buzzer,
      .set_value = set_buzzer,
      .get_max_value = get_max_buzzer },
 
-    { .param_type = PARAM_LANGUAGE,
+    { .param_type = SETTINGS_LANGUAGE,
      .name_dict = DICT_LANGUAGE,
      .unit_type = UNIT_LANGUAGE,
      .get_value = get_language,
      .set_value = set_language,
      .get_max_value = get_max_language },
-    { .param_type = PARAM_POWER_ON_MIN,
+    { .param_type = SETTINGS_POWER_ON_MIN,
      .name_dict = DICT_IDLE_TIME,
      .unit_type = UNIT_INT,
      .unit_name = "[min]",
@@ -280,7 +281,7 @@ static parameters_t parameters_list_solarka[] =
      .get_max_value = get_max_power_on_min,
      .get_min_value = get_min_power_on_min },
 
-    { .param_type = PARAM_MOTOR_ERROR,
+    { .param_type = SETTINGS_MOTOR_ERROR,
      .name_dict = DICT_MOTOR_ERR,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_motor_error,
@@ -288,7 +289,7 @@ static parameters_t parameters_list_solarka[] =
      .get_max_value = get_max_motor_error,
      .exit = exit_motor_error },
 
-    { .param_type = PARAM_VIBRO_ERROR,
+    { .param_type = SETTINGS_VIBRO_ERROR,
      .name_dict = DICT_VIBRO_ERR,
      .unit_type = UNIT_ON_OFF,
      .get_value = get_servo_error,
@@ -296,7 +297,7 @@ static parameters_t parameters_list_solarka[] =
      .get_max_value = get_max_servo_error,
      .exit = exit_servo_error },
 
-    { .param_type = PARAM_PERIOD,
+    { .param_type = SETTINGS_PERIOD,
      .name_dict = DICT_PERIOD,
      .unit_type = UNIT_INT,
      .unit_name = "[s]",
@@ -306,7 +307,7 @@ static parameters_t parameters_list_solarka[] =
      .exit = exit_period,
      .get_min_value = get_min_period },
 
-    { .param_type = PARAM_MOTOR_ERROR_CALIBRATION,
+    { .param_type = SETTINGS_MOTOR_ERROR_CALIBRATION,
      .name_dict = DICT_MOTOR_ERROR_CALIBRATION,
      .unit_type = UNIT_INT,
      .get_value = get_motor_error_calibration,
@@ -314,7 +315,7 @@ static parameters_t parameters_list_solarka[] =
      .get_max_value = get_max_motor_error_calibration,
      .exit = exit_motor_error_calibration },
 
-    { .param_type = PARAM_SILOS_HEIGHT,
+    { .param_type = SETTINGS_SILOS_HEIGHT,
      .name_dict = DICT_SILOS_HEIGHT,
      .unit_type = UNIT_INT,
      .get_value = get_silos_height,
@@ -333,50 +334,50 @@ static menu_state_t _state;
 
 static void get_max_servo_close_calibration( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_CLOSE_SERVO_REGULATION );
+  *value = parameters_getMaxValue( PARAM_CLOSE_SERVO_REGULATION );
 }
 
 static void get_max_servo_open_calibration( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_OPEN_SERVO_REGULATION );
+  *value = parameters_getMaxValue( PARAM_OPEN_SERVO_REGULATION );
 }
 
 static void get_servo_close_calibration( uint32_t* value )
 {
-  *value = menuGetValue( MENU_CLOSE_SERVO_REGULATION );
+  *value = parameters_getValue( PARAM_CLOSE_SERVO_REGULATION );
 }
 
 static void get_servo_open_calibration( uint32_t* value )
 {
-  *value = menuGetValue( MENU_OPEN_SERVO_REGULATION );
+  *value = parameters_getValue( PARAM_OPEN_SERVO_REGULATION );
 }
 
 static void set_servo_close_calibration( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  cmdClientSetValueWithoutResp( MENU_CLOSE_SERVO_REGULATION, value );
+  cmdClientSetValueWithoutResp( PARAM_CLOSE_SERVO_REGULATION, value );
 }
 
 static void set_servo_open_calibration( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  cmdClientSetValueWithoutResp( MENU_OPEN_SERVO_REGULATION, value );
+  cmdClientSetValueWithoutResp( PARAM_OPEN_SERVO_REGULATION, value );
 }
 
 static void get_silos_height( uint32_t* value )
 {
-  *value = menuGetValue( MENU_SILOS_HEIGHT );
+  *value = parameters_getValue( PARAM_SILOS_HEIGHT );
 }
 
 static void set_silos_height( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  cmdClientSetValueWithoutResp( MENU_SILOS_HEIGHT, value );
+  cmdClientSetValueWithoutResp( PARAM_SILOS_HEIGHT, value );
 }
 
 static void get_max_silos_height( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_SILOS_HEIGHT );
+  *value = parameters_getMaxValue( PARAM_SILOS_HEIGHT );
 }
 
 static void get_min_silos_height( uint32_t* value )
@@ -387,77 +388,77 @@ static void get_min_silos_height( uint32_t* value )
 static void enter_servo_close_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_CLOSE_SERVO_REGULATION_FLAG, 1 );
+  cmdClientSetValueWithoutResp( PARAM_CLOSE_SERVO_REGULATION_FLAG, 1 );
 }
 
 static void exit_servo_close_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_CLOSE_SERVO_REGULATION_FLAG, 0 );
+  cmdClientSetValueWithoutResp( PARAM_CLOSE_SERVO_REGULATION_FLAG, 0 );
 }
 
 static void enter_servo_open_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_OPEN_SERVO_REGULATION_FLAG, 1 );
+  cmdClientSetValueWithoutResp( PARAM_OPEN_SERVO_REGULATION_FLAG, 1 );
 }
 
 static void exit_servo_open_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_OPEN_SERVO_REGULATION_FLAG, 0 );
+  cmdClientSetValueWithoutResp( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
 }
 
 static void get_motor_error( uint32_t* value )
 {
-  *value = menuGetValue( MENU_ERROR_MOTOR );
+  *value = parameters_getValue( PARAM_ERROR_MOTOR );
 }
 
 static void get_max_motor_error( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_ERROR_MOTOR );
+  *value = parameters_getMaxValue( PARAM_ERROR_MOTOR );
 }
 
 static void set_motor_error( uint32_t value )
 {
-  menuSetValue( MENU_ERROR_MOTOR, value );
+  parameters_setValue( PARAM_ERROR_MOTOR, value );
 }
 
 static void exit_motor_error( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_ERROR_MOTOR, menuGetValue( MENU_ERROR_MOTOR ) );
+  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
 }
 
 static void get_servo_error( uint32_t* value )
 {
-  *value = menuGetValue( MENU_ERROR_SERVO );
+  *value = parameters_getValue( PARAM_ERROR_SERVO );
 }
 
 static void get_max_servo_error( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_ERROR_SERVO );
+  *value = parameters_getMaxValue( PARAM_ERROR_SERVO );
 }
 
 static void set_servo_error( uint32_t value )
 {
-  menuSetValue( MENU_ERROR_SERVO, value );
+  parameters_setValue( PARAM_ERROR_SERVO, value );
 }
 
 static void exit_servo_error( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_ERROR_SERVO, menuGetValue( MENU_ERROR_SERVO ) );
+  cmdClientSetValueWithoutResp( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
 }
 
 static void get_period( uint32_t* value )
 {
-  *value = menuGetValue( MENU_PERIOD );
+  *value = parameters_getValue( PARAM_PERIOD );
 }
 
 static void get_max_period( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_PERIOD );
+  *value = parameters_getMaxValue( PARAM_PERIOD );
 }
 
 static void get_min_period( uint32_t* value )
@@ -468,44 +469,44 @@ static void get_min_period( uint32_t* value )
 
 static void set_period( uint32_t value )
 {
-  menuSetValue( MENU_PERIOD, value );
+  parameters_setValue( PARAM_PERIOD, value );
 }
 
 static void exit_period( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_PERIOD, menuGetValue( MENU_PERIOD ) );
+  cmdClientSetValueWithoutResp( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ) );
 }
 
 static void get_motor_error_calibration( uint32_t* value )
 {
-  *value = menuGetValue( MENU_ERROR_MOTOR_CALIBRATION );
+  *value = parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION );
 }
 
 static void set_motor_error_calibration( uint32_t value )
 {
-  menuSetValue( MENU_ERROR_MOTOR_CALIBRATION, value );
+  parameters_setValue( PARAM_ERROR_MOTOR_CALIBRATION, value );
 }
 
 static void get_max_motor_error_calibration( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_ERROR_MOTOR_CALIBRATION );
+  *value = parameters_getMaxValue( PARAM_ERROR_MOTOR_CALIBRATION );
 }
 
 static void exit_motor_error_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( MENU_ERROR_MOTOR_CALIBRATION, menuGetValue( MENU_ERROR_MOTOR_CALIBRATION ) );
+  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
 }
 
 static void get_power_on_min( uint32_t* value )
 {
-  *value = menuGetValue( MENU_POWER_ON_MIN );
+  *value = parameters_getValue( PARAM_POWER_ON_MIN );
 }
 
 static void get_max_power_on_min( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_POWER_ON_MIN );
+  *value = parameters_getMaxValue( PARAM_POWER_ON_MIN );
 }
 
 static void get_min_power_on_min( uint32_t* value )
@@ -516,12 +517,12 @@ static void get_min_power_on_min( uint32_t* value )
 
 static void set_power_on_min( uint32_t value )
 {
-  menuSetValue( MENU_POWER_ON_MIN, value );
+  parameters_setValue( PARAM_POWER_ON_MIN, value );
 }
 
 static void get_language( uint32_t* value )
 {
-  *value = menuGetValue( MENU_LANGUAGE );
+  *value = parameters_getValue( PARAM_LANGUAGE );
 }
 
 static void get_max_language( uint32_t* value )
@@ -536,49 +537,49 @@ static void set_language( uint32_t value )
 
 static void get_bootup( uint32_t* value )
 {
-  *value = menuGetValue( MENU_BOOTUP_SYSTEM );
+  *value = parameters_getValue( PARAM_BOOT_UP_SYSTEM );
 }
 
 static void get_buzzer( uint32_t* value )
 {
-  *value = menuGetValue( MENU_BUZZER );
+  *value = parameters_getValue( PARAM_BUZZER );
 }
 
 static void get_max_bootup( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_BOOTUP_SYSTEM );
+  *value = parameters_getMaxValue( PARAM_BOOT_UP_SYSTEM );
 }
 
 static void get_max_buzzer( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_BUZZER );
+  *value = parameters_getMaxValue( PARAM_BUZZER );
 }
 
 static void set_bootup( uint32_t value )
 {
-  menuSetValue( MENU_BOOTUP_SYSTEM, value );
+  parameters_setValue( PARAM_BOOT_UP_SYSTEM, value );
 }
 
 static void set_buzzer( uint32_t value )
 {
-  menuSetValue( MENU_BUZZER, value );
+  parameters_setValue( PARAM_BUZZER, value );
 }
 
 static void get_brightness( uint32_t* value )
 {
-  *value = menuGetValue( MENU_BRIGHTNESS );
+  *value = parameters_getValue( PARAM_BRIGHTNESS );
 }
 
 static void set_brightness( uint32_t value )
 {
-  menuSetValue( MENU_BRIGHTNESS, value );
+  parameters_setValue( PARAM_BRIGHTNESS, value );
   MOTOR_LED_SET_RED( 1 );
   SERVO_VIBRO_LED_SET_GREEN( 1 );
 }
 
 static void get_max_brightness( uint32_t* value )
 {
-  *value = menuGetMaxValue( MENU_BRIGHTNESS );
+  *value = parameters_getMaxValue( PARAM_BRIGHTNESS );
 }
 
 static void get_min_brightness( uint32_t* value )
@@ -732,7 +733,6 @@ static void menu_button_plus_callback( void* arg )
 
 static void _fast_add_cb( uint32_t value )
 {
-  debug_function_name( __func__ );
   (void) value;
 }
 
@@ -869,7 +869,7 @@ static void menu_button_exit_callback( void* arg )
     return;
   }
 
-  menuSaveParameters();
+  parameters_save();
   if ( _state == MENU_EDIT_PARAMETERS )
   {
     if ( parameters_list[menu->position].set_value != NULL )
@@ -886,7 +886,7 @@ static void menu_button_exit_callback( void* arg )
     return;
   }
 
-  menuExit( menu );
+  menuDrv_Exit( menu );
 }
 
 static bool menu_button_init_cb( void* arg )
@@ -921,7 +921,7 @@ static bool menu_button_init_cb( void* arg )
   menu->button.down_plus.timer_callback = menu_button_plus_time_cb;
   menu->button.down_plus.rise_callback = menu_button_m_p_pull_cb;
 
-  if ( config.dev_type == T_DEV_TYPE_SIEWNIK )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SIEWNIK )
   {
     parameters_list = parameters_list_siewnik;
     parameters_size = sizeof( parameters_list_siewnik ) / sizeof( parameters_list_siewnik[0] );

@@ -1,12 +1,13 @@
+#include "app_config.h"
 #include "cmd_client.h"
-#include "config.h"
-#include "menu.h"
+
 #include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
-#include "menu_param.h"
+#include "parameters.h"
 #include "ssd1306.h"
 #include "ssdFigure.h"
+#include "wifi_menu.h"
 #include "wifidrv.h"
 
 #define MODULE_NAME "[SETTING] "
@@ -71,24 +72,24 @@ static scrollBar_t scrollBar = {
 
 static void get_current( uint32_t* value )
 {
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
-    *value = menuGetValue( MENU_CURRENT_MOTOR ) * 100;
+    *value = parameters_getValue( PARAM_CURRENT_MOTOR ) * 100;
   }
   else
   {
-    *value = menuGetValue( MENU_CURRENT_MOTOR );
+    *value = parameters_getValue( PARAM_CURRENT_MOTOR );
   }
 }
 
 static void get_voltage( uint32_t* value )
 {
-  *value = menuGetValue( MENU_VOLTAGE_ACCUM );
+  *value = parameters_getValue( PARAM_VOLTAGE_ACCUM );
 }
 
 static void get_silos( uint32_t* value )
 {
-  *value = menuGetValue( MENU_SILOS_LEVEL );
+  *value = parameters_getValue( PARAM_SILOS_LEVEL );
 }
 
 static void get_signal( uint32_t* value )
@@ -98,7 +99,7 @@ static void get_signal( uint32_t* value )
 
 static void get_temp( uint32_t* value )
 {
-  *value = menuGetValue( MENU_TEMPERATURE );
+  *value = parameters_getValue( PARAM_TEMPERATURE );
 }
 
 static void get_conection( uint32_t* value )
@@ -146,7 +147,7 @@ static void menu_button_exit_callback( void* arg )
     NULL_ERROR_MSG();
     return;
   }
-  menuExit( menu );
+  menuDrv_Exit( menu );
 }
 
 static bool menu_button_init_cb( void* arg )
@@ -263,8 +264,8 @@ static bool _connected_process( menu_token_t* menu )
   scrollBar.all_line = PARAM_TOP - 1;
   ssdFigureDrawScrollBar( &scrollBar );
 
-  MOTOR_LED_SET_GREEN( menuGetValue( MENU_MOTOR_IS_ON ) );
-  SERVO_VIBRO_LED_SET_GREEN( menuGetValue( MENU_SERVO_IS_ON ) );
+  MOTOR_LED_SET_GREEN( parameters_getValue( PARAM_MOTOR_IS_ON ) );
+  SERVO_VIBRO_LED_SET_GREEN( parameters_getValue( PARAM_SERVO_IS_ON ) );
 
   return true;
 }

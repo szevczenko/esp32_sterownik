@@ -1,6 +1,6 @@
 #ifndef SSD_FIGURE_H
 #define SSD_FIGURE_H
-#include "config.h"
+#include "app_config.h"
 
 typedef struct ssdFigure
 {

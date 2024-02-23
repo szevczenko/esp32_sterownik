@@ -1,5 +1,5 @@
-#include "config.h"
-#include "menu.h"
+#include "app_config.h"
+
 #include "menu_drv.h"
 // #include "ssd1306.h"
 #include "menu_default.h"
@@ -78,7 +78,6 @@ static void menu_button_exit_callback( void* arg )
     return;
   }
 
-  // menuExit(menu);
   menuEnter( menu->menu_list[0] );
 }
 

@@ -1,5 +1,5 @@
-#include "config.h"
-#include "menu.h"
+#include "app_config.h"
+
 #include "menu_drv.h"
 #include "stdarg.h"
 #include "stdint.h"
@@ -8,7 +8,7 @@
 #include "cmd_client.h"
 #include "freertos/semphr.h"
 #include "menu_default.h"
-#include "menu_param.h"
+#include "parameters.h"
 #include "oled.h"
 #include "parse_cmd.h"
 #include "ssdFigure.h"
@@ -74,7 +74,7 @@ menu_token_t bootup_menu =
 
 static void change_state( state_bootup_t new_state )
 {
-  debug_function_name( __func__ );
+  
   if ( ctx.state < STATE_TOP )
   {
     if ( ctx.state != new_state )
@@ -180,7 +180,7 @@ static void bootup_get_server_data( void )
   uint32_t time_to_connect = 0;
   uint32_t start_status = 0;
 
-  while ( cmdClientGetValue( MENU_START_SYSTEM, &start_status, 150 ) == 0 )
+  while ( cmdClientGetValue( PARAM_START_SYSTEM, &start_status, 150 ) == 0 )
   {
     if ( time_to_connect < 5 )
     {
@@ -188,7 +188,7 @@ static void bootup_get_server_data( void )
     }
     else
     {
-      LOG( PRINT_INFO, "Timeout get MENU_START_SYSTEM" );
+      LOG( PRINT_INFO, "Timeout get PARAM_START_SYSTEM" );
       change_state( STATE_EXIT );
       return;
     }
@@ -328,7 +328,7 @@ static bool menu_button_init_cb( void* arg )
   return true;
 }
 
-void menuInitBootupMenu( void )
+void menuInitBootUpMenu( void )
 {
   memset( &ctx, 0, sizeof( ctx ) );
   bootup_menu.menu_cb.enter = menu_enter_cb;

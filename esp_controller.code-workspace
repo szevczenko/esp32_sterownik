@@ -148,7 +148,11 @@
             "adc_oneshot.h": "c",
             "io.h": "c",
             "unistd.h": "c",
-            "ringbuff.h": "c"
+            "ringbuff.h": "c",
+            "menu.h": "c",
+            "menu_drv.h": "c",
+            "servo.h": "c",
+            "adc_cali.h": "c"
         },
         "cSpell.words": [
             "Dmytro",

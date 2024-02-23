@@ -1,6 +1,5 @@
+#include "app_config.h"
 #include "cmd_client.h"
-#include "config.h"
-#include "menu.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "oled.h"
@@ -50,8 +49,9 @@ typedef struct
 } wifi_menu_t;
 
 static wifi_menu_t ctx;
+static uint8_t dev_type;
 
-__attribute__( ( unused ) ) static char* state_name[] =
+static char* state_name[] =
   {
     [ST_WIFI_INIT] = "ST_WIFI_INIT",
     [ST_WIFI_IDLE] = "ST_WIFI_IDLE",
@@ -156,7 +156,7 @@ static void menu_button_exit_callback( void* arg )
     return;
   }
 
-  menuExit( menu );
+  menuDrv_Exit( menu );
 }
 
 static bool menu_button_init_cb( void* arg )
@@ -209,17 +209,21 @@ static bool connectToDevice( char* dev )
   LOG( PRINT_INFO, "Try connect %s ", dev );
 
   /* Check device type */
-  config.dev_type = 0xFF;
+  dev_type = 0xFF;
   if ( memcmp( WIFI_SIEWNIK_NAME, dev, strlen( WIFI_SIEWNIK_NAME ) - 1 ) == 0 )
   {
-    config.dev_type = T_DEV_TYPE_SIEWNIK;
+    dev_type = T_DEV_TYPE_SIEWNIK;
   }
   else if ( memcmp( WIFI_SOLARKA_NAME, dev, strlen( WIFI_SOLARKA_NAME ) - 1 ) == 0 )
   {
-    config.dev_type = T_DEV_TYPE_SOLARKA;
+    dev_type = T_DEV_TYPE_SOLARKA;
+  }
+  else if ( memcmp( WIFI_VALVE_NAME, dev, strlen( WIFI_VALVE_NAME ) - 1 ) == 0 )
+  {
+    dev_type = T_DEV_TYPE_VALVE;
   }
 
-  if ( config.dev_type != 0xFF )
+  if ( dev_type != 0xFF )
   {
     /* Disconnect if connected */
     if ( wifiDrvIsConnected() )
@@ -247,7 +251,7 @@ static bool connectToDevice( char* dev )
       osDelay( 50 );
     } while ( !wifiDrvReadyToConnect() );
 
-    if ( wifiDrvConnect() != TRUE )
+    if ( wifiDrvConnect() != true )
     {
       ctx.error_msg = "conToDevice err";
       return false;
@@ -257,7 +261,7 @@ static bool connectToDevice( char* dev )
   }
   else
   {
-    config.dev_type = DEFAULT_DEV_TYPE;
+    dev_type = T_DEV_TYPE_VALVE;
   }
 
   ctx.error_msg = "Bad dev name";
@@ -305,7 +309,8 @@ static void menu_wifi_find_devices( void )
 
       wifiDrvGetNameFromScannedList( i, dev_name );
       if ( ( memcmp( WIFI_SIEWNIK_NAME, dev_name, strlen( WIFI_SIEWNIK_NAME ) - 1 ) == 0 )
-           || ( memcmp( WIFI_SOLARKA_NAME, dev_name, strlen( WIFI_SOLARKA_NAME ) - 1 ) == 0 ) )
+           || ( memcmp( WIFI_SOLARKA_NAME, dev_name, strlen( WIFI_SOLARKA_NAME ) - 1 ) == 0 )
+           || ( memcmp( WIFI_VALVE_NAME, dev_name, strlen( WIFI_VALVE_NAME ) - 1 ) == 0 ) )
       {
         LOG( PRINT_INFO, "%s\n", dev_name );
         strncpy( ctx.devices_list[ctx.devices_count++], dev_name, 33 );
@@ -508,7 +513,7 @@ static void menu_wifi_connected( menu_token_t* menu )
   else
   {
     osDelay( 1000 );
-    menuExit( menu );
+    menuDrv_Exit( menu );
     enterMenuStart();
   }
 }
@@ -589,4 +594,9 @@ void menuInitWifiMenu( menu_token_t* menu )
   menu->menu_cb.button_init_cb = menu_button_init_cb;
   menu->menu_cb.exit = menu_exit_cb;
   menu->menu_cb.process = menu_process;
+}
+
+uint8_t wifiMenu_GetDevType( void )
+{
+  return dev_type;
 }

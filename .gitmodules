@@ -1,0 +1,3 @@
+[submodule "hq_components"]
+	path = hq_components
+	url = https://github.com/szevczenko/hq_components.git

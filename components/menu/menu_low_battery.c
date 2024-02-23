@@ -1,5 +1,5 @@
-#include "config.h"
-#include "menu.h"
+#include "app_config.h"
+
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "power_on.h"

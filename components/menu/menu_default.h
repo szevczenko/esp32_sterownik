@@ -1,6 +1,6 @@
 #ifndef MENU_DEFAULT_H
 #define MENU_DEFAULT_H
-#include "menu.h"
+#include "menu_drv.h"
 
 #define LINE_HEIGHT      11
 #define MENU_HEIGHT      16

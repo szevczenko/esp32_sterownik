@@ -2,11 +2,10 @@
 
 #include "but.h"
 #include "cmd_client.h"
-#include "config.h"
+#include "app_config.h"
 #include "freertos/semphr.h"
-#include "menu.h"
 #include "menu_drv.h"
-#include "menu_param.h"
+#include "parameters.h"
 #include "start_menu.h"
 #include "stdarg.h"
 #include "stdint.h"
@@ -67,7 +66,7 @@ static char* state_name[] =
 
 static void change_state( state_backend_t new_state )
 {
-  debug_function_name( __func__ );
+  
   if ( ctx.state < STATE_TOP )
   {
     if ( ctx.state != new_state )
@@ -98,10 +97,10 @@ static void _send_emergency_msg( void )
   }
 
   bool ret =
-    ( cmdClientSetValue( MENU_EMERGENCY_DISABLE, 1,
+    ( cmdClientSetValue( PARAM_EMERGENCY_DISABLE, 1,
                          2000 )
       > 0 )
-    && ( cmdClientSetValue( MENU_MOTOR_IS_ON, 0, 2000 ) > 0 ) && ( cmdClientSetValue( MENU_SERVO_IS_ON, 0, 2000 ) > 0 );
+    && ( cmdClientSetValue( PARAM_MOTOR_IS_ON, 0, 2000 ) > 0 ) && ( cmdClientSetValue( PARAM_SERVO_IS_ON, 0, 2000 ) > 0 );
 
   LOG( PRINT_INFO, "%s %d", __func__, ret );
   if ( ret )
@@ -144,8 +143,8 @@ static void backend_idle( void )
 
 static bool _check_error( void )
 {
-  cmdClientGetValue( MENU_MACHINE_ERRORS, NULL, 2000 );
-  uint32_t errors = menuGetValue( MENU_MACHINE_ERRORS );
+  cmdClientGetValue( PARAM_MACHINE_ERRORS, NULL, 2000 );
+  uint32_t errors = parameters_getValue( PARAM_MACHINE_ERRORS );
 
   if ( errors > 0 )
   {
@@ -169,11 +168,11 @@ static void backend_send_control_data( void )
 
   if ( ctx.send_all_data )
   {
-    if ( cmdClientSetValue( MENU_MOTOR, data->motor_value, 1000 ) == TRUE && cmdClientSetValue( MENU_SERVO, data->servo_value, 1000 ) == TRUE &&
+    if ( cmdClientSetValue( PARAM_MOTOR, data->motor_value, 1000 ) == TRUE && cmdClientSetValue( PARAM_SERVO, data->servo_value, 1000 ) == TRUE &&
 #if MENU_VIRO_ON_OFF_VERSION
-         cmdClientSetValue( MENU_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == TRUE && cmdClientSetValue( MENU_VIBRO_ON_S, data->vibro_on_s, 1000 ) == TRUE &&
+         cmdClientSetValue( PARAM_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == TRUE && cmdClientSetValue( PARAM_VIBRO_ON_S, data->vibro_on_s, 1000 ) == TRUE &&
 #endif
-         cmdClientSetValue( MENU_MOTOR_IS_ON, data->motor_on, 1000 ) == TRUE && cmdClientSetValue( MENU_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == TRUE )
+         cmdClientSetValue( PARAM_MOTOR_IS_ON, data->motor_on, 1000 ) == TRUE && cmdClientSetValue( PARAM_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == TRUE )
     {
       ctx.send_all_data = false;
       ctx.sended_data.motor_value = data->motor_value;
@@ -189,7 +188,7 @@ static void backend_send_control_data( void )
 
   if ( data->motor_value != ctx.sended_data.motor_value )
   {
-    if ( cmdClientSetValue( MENU_MOTOR, data->motor_value, 1000 ) == TRUE )
+    if ( cmdClientSetValue( PARAM_MOTOR, data->motor_value, 1000 ) == TRUE )
     {
       ctx.sended_data.motor_value = data->motor_value;
     }
@@ -197,7 +196,7 @@ static void backend_send_control_data( void )
 
   if ( data->servo_value != ctx.sended_data.servo_value )
   {
-    if ( cmdClientSetValue( MENU_SERVO, data->servo_value, 1000 ) == TRUE )
+    if ( cmdClientSetValue( PARAM_SERVO, data->servo_value, 1000 ) == TRUE )
     {
       ctx.sended_data.servo_value = data->servo_value;
     }
@@ -205,7 +204,7 @@ static void backend_send_control_data( void )
 #if MENU_VIRO_ON_OFF_VERSION
   if ( data->vibro_off_s != ctx.sended_data.vibro_off_s )
   {
-    if ( cmdClientSetValue( MENU_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == TRUE )
+    if ( cmdClientSetValue( PARAM_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == TRUE )
     {
       ctx.sended_data.vibro_off_s = data->vibro_off_s;
     }
@@ -213,7 +212,7 @@ static void backend_send_control_data( void )
 
   if ( data->vibro_on_s != ctx.sended_data.vibro_on_s )
   {
-    if ( cmdClientSetValue( MENU_VIBRO_ON_S, data->vibro_on_s, 1000 ) == TRUE )
+    if ( cmdClientSetValue( PARAM_VIBRO_ON_S, data->vibro_on_s, 1000 ) == TRUE )
     {
       ctx.sended_data.vibro_on_s = data->vibro_on_s;
     }
@@ -221,7 +220,7 @@ static void backend_send_control_data( void )
 #endif
   if ( data->motor_on != ctx.sended_data.motor_on )
   {
-    if ( cmdClientSetValue( MENU_MOTOR_IS_ON, data->motor_on, 1000 ) == TRUE )
+    if ( cmdClientSetValue( PARAM_MOTOR_IS_ON, data->motor_on, 1000 ) == TRUE )
     {
       ctx.sended_data.motor_on = data->motor_on;
     }
@@ -229,7 +228,7 @@ static void backend_send_control_data( void )
 
   if ( data->servo_vibro_on != ctx.sended_data.servo_vibro_on )
   {
-    if ( cmdClientSetValue( MENU_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == TRUE )
+    if ( cmdClientSetValue( PARAM_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == TRUE )
     {
       ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
     }
@@ -251,12 +250,12 @@ static void backend_start( void )
       LOG( PRINT_DEBUG, "No error" );
     }
 
-    cmdClientGetValue(MENU_CURRENT_MOTOR, NULL, 2000);
-    cmdClientGetValue(MENU_VOLTAGE_ACCUM, NULL, 2000);
-    cmdClientGetValue( MENU_LOW_LEVEL_SILOS, NULL, 2000 );
-    cmdClientGetValue( MENU_SILOS_LEVEL, NULL, 2000 );
-    cmdClientGetValue( MENU_SILOS_SENSOR_IS_CONECTED, NULL, 2000 );
-    LOG( PRINT_INFO, "Get silos %d ", menuGetValue( MENU_LOW_LEVEL_SILOS ) );
+    cmdClientGetValue(PARAM_CURRENT_MOTOR, NULL, 2000);
+    cmdClientGetValue(PARAM_VOLTAGE_ACCUM, NULL, 2000);
+    cmdClientGetValue( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
+    cmdClientGetValue( PARAM_SILOS_LEVEL, NULL, 2000 );
+    cmdClientGetValue( PARAM_SILOS_SENSOR_IS_CONECTED, NULL, 2000 );
+    LOG( PRINT_INFO, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
   }
 
   ctx.get_data_cnt++;
@@ -292,10 +291,10 @@ static void backend_menu_parameters( void )
     return;
   }
 
-  cmdClientGetValue( MENU_TEMPERATURE, NULL, 2000 );
-  cmdClientGetValue( MENU_VOLTAGE_ACCUM, NULL, 2000 );
-  cmdClientGetValue( MENU_CURRENT_MOTOR, NULL, 2000 );
-  cmdClientGetValue( MENU_SILOS_LEVEL, NULL, 2000 );
+  cmdClientGetValue( PARAM_TEMPERATURE, NULL, 2000 );
+  cmdClientGetValue( PARAM_VOLTAGE_ACCUM, NULL, 2000 );
+  cmdClientGetValue( PARAM_CURRENT_MOTOR, NULL, 2000 );
+  cmdClientGetValue( PARAM_SILOS_LEVEL, NULL, 2000 );
   osDelay( 50 );
 }
 
@@ -321,7 +320,7 @@ static void backend_emergency_disable_exit( void )
 {
   if ( !ctx.emergency_exit_msg_sended )
   {
-    int ret = cmdClientSetValue( MENU_EMERGENCY_DISABLE, 0, 2000 );
+    int ret = cmdClientSetValue( PARAM_EMERGENCY_DISABLE, 0, 2000 );
     LOG( PRINT_INFO, "%s %d", __func__, ret );
     if ( ret > 0 )
     {
@@ -425,7 +424,7 @@ void menuBackendInit( void )
 
 bool backendIsConnected( void )
 {
-  debug_function_name( __func__ );
+  
   if ( !wifiDrvIsConnected() )
   {
     LOG( PRINT_INFO, "START_MENU: WiFi not connected" );

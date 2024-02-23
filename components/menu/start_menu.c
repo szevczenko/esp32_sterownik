@@ -1,18 +1,18 @@
 #include "start_menu.h"
 
+#include "app_config.h"
 #include "battery.h"
 #include "buzzer.h"
 #include "cmd_client.h"
-#include "config.h"
 #include "fast_add.h"
 #include "freertos/timers.h"
-#include "menu.h"
 #include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "oled.h"
 #include "ssd1306.h"
 #include "ssdFigure.h"
+#include "wifi_menu.h"
 #include "wifidrv.h"
 
 #define MODULE_NAME "[START] "
@@ -127,9 +127,10 @@ __attribute__( ( unused ) ) static char* state_name[] =
     [STATE_RECONNECT] = "STATE_RECONNECT",
     [STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT" };
 
+extern void enterMenuParameters( void );
+
 static void change_state( state_start_menu_t new_state )
 {
-  debug_function_name( __func__ );
   if ( ctx.state < STATE_TOP )
   {
     if ( ctx.state != new_state )
@@ -147,15 +148,14 @@ static void change_state( state_start_menu_t new_state )
 
 static void _reset_error( void )
 {
-  if ( menuGetValue( MENU_MACHINE_ERRORS ) )
+  if ( parameters_getValue( PARAM_MACHINE_ERRORS ) )
   {
-    cmdClientSetValueWithoutResp( MENU_MACHINE_ERRORS, 0 );
+    cmdClientSetValueWithoutResp( PARAM_MACHINE_ERRORS, 0 );
   }
 }
 
 static void set_change_menu( edit_value_t val )
 {
-  debug_function_name( __func__ );
   if ( ( ctx.state == STATE_READY ) || ( ctx.state == STATE_SERVO_VIBRO_CHANGE ) || ( ctx.state == STATE_MOTOR_CHANGE ) || ( ctx.state == STATE_LOW_SILOS ) )
   {
     switch ( val )
@@ -216,7 +216,7 @@ static void _reset_power_save_timer( void )
 
 static bool _check_low_silos_flag( void )
 {
-  uint32_t flag = menuGetValue( MENU_LOW_LEVEL_SILOS );
+  uint32_t flag = parameters_getValue( PARAM_LOW_LEVEL_SILOS );
 
   LOG( PRINT_INFO, "------SILOS FLAG %d---------", flag );
   if ( flag > 0 )
@@ -246,7 +246,6 @@ static void menu_enter_parameters_callback( void* arg )
 
 static void menu_button_up_callback( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -276,7 +275,6 @@ static void menu_button_up_callback( void* arg )
 
 static void menu_button_down_callback( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -305,7 +303,6 @@ static void menu_button_down_callback( void* arg )
 
 static void menu_button_exit_callback( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -314,13 +311,12 @@ static void menu_button_exit_callback( void* arg )
     return;
   }
   _reset_error();
-  menuExit( menu );
+  menuDrv_Exit( menu );
   ctx.exit_wait_flag = true;
 }
 
 static void menu_button_servo_callback( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -350,7 +346,6 @@ static void menu_button_servo_callback( void* arg )
 
 static void menu_button_motor_callback( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -390,14 +385,12 @@ static void menu_button_motor_callback( void* arg )
 
 static void motor_fast_add_cb( uint32_t value )
 {
-  debug_function_name( __func__ );
   (void) value;
   set_change_menu( EDIT_MOTOR );
 }
 
 static void menu_button_motor_plus_push_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -430,7 +423,6 @@ static void menu_button_motor_plus_push_cb( void* arg )
 
 static void menu_button_motor_plus_time_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -457,7 +449,6 @@ static void menu_button_motor_plus_time_cb( void* arg )
 
 static void menu_button_motor_minus_push_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -490,7 +481,6 @@ static void menu_button_motor_minus_push_cb( void* arg )
 
 static void menu_button_motor_minus_time_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -517,7 +507,6 @@ static void menu_button_motor_minus_time_cb( void* arg )
 
 static void menu_button_motor_p_m_pull_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -549,14 +538,12 @@ static void menu_button_motor_p_m_pull_cb( void* arg )
 
 static void servo_fast_add_cb( uint32_t value )
 {
-  debug_function_name( __func__ );
   (void) value;
   set_change_menu( EDIT_SERVO );
 }
 
 static void menu_button_servo_plus_push_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -579,7 +566,7 @@ static void menu_button_servo_plus_push_cb( void* arg )
     return;
   }
 #if MENU_VIRO_ON_OFF_VERSION
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
     if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
     {
@@ -609,7 +596,6 @@ static void menu_button_servo_plus_push_cb( void* arg )
 
 static void menu_button_servo_plus_time_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -631,7 +617,7 @@ static void menu_button_servo_plus_time_cb( void* arg )
     return;
   }
 #if MENU_VIRO_ON_OFF_VERSION
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
     if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
     {
@@ -651,7 +637,6 @@ static void menu_button_servo_plus_time_cb( void* arg )
 
 static void menu_button_servo_minus_push_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -674,7 +659,7 @@ static void menu_button_servo_minus_push_cb( void* arg )
     return;
   }
 #if MENU_VIRO_ON_OFF_VERSION
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
     if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
     {
@@ -704,7 +689,6 @@ static void menu_button_servo_minus_push_cb( void* arg )
 
 static void menu_button_servo_minus_time_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -726,7 +710,7 @@ static void menu_button_servo_minus_time_cb( void* arg )
     return;
   }
 #if MENU_VIRO_ON_OFF_VERSION
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
     if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
     {
@@ -746,7 +730,6 @@ static void menu_button_servo_minus_time_cb( void* arg )
 
 static void menu_button_servo_p_m_pull_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -755,7 +738,7 @@ static void menu_button_servo_p_m_pull_cb( void* arg )
     return;
   }
 #if MENU_VIRO_ON_OFF_VERSION
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
     fastProcessStop( &ctx.data.vibro_off_s );
     fastProcessStop( &ctx.data.vibro_on_s );
@@ -784,7 +767,6 @@ static void menu_button_servo_p_m_pull_cb( void* arg )
 
 static void menu_button_on_off( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -798,7 +780,6 @@ static void menu_button_on_off( void* arg )
 
 static bool menu_button_init_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -835,7 +816,6 @@ static bool menu_button_init_cb( void* arg )
 
 static bool menu_enter_cb( void* arg )
 {
-  debug_function_name( __func__ );
   menu_token_t* menu = arg;
 
   if ( menu == NULL )
@@ -852,22 +832,22 @@ static bool menu_enter_cb( void* arg )
     change_state( STATE_INIT );
   }
 
-  cmdClientSetValueWithoutResp( MENU_START_SYSTEM, 1 );
+  cmdClientSetValueWithoutResp( PARAM_START_SYSTEM, 1 );
 
-  ctx.data.motor_value = menuGetValue( MENU_MOTOR );
-  ctx.data.servo_value = menuGetValue( MENU_SERVO );
-  ctx.data.motor_on = menuGetValue( MENU_MOTOR_IS_ON );
-  ctx.data.servo_vibro_on = menuGetValue( MENU_SERVO_IS_ON );
+  ctx.data.motor_value = parameters_getValue( PARAM_MOTOR );
+  ctx.data.servo_value = parameters_getValue( PARAM_SERVO );
+  ctx.data.motor_on = parameters_getValue( PARAM_MOTOR_IS_ON );
+  ctx.data.servo_vibro_on = parameters_getValue( PARAM_SERVO_IS_ON );
   if ( !ctx.enter_parameters_menu )
   {
     ctx.data.motor_on = 0;
     ctx.data.servo_vibro_on = 0;
   }
 
-  cmdClientSetValueWithoutResp( MENU_ERROR_MOTOR, menuGetValue( MENU_ERROR_MOTOR ) );
-  cmdClientSetValueWithoutResp( MENU_ERROR_SERVO, menuGetValue( MENU_ERROR_SERVO ) );
-  cmdClientSetValueWithoutResp( MENU_ERROR_MOTOR_CALIBRATION, menuGetValue( MENU_ERROR_MOTOR_CALIBRATION ) );
-  cmdClientSetValueWithoutResp( MENU_SILOS_HEIGHT, menuGetValue( MENU_SILOS_HEIGHT ) );
+  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
+  cmdClientSetValueWithoutResp( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
+  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
+  cmdClientSetValueWithoutResp( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
   backendEnterMenuStart();
 
   ctx.error_flag = 0;
@@ -877,8 +857,6 @@ static bool menu_enter_cb( void* arg )
 
 static bool menu_exit_cb( void* arg )
 {
-  debug_function_name( __func__ );
-
   if ( !ctx.enter_parameters_menu )
   {
     ctx.data.motor_on = 0;
@@ -923,24 +901,24 @@ static void menu_check_connection( void )
 
   bool ret = false;
 
-  ctx.data.motor_value = menuGetValue( MENU_MOTOR );
-  ctx.data.servo_value = menuGetValue( MENU_SERVO );
+  ctx.data.motor_value = parameters_getValue( PARAM_MOTOR );
+  ctx.data.servo_value = parameters_getValue( PARAM_SERVO );
   ctx.data.motor_on = 0;
   ctx.data.servo_vibro_on = 0;
 #if MENU_VIRO_ON_OFF_VERSION
-  if ( menuGetValue( MENU_VIBRO_ON_S ) == 0 )
+  if ( parameters_getValue( PARAM_VIBRO_ON_S ) == 0 )
   {
-    menuSetValue( MENU_VIBRO_ON_S, 1 );
+    parameters_setValue( PARAM_VIBRO_ON_S, 1 );
   }
-  ctx.data.vibro_on_s = menuGetValue( MENU_VIBRO_ON_S );
-  ctx.data.vibro_off_s = menuGetValue( MENU_VIBRO_OFF_S );
+  ctx.data.vibro_on_s = parameters_getValue( PARAM_VIBRO_ON_S );
+  ctx.data.vibro_off_s = parameters_getValue( PARAM_VIBRO_OFF_S );
 #endif
   for ( uint8_t i = 0; i < 3; i++ )
   {
     LOG( PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i );
     osDelay( 250 );
 
-    if ( ( cmdClientSetValue( MENU_EMERGENCY_DISABLE, 0, 1000 ) == TRUE ) && ( cmdClientSetValue( MENU_PERIOD, menuGetValue( MENU_PERIOD ), 1000 ) == TRUE ) )
+    if ( ( cmdClientSetValue( PARAM_EMERGENCY_DISABLE, 0, 1000 ) == TRUE ) && ( cmdClientSetValue( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ), 1000 ) == TRUE ) )
     {
       break;
     }
@@ -961,15 +939,15 @@ static void menu_start_idle( void )
 {
   if ( backendIsConnected() )
   {
-    cmdClientSetValueWithoutResp( MENU_START_SYSTEM, 1 );
+    cmdClientSetValueWithoutResp( PARAM_START_SYSTEM, 1 );
     ctx.data.motor_on = 0;
-    ctx.data.motor_value = menuGetValue( MENU_MOTOR );
-    ctx.data.servo_value = menuGetValue( MENU_SERVO );
+    ctx.data.motor_value = parameters_getValue( PARAM_MOTOR );
+    ctx.data.servo_value = parameters_getValue( PARAM_SERVO );
     ctx.data.servo_vibro_on = 0;
-    cmdClientSetValueWithoutResp( MENU_ERROR_MOTOR, menuGetValue( MENU_ERROR_MOTOR ) );
-    cmdClientSetValueWithoutResp( MENU_ERROR_SERVO, menuGetValue( MENU_ERROR_SERVO ) );
-    cmdClientSetValueWithoutResp( MENU_ERROR_MOTOR_CALIBRATION, menuGetValue( MENU_ERROR_MOTOR_CALIBRATION ) );
-    cmdClientSetValueWithoutResp( MENU_SILOS_HEIGHT, menuGetValue( MENU_SILOS_HEIGHT ) );
+    cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
+    cmdClientSetValueWithoutResp( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
+    cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
+    cmdClientSetValueWithoutResp( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
     change_state( STATE_START );
   }
   else
@@ -990,7 +968,6 @@ static void menu_start_start( void )
 
 static void menu_start_ready( void )
 {
-  debug_function_name( __func__ );
   if ( !backendIsConnected() )
   {
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
@@ -1057,12 +1034,12 @@ static void menu_start_ready( void )
   //     }
   // }
 
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
-    if ( menuGetValue( MENU_SILOS_SENSOR_IS_CONECTED ) )
+    if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONECTED ) )
     {
-      uint32_t silos_level = menuGetValue( MENU_SILOS_LEVEL );
-      sprintf( str, "%ld", menuGetValue( MENU_SILOS_LEVEL ) );
+      uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
+      sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
       if ( silos_level > 99 )
       {
         oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
@@ -1076,13 +1053,13 @@ static void menu_start_ready( void )
         oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
       }
     }
-    if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+    if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
     {
-      draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );    //Mariusz
-      if ( menuGetValue( MENU_SILOS_SENSOR_IS_CONECTED ) )
+      draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );    //Mariusz
+      if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONECTED ) )
       {
-        uint32_t silos_level = menuGetValue( MENU_SILOS_LEVEL );
-        sprintf( str, "%ld", menuGetValue( MENU_SILOS_LEVEL ) );
+        uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
+        sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
         if ( silos_level > 99 )
         {
           oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
@@ -1264,7 +1241,6 @@ static void menu_start_error( void )
 
 static void menu_start_info( void )
 {
-  debug_function_name( __func__ );
   osDelay( 2500 );
   change_state( ctx.last_state );
 }
@@ -1276,7 +1252,7 @@ static void menu_start_motor_change( void )
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
     return;
   }
-  draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );
+  draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
   sprintf( ctx.buff, "%ld%%", ctx.data.motor_value );
   oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );    // Font_16x26
@@ -1289,15 +1265,15 @@ static void menu_start_motor_change( void )
 
 static void menu_start_vibro_change( void )
 {
-  draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );
-  debug_function_name( __func__ );
+  draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+
   if ( !backendIsConnected() )
   {
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
     return;
   }
 
-  if ( config.dev_type == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
 #if MENU_VIRO_ON_OFF_VERSION
     oled_printFixed( 0, 0, dictionary_get_string( ctx.edit_value == EDIT_VIBRO_OFF_S ? DICT_VIBRO_OFF : DICT_VIBRO_OFF ), OLED_FONT_SIZE_16 );
@@ -1325,7 +1301,7 @@ static void menu_start_vibro_change( void )
   }
   else
   {
-    draw_low_accu( 60, 1, menuGetValue( MENU_VOLTAGE_ACCUM ), menuGetValue( MENU_CURRENT_MOTOR ) );
+    draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
     oled_printFixed( 0, 0, dictionary_get_string( DICT_SERVO ), OLED_FONT_SIZE_26 );
     sprintf( ctx.buff, "%ld%%", ctx.data.servo_value );
     oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
