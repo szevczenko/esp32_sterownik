@@ -89,7 +89,7 @@ static void checkDevType( void )
     config.wifi_type = T_WIFI_TYPE_SERVER;
   }
 }
-
+// Testowy branch
 void app_main()
 {
   configInit();
