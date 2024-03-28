@@ -447,6 +447,12 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "     Сервер тайм-аута",
                              "       Przekroczono czas \n       odpowiedzi serwera",
                              "  Zeitüberschreitung\n         Server" },
+  [DICT_SERIAL_NUMBER] =
+    {
+                             "SN",
+                             "SN",
+                             "SN",
+                             "SN" },
 };
 
 void dictionary_init( void )

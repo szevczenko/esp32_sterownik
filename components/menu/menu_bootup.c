@@ -110,7 +110,7 @@ static void bootup_wifi_wait( void )
 
 static void bootup_check_memory( void )
 {
-  if ( wifiDrvIsReadedData() )
+  if ( wifiDrvIsReadData() )
   {
     change_state( STATE_CONNECT );
   }
@@ -180,7 +180,7 @@ static void bootup_get_server_data( void )
   uint32_t time_to_connect = 0;
   uint32_t start_status = 0;
 
-  while ( cmdClientGetValue( PARAM_START_SYSTEM, &start_status, 150 ) == 0 )
+  while ( cmdClientGetValue( PARAM_START_SYSTEM, &start_status, 150 ) != ERROR_CODE_OK )
   {
     if ( time_to_connect < 5 )
     {

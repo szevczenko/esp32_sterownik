@@ -918,7 +918,7 @@ static void menu_check_connection( void )
     LOG( PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i );
     osDelay( 250 );
 
-    if ( ( cmdClientSetValue( PARAM_EMERGENCY_DISABLE, 0, 1000 ) == TRUE ) && ( cmdClientSetValue( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ), 1000 ) == TRUE ) )
+    if ( ( cmdClientSetValue( PARAM_EMERGENCY_DISABLE, 0, 1000 ) == ERROR_CODE_OK ) && ( cmdClientSetValue( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ), 1000 ) == ERROR_CODE_OK ) )
     {
       break;
     }
@@ -1036,7 +1036,7 @@ static void menu_start_ready( void )
 
   if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
-    if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONECTED ) )
+    if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
     {
       uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
       sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
@@ -1056,7 +1056,7 @@ static void menu_start_ready( void )
     if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
     {
       draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );    //Mariusz
-      if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONECTED ) )
+      if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
       {
         uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
         sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );

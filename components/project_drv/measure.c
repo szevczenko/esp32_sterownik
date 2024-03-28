@@ -217,11 +217,11 @@ static void measure_process( void* arg )
       LOG( PRINT_INFO, "Silos %d %d", silos_percent, silos_is_low );
       parameters_setValue( PARAM_LOW_LEVEL_SILOS, silos_is_low );
       parameters_setValue( PARAM_SILOS_LEVEL, (uint32_t) silos_percent );
-      parameters_setValue( PARAM_SILOS_SENSOR_IS_CONECTED, 1 );
+      parameters_setValue( PARAM_SILOS_SENSOR_IS_CONNECTED, 1 );
     }
     else
     {
-      parameters_setValue( PARAM_SILOS_SENSOR_IS_CONECTED, 0 );
+      parameters_setValue( PARAM_SILOS_SENSOR_IS_CONNECTED, 0 );
       parameters_setValue( PARAM_LOW_LEVEL_SILOS, 0 );
       parameters_setValue( PARAM_SILOS_LEVEL, 0 );
     }
