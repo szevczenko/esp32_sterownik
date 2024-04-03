@@ -1,5 +1,6 @@
 #include "app_config.h"
 #include "cmd_client.h"
+#include "dictionary.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "oled.h"

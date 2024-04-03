@@ -1,5 +1,5 @@
 #include "app_config.h"
-
+#include "dictionary.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "menu_low_battery.h"

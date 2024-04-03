@@ -5,4 +5,5 @@ cmake_minimum_required(VERSION 3.5)
 set(EXTRA_COMPONENT_DIRS "hq_components")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+add_compile_definitions("PROJECT_PARAMETERS=1")
 project(sterownik)

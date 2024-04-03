@@ -6,6 +6,7 @@
 #include "buzzer.h"
 #include "cmd_client.h"
 #include "cmd_server.h"
+#include "dictionary.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/uart.h"
@@ -20,6 +21,7 @@
 #include "intf/i2c/ssd1306_i2c.h"
 #include "keepalive.h"
 #include "measure.h"
+#include "menu_backend.h"
 #include "menu_drv.h"
 #include "motor.h"
 #include "nvs_flash.h"
@@ -32,6 +34,7 @@
 #include "ssd1306.h"
 #include "vibro.h"
 #include "wifidrv.h"
+#include "ota_drv.h"
 
 extern void ultrasonar_start( void );
 
@@ -93,10 +96,16 @@ static void checkDevType( void )
   wifiDrvSetWifiType( wifi_type );
 }
 
+static void _toggle_emergency_disable( void )
+{
+  backendToggleEmergencyDisable();
+}
+
 void app_init( void )
 {
   nvs_flash_init();
   DevConfig_Init();
+  OTA_Init();
 }
 
 void app_main()
@@ -107,6 +116,7 @@ void app_main()
   if ( wifi_type != T_WIFI_TYPE_SERVER )
   {
     graphic_init();
+    menuBackendInit();
     battery_init();
     init_leds();
     osDelay( 10 );
@@ -127,7 +137,7 @@ void app_main()
 
     if ( voltage > 3.2 )
     {
-      menuDrvInit( MENU_DRV_NORMAL_INIT );
+      menuDrvInit( MENU_DRV_NORMAL_INIT, _toggle_emergency_disable );
       wifiDrvInit();
       keepAliveStartTask();
       dictionary_init();
@@ -137,7 +147,7 @@ void app_main()
     }
     else
     {
-      menuDrvInit( MENU_DRV_LOW_BATTERY_INIT );
+      menuDrvInit( MENU_DRV_LOW_BATTERY_INIT, _toggle_emergency_disable );
       power_on_disable_system();
     }
   }
@@ -173,7 +183,7 @@ void app_main()
   }
 
   DevConfig_Printf( PRINT_DEBUG, PRINT_DEBUG, "[MENU] ------------START SYSTEM-------------" );
-  DevConfig_Printf( PRINT_DEBUG, PRINT_DEBUG, "[MENU] SN %.6ld", DevConfig_GetSerialNumber() );
+  DevConfig_Printf( PRINT_DEBUG, PRINT_DEBUG, "[MENU] SN %s", DevConfig_GetSerialNumber() );
   while ( 1 )
   {
     vTaskDelay( MS2ST( 250 ) );

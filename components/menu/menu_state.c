@@ -1,6 +1,6 @@
 #include "app_config.h"
 #include "cmd_client.h"
-
+#include "dictionary.h"
 #include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
@@ -63,13 +63,13 @@ static void get_sn( char** value );
 
 static parameters_t parameters_list[] =
   {
-    [PARAM_CURRENT] = {.name_dict = DICT_CURRENT,  .unit = "A",    .unit_type = UNIT_DOUBLE, .get_value = get_current  },
-    [PARAM_VOLTAGE] = { .name_dict = DICT_VOLTAGE, .unit = "V",    .unit_type = UNIT_DOUBLE, .get_value = get_voltage  },
-    [PARAM_SILOS] = { .name_dict = DICT_SILOS,   .unit = "dm 3", .unit_type = UNIT_INT,    .get_value = get_silos    },
-    [PARAM_SIGNAL] = { .name_dict = DICT_SIGNAL,  .unit = "",     .unit_type = UNIT_INT,    .get_value = get_signal   },
-    [PARAM_TEMPERATURE_IN] = { .name_dict = DICT_TEMP,    .unit = "\"C",  .unit_type = UNIT_INT,    .get_value = get_temp     },
-    [PARAM_CONNECTION] = { .name_dict = DICT_CONNECT, .unit = "",     .unit_type = UNIT_BOOL,   .get_value = get_connection},
-    [PARAM_SN] = { .name_dict = DICT_SERIAL_NUMBER, .unit = "",  .unit_type = UNIT_STR,    .get_str = get_sn        },
+    [PARAM_CURRENT] = {.name_dict = DICT_CURRENT,        .unit = "A",    .unit_type = UNIT_DOUBLE, .get_value = get_current   },
+    [PARAM_VOLTAGE] = { .name_dict = DICT_VOLTAGE,       .unit = "V",    .unit_type = UNIT_DOUBLE, .get_value = get_voltage   },
+    [PARAM_SILOS] = { .name_dict = DICT_SILOS,         .unit = "dm 3", .unit_type = UNIT_INT,    .get_value = get_silos     },
+    [PARAM_SIGNAL] = { .name_dict = DICT_SIGNAL,        .unit = "",     .unit_type = UNIT_INT,    .get_value = get_signal    },
+    [PARAM_TEMPERATURE_IN] = { .name_dict = DICT_TEMP,          .unit = "\"C",  .unit_type = UNIT_INT,    .get_value = get_temp      },
+    [PARAM_CONNECTION] = { .name_dict = DICT_CONNECT,       .unit = "",     .unit_type = UNIT_BOOL,   .get_value = get_connection},
+    [PARAM_SN] = { .name_dict = DICT_SERIAL_NUMBER, .unit = "",     .unit_type = UNIT_STR,    .get_str = get_sn          },
 };
 
 static scrollBar_t scrollBar = {

@@ -1,8 +1,8 @@
-#include "app_config.h"
-
-#include "menu_drv.h"
-// #include "ssd1306.h"
 #include "menu_default.h"
+
+#include "app_config.h"
+#include "dictionary.h"
+#include "menu_drv.h"
 #include "oled.h"
 #include "ssdFigure.h"
 

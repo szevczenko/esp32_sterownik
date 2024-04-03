@@ -2,9 +2,9 @@
 
 #include "app_config.h"
 #include "cmd_client.h"
+#include "dictionary.h"
 #include "fast_add.h"
 #include "led.h"
-
 #include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"

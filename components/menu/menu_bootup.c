@@ -1,17 +1,16 @@
 #include "app_config.h"
-
-#include "menu_drv.h"
-#include "stdarg.h"
-#include "stdint.h"
-// #include "ssd1306.h"
 #include "but.h"
 #include "cmd_client.h"
+#include "dictionary.h"
 #include "freertos/semphr.h"
 #include "menu_default.h"
-#include "parameters.h"
+#include "menu_drv.h"
 #include "oled.h"
+#include "parameters.h"
 #include "parse_cmd.h"
 #include "ssdFigure.h"
+#include "stdarg.h"
+#include "stdint.h"
 #include "wifidrv.h"
 
 #define MODULE_NAME "[BOOTUP] "
@@ -74,7 +73,6 @@ menu_token_t bootup_menu =
 
 static void change_state( state_bootup_t new_state )
 {
-  
   if ( ctx.state < STATE_TOP )
   {
     if ( ctx.state != new_state )
