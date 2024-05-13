@@ -61,7 +61,7 @@ static meas_data_t meas_data[MEAS_CH_LAST] =
 #if CONFIG_DEVICE_SIEWNIK
     [MEAS_CH_SERVO] = { .unit = ADC_UNIT_1, .channel = ADC_SERVO_CH,  .ch_name = "MEAS_CH_SERVO"      },
     [MEAS_CH_TEMP] = { .unit = ADC_UNIT_1, .channel = ADC_CE_CH,     .ch_name = "MEAS_CH_TEMP"       },
-    [MEAS_CH_CHECK_SERVO] = { .unit = ADC_UNIT_2, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_CHECK_SERVO"},
+    // [MEAS_CH_CHECK_SERVO] = { .unit = ADC_UNIT_1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_CHECK_SERVO"},
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
@@ -132,6 +132,7 @@ static void _read_adc_values( adc_oneshot_unit_handle_t adc1_handle, adc_oneshot
     for ( int i = 0; i < NO_OF_SAMPLES; i++ )
     {
       int adc_reading = 0;
+      LOG( PRINT_DEBUG, "ADC%d Channel[%d]", meas_data[ch].unit + 1, meas_data[ch].channel );
       ESP_ERROR_CHECK( adc_oneshot_read( meas_data[ch].unit == ADC_UNIT_1 ? adc1_handle : adc2_handle, meas_data[ch].channel, &adc_reading ) );
       LOG( PRINT_DEBUG, "ADC%d Channel[%d] Raw Data: %d", meas_data[ch].unit + 1, meas_data[ch].channel, adc_reading );
       meas_data[ch].adc += adc_reading;

@@ -18,6 +18,8 @@
 #include "fast_add.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "http_parameters_client.h"
+#include "http_server.h"
 #include "intf/i2c/ssd1306_i2c.h"
 #include "keepalive.h"
 #include "measure.h"
@@ -26,7 +28,9 @@
 #include "motor.h"
 #include "nvs_flash.h"
 #include "oled.h"
+#include "ota_drv.h"
 #include "parameters.h"
+#include "parameters_api.h"
 #include "pcf8574.h"
 #include "power_on.h"
 #include "server_controller.h"
@@ -34,7 +38,7 @@
 #include "ssd1306.h"
 #include "vibro.h"
 #include "wifidrv.h"
-#include "ota_drv.h"
+#include "pwm_drv.h"
 
 extern void ultrasonar_start( void );
 
@@ -108,95 +112,114 @@ void app_init( void )
   OTA_Init();
 }
 
+static void _init_server( void )
+{
+  wifiDrvInit();
+  keepAliveStartTask();
+  parameters_init();
+
+  measure_start();
+  srvrControllStart();
+  ultrasonar_start();
+
+#if CONFIG_DEVICE_SIEWNIK
+  errorSiewnikStart();
+#endif
+
+#if CONFIG_DEVICE_SOLARKA
+  errorSolarkaStart();
+#endif
+
+  //LED on
+  io_conf.intr_type = GPIO_INTR_DISABLE;
+  io_conf.mode = GPIO_MODE_OUTPUT;
+  io_conf.pin_bit_mask = ( 1 << blink_pin );
+  io_conf.pull_down_en = 0;
+  io_conf.pull_up_en = 0;
+  gpio_config( &io_conf );
+  gpio_set_level( blink_pin, 1 );
+
+  // cmdServerStartTask();
+  HTTPServer_Init();
+  ParametersAPI_Init();
+}
+
+static void _init_client( void )
+{
+  graphic_init();
+  menuBackendInit();
+  battery_init();
+  init_leds();
+  osDelay( 10 );
+
+  buzzer_init();
+  power_on_init();
+
+  /* Wait to measure voltage */
+  while ( !battery_is_measured() )
+  {
+    osDelay( 10 );
+  }
+
+  float voltage = battery_get_voltage();
+  power_on_enable_system();
+  init_buttons();
+  parameters_init();
+
+  if ( voltage > 3.2 )
+  {
+    menuDrvInit( MENU_DRV_NORMAL_INIT, _toggle_emergency_disable );
+    wifiDrvInit();
+    osDelay( 1000 );
+    keepAliveStartTask();
+    dictionary_init();
+    fastProcessStartTask();
+    power_on_start_task();
+    // cmdClientStartTask();
+    HTTPParamClient_Init();
+    init_sleep();
+  }
+  else
+  {
+    menuDrvInit( MENU_DRV_LOW_BATTERY_INIT, _toggle_emergency_disable );
+    power_on_disable_system();
+  }
+}
+
+static void _blink_led( void )
+{
+  vTaskDelay( MS2ST( 250 ) );
+  if ( ( wifi_type == T_WIFI_TYPE_SERVER ) && !HTTPServer_IsClientConnected() )
+  {
+    gpio_set_level( blink_pin, 0 );
+  }
+
+  vTaskDelay( MS2ST( 750 ) );
+
+  if ( wifi_type == T_WIFI_TYPE_SERVER )
+  {
+    gpio_set_level( blink_pin, 1 );
+  }
+}
+
 void app_main()
 {
   app_init();
   checkDevType();
 
-  if ( wifi_type != T_WIFI_TYPE_SERVER )
+  if ( wifi_type == T_WIFI_TYPE_SERVER )
   {
-    graphic_init();
-    menuBackendInit();
-    battery_init();
-    init_leds();
-    osDelay( 10 );
-
-    buzzer_init();
-    power_on_init();
-
-    /* Wait to measure voltage */
-    while ( !battery_is_measured() )
-    {
-      osDelay( 10 );
-    }
-
-    float voltage = battery_get_voltage();
-    power_on_enable_system();
-    init_buttons();
-    parameters_init();
-
-    if ( voltage > 3.2 )
-    {
-      menuDrvInit( MENU_DRV_NORMAL_INIT, _toggle_emergency_disable );
-      wifiDrvInit();
-      keepAliveStartTask();
-      dictionary_init();
-      fastProcessStartTask();
-      power_on_start_task();
-      // init_sleep();
-    }
-    else
-    {
-      menuDrvInit( MENU_DRV_LOW_BATTERY_INIT, _toggle_emergency_disable );
-      power_on_disable_system();
-    }
+    _init_server();
   }
   else
   {
-    wifiDrvInit();
-    keepAliveStartTask();
-    parameters_init();
-
-    //#if CONFIG_DEVICE_SIEWNIK
-    measure_start();
-    //#endif
-    srvrControllStart();
-    ultrasonar_start();
-    //WYLACZONE
-
-#if CONFIG_DEVICE_SIEWNIK
-    errorSiewnikStart();
-#endif
-
-#if CONFIG_DEVICE_SOLARKA
-    errorSolarkaStart();
-#endif
-
-    //LED on
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = ( 1 << blink_pin );
-    io_conf.pull_down_en = 0;
-    io_conf.pull_up_en = 0;
-    gpio_config( &io_conf );
-    gpio_set_level( blink_pin, 1 );
+    _init_client();
   }
 
   DevConfig_Printf( PRINT_DEBUG, PRINT_DEBUG, "[MENU] ------------START SYSTEM-------------" );
   DevConfig_Printf( PRINT_DEBUG, PRINT_DEBUG, "[MENU] SN %s", DevConfig_GetSerialNumber() );
   while ( 1 )
   {
-    vTaskDelay( MS2ST( 250 ) );
-    if ( ( wifi_type == T_WIFI_TYPE_SERVER ) && !cmdServerIsWorking() )
-    {
-      gpio_set_level( blink_pin, 0 );
-    }
-
-    vTaskDelay( MS2ST( 750 ) );
-
-    if ( wifi_type == T_WIFI_TYPE_SERVER )
-    {
-      gpio_set_level( blink_pin, 1 );
-    }
+    _blink_led();
   }
 }

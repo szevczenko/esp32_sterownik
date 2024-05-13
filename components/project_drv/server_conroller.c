@@ -11,6 +11,7 @@
 #include "server_controller.h"
 #include "servo.h"
 #include "vibro.h"
+#include "http_server.h"
 
 #define MODULE_NAME "[Srvr Ctrl] "
 #define DEBUG_LVL   PRINT_INFO
@@ -25,7 +26,7 @@
 #define SYSTEM_ON_PIN 15
 
 #define MOTOR_PWM_PIN  27
-#define SERVO_PWM_PIN  26
+#define SERVO_PWM_PIN  25
 #define MOTOR_PWM_PIN2 25
 
 typedef enum
@@ -144,7 +145,7 @@ static void set_working_data( void )
     gpio_set_level( SYSTEM_ON_PIN, 0 );
   }
 
-  LOG( PRINT_INFO, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value );
+  LOG( PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value );
   if ( ctx.motor_on )
   {
     float duty = (float) ctx.motor_pwm;
@@ -171,11 +172,11 @@ static void set_working_data( void )
   if ( vibro_is_on() && ctx.servo_on )
   {
     // ToDo napiecie 2 progi
-    PWMDrv_SetDuty( &ctx.motor2_pwm, 99.99 );
+    PWMDrv_SetDuty( &ctx.servo_pwm_drv, 50 );
   }
   else
   {
-    PWMDrv_Stop( &ctx.motor2_pwm, true );
+    PWMDrv_Stop( &ctx.servo_pwm_drv, true );
   }
 #endif
 
@@ -202,9 +203,11 @@ static void state_init( void )
 
 #if CONFIG_DEVICE_SOLARKA
   PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN );
-  PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, MOTOR_PWM_PIN2 );
+  // PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, MOTOR_PWM_PIN2 );
+  PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, SERVO_PWM_PIN );
+  PWMDrv_Stop( &ctx.servo_pwm_drv, true );
   PWMDrv_Stop( &ctx.motor1_pwm, false );
-  PWMDrv_Stop( &ctx.motor2_pwm, true );
+  // PWMDrv_Stop( &ctx.motor2_pwm, true );
 #endif
 
 #if CONFIG_DEVICE_SIEWNIK
@@ -233,7 +236,7 @@ static void state_idle( void )
     return;
   }
 
-  if ( ctx.working_state_req && cmdServerIsWorking() )
+  if ( ctx.working_state_req && HTTPServer_IsClientConnected() )
   {
     measure_meas_calibration_value();
     count_working_data();
@@ -283,7 +286,7 @@ static void state_working( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !cmdServerIsWorking() )
+  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
   {
     vibro_stop();
     change_state( STATE_IDLE );
@@ -333,7 +336,7 @@ static void state_servo_open_regulation( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !cmdServerIsWorking() )
+  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
   {
     parameters_save();
     parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
@@ -370,7 +373,7 @@ static void state_servo_close_regulation( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !cmdServerIsWorking() )
+  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
   {
     parameters_save();
     parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );

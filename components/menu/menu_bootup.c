@@ -3,6 +3,8 @@
 #include "cmd_client.h"
 #include "dictionary.h"
 #include "freertos/semphr.h"
+#include "http_parameters_client.h"
+#include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "oled.h"
@@ -11,6 +13,7 @@
 #include "ssdFigure.h"
 #include "stdarg.h"
 #include "stdint.h"
+#include "wifi_menu.h"
 #include "wifidrv.h"
 
 #define MODULE_NAME "[BOOTUP] "
@@ -166,9 +169,12 @@ static void bootup_wait_connect( void )
 
     _show_wait_connection();
     osDelay( 50 );
-  } while ( !cmdClientIsConnected() );
+  } while ( !backendIsConnected() );
 
   oled_clearScreen();
+  char ap_name[64] = {};
+  wifiDrvGetAPName( ap_name );
+  wifiMenu_SetDevType( ap_name );
   menuPrintfInfo( dictionary_get_string( DICT_CONNECTED_TRY_READ_DATA ) );
   change_state( STATE_GET_SERVER_DATA );
 }
@@ -178,7 +184,7 @@ static void bootup_get_server_data( void )
   uint32_t time_to_connect = 0;
   uint32_t start_status = 0;
 
-  while ( cmdClientGetValue( PARAM_START_SYSTEM, &start_status, 150 ) != ERROR_CODE_OK )
+  while ( HTTPParamClient_GetU32Value( PARAM_START_SYSTEM, &start_status, 150 ) != ERROR_CODE_OK )
   {
     if ( time_to_connect < 5 )
     {

@@ -110,7 +110,7 @@ static void get_temp( uint32_t* value )
 
 static void get_connection( uint32_t* value )
 {
-  *value = cmdClientIsConnected();
+  *value = backendIsConnected();
 }
 
 static void get_sn( char** value )
@@ -306,7 +306,7 @@ static bool menu_process( void* arg )
   oled_printFixed( 2, 0, dictionary_get_string( menu->name_dict ), OLED_FONT_SIZE_16 );
   oled_setGLCDFont( OLED_FONT_SIZE_11 );
 
-  if ( cmdClientIsConnected() )
+  if ( backendIsConnected() )
   {
     ret = _connected_process( menu );
   }

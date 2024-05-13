@@ -1,3 +1,6 @@
 [submodule "hq_components"]
 	path = hq_components
 	url = https://github.com/szevczenko/hq_components.git
+[submodule "components/mongoose_drv/mongoose"]
+	path = components/mongoose_drv/mongoose
+	url = https://github.com/cesanta/mongoose.git

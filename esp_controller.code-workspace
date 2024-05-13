@@ -152,12 +152,43 @@
             "menu.h": "c",
             "menu_drv.h": "c",
             "servo.h": "c",
-            "adc_cali.h": "c"
+            "adc_cali.h": "c",
+            "parameters.h": "c",
+            "http_server.h": "c",
+            "mongoose.h": "c",
+            "*.conf": "bitbake",
+            "*.inc": "bitbake",
+            "dev_config.h": "c",
+            "parse_cmd.h": "c",
+            "atomic": "c",
+            "condition_variable": "c",
+            "http_parameters_client.h": "c",
+            "stdbool.h": "c",
+            "esp_heap_trace.h": "c",
+            "esp_debug_helpers.h": "c"
         },
         "cSpell.words": [
             "Dmytro",
             "lwjson",
             "Shevchenko"
         ],
+        "python.autoComplete.extraPaths": [
+            "${workspaceFolder}/sources/poky/bitbake/lib",
+            "${workspaceFolder}\\sources\\poky\\meta\\lib"
+        ],
+        "python.analysis.extraPaths": [
+            "${workspaceFolder}/sources/poky/bitbake/lib",
+            "${workspaceFolder}\\sources\\poky\\meta\\lib"
+        ],
+        "[python]": {
+            "diffEditor.ignoreTrimWhitespace": false,
+            "editor.formatOnType": true,
+            "editor.wordBasedSuggestions": "off",
+            "files.trimTrailingWhitespace": false
+        },
+        "[shellscript]": {
+            "files.eol": "\n",
+            "files.trimTrailingWhitespace": false
+        },
     }
 }

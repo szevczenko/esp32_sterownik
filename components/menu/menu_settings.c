@@ -4,6 +4,7 @@
 #include "cmd_client.h"
 #include "dictionary.h"
 #include "fast_add.h"
+#include "http_parameters_client.h"
 #include "led.h"
 #include "menu_backend.h"
 #include "menu_default.h"
@@ -355,13 +356,13 @@ static void get_servo_open_calibration( uint32_t* value )
 static void set_servo_close_calibration( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  cmdClientSetValueWithoutResp( PARAM_CLOSE_SERVO_REGULATION, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_CLOSE_SERVO_REGULATION, value );
 }
 
 static void set_servo_open_calibration( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  cmdClientSetValueWithoutResp( PARAM_OPEN_SERVO_REGULATION, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_OPEN_SERVO_REGULATION, value );
 }
 
 static void get_silos_height( uint32_t* value )
@@ -372,7 +373,7 @@ static void get_silos_height( uint32_t* value )
 static void set_silos_height( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  cmdClientSetValueWithoutResp( PARAM_SILOS_HEIGHT, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, value );
 }
 
 static void get_max_silos_height( uint32_t* value )
@@ -388,25 +389,25 @@ static void get_min_silos_height( uint32_t* value )
 static void enter_servo_close_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_CLOSE_SERVO_REGULATION_FLAG, 1 );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_CLOSE_SERVO_REGULATION_FLAG, 1 );
 }
 
 static void exit_servo_close_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_CLOSE_SERVO_REGULATION_FLAG, 0 );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_CLOSE_SERVO_REGULATION_FLAG, 0 );
 }
 
 static void enter_servo_open_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_OPEN_SERVO_REGULATION_FLAG, 1 );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_OPEN_SERVO_REGULATION_FLAG, 1 );
 }
 
 static void exit_servo_open_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
 }
 
 static void get_motor_error( uint32_t* value )
@@ -427,7 +428,7 @@ static void set_motor_error( uint32_t value )
 static void exit_motor_error( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
 }
 
 static void get_servo_error( uint32_t* value )
@@ -448,7 +449,7 @@ static void set_servo_error( uint32_t value )
 static void exit_servo_error( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
 }
 
 static void get_period( uint32_t* value )
@@ -475,7 +476,7 @@ static void set_period( uint32_t value )
 static void exit_period( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ) );
 }
 
 static void get_motor_error_calibration( uint32_t* value )
@@ -496,7 +497,7 @@ static void get_max_motor_error_calibration( uint32_t* value )
 static void exit_motor_error_calibration( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
-  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
 }
 
 static void get_power_on_min( uint32_t* value )

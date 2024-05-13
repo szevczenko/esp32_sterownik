@@ -1,6 +1,7 @@
 #include "app_config.h"
 #include "cmd_client.h"
 #include "dictionary.h"
+#include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "oled.h"
@@ -205,11 +206,8 @@ static bool menu_exit_cb( void* arg )
   return true;
 }
 
-static bool connectToDevice( char* dev )
+static void _set_dev_type( const char* dev )
 {
-  LOG( PRINT_INFO, "Try connect %s ", dev );
-
-  /* Check device type */
   dev_type = 0xFF;
   if ( memcmp( WIFI_SIEWNIK_NAME, dev, strlen( WIFI_SIEWNIK_NAME ) - 1 ) == 0 )
   {
@@ -223,6 +221,14 @@ static bool connectToDevice( char* dev )
   {
     dev_type = T_DEV_TYPE_VALVE;
   }
+}
+
+static bool connectToDevice( char* dev )
+{
+  LOG( PRINT_INFO, "Try connect %s ", dev );
+
+  /* Check device type */
+  _set_dev_type( dev );
 
   if ( dev_type != 0xFF )
   {
@@ -295,9 +301,9 @@ static void menu_wifi_find_devices( void )
 {
   static char dev_name[33] = { 0 };
 
-  int err = wifiDrvStartScan();
+  bool result = wifiDrvStartScan();
 
-  if ( err == ESP_OK )
+  if ( result )
   {
     ctx.devices_count = 0;
     wifiDrvGetScanResult( &ctx.ap_count );
@@ -324,7 +330,7 @@ static void menu_wifi_find_devices( void )
   {
     change_state( ST_WIFI_ERROR_CHECK );
     ctx.error_flag = true;
-    ctx.error_code = err;
+    ctx.error_code = -1;
     ctx.error_msg = "WiFi Scan Error";
   }
 
@@ -464,7 +470,7 @@ static void menu_wifi_wait_cmd_client( void )
     }
 
     osDelay( 50 );
-  } while ( !cmdClientIsConnected() );
+  } while ( !backendIsConnected() );
 
   change_state( ST_WIFI_CONNECTED );
 }
@@ -595,6 +601,12 @@ void menuInitWifiMenu( menu_token_t* menu )
   menu->menu_cb.button_init_cb = menu_button_init_cb;
   menu->menu_cb.exit = menu_exit_cb;
   menu->menu_cb.process = menu_process;
+}
+
+void wifiMenu_SetDevType( const char* dev )
+{
+  assert( dev );
+  _set_dev_type( dev );
 }
 
 uint8_t wifiMenu_GetDevType( void )

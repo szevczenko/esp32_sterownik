@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "dev_config.h"
 #include "driver/gpio.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "led.h"
 #include "lwip/arch.h"
-#include "dev_config.h"
 
 #ifndef SSD1306_I2C_PORT
 #define SSD1306_I2C_PORT I2C_NUM_0
@@ -55,8 +55,14 @@
 #define TIMEOUT -2
 #endif
 
-#define CONFIG_DEVICE_SIEWNIK FALSE
-#define CONFIG_DEVICE_SOLARKA TRUE
+#define CONFIG_DEVICE_SIEWNIK TRUE
+#define CONFIG_DEVICE_SOLARKA FALSE
+
+#if CONFIG_DEVICE_SOLARKA
+#define WIFI_AP_NAME "SOLA"
+#else
+#define WIFI_AP_NAME "SIEW"
+#endif
 
 #define T_DEV_TYPE_SIEWNIK 1
 #define T_DEV_TYPE_SOLARKA 2
@@ -97,7 +103,7 @@
 
 //////////////////////////////////////  END  //////////////////////////////////////////////
 
-#define NORMALPRIO       5
+#define NORMALPRIO 5
 
 #define MS2ST( ms )   pdMS_TO_TICKS( ms )
 #define ST2MS( tick ) ( ( tick ) * portTICK_PERIOD_MS )

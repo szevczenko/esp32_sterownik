@@ -14,7 +14,7 @@
       "tmoScaleFactor": 1,
       "initGdbCommands": [
         "target remote :3333",
-        "symbol-file ${workspaceFolder}\\build\\main.elf",
+        "symbol-file ${workspaceFolder}\\build\\sterownik.elf",
         "mon reset halt",
         "flushregs",
         "thb app_main"
@@ -26,7 +26,7 @@
       "type": "cppdbg",
       "request": "launch",
       "name": "Debug ESP32",
-      "program": "${workspaceFolder}\\build\\main.elf",
+      "program": "${workspaceFolder}\\build\\sterownik.elf",
       "cwd": "${workspaceFolder}",
       "environment": [
         {
@@ -65,7 +65,7 @@
       "type": "cppdbg",
       "request": "launch",
       "name": "Debug ESP32S2",
-      "program": "${workspaceFolder}\\build\\main.elf",
+      "program": "${workspaceFolder}\\build\\sterownik.elf",
       "cwd": "${workspaceFolder}",
       "environment": [
         {

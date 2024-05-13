@@ -7,6 +7,7 @@
 #include "dictionary.h"
 #include "fast_add.h"
 #include "freertos/timers.h"
+#include "http_parameters_client.h"
 #include "menu_backend.h"
 #include "menu_default.h"
 #include "menu_drv.h"
@@ -152,7 +153,7 @@ static void _reset_error( void )
 {
   if ( parameters_getValue( PARAM_MACHINE_ERRORS ) )
   {
-    cmdClientSetValueWithoutResp( PARAM_MACHINE_ERRORS, 0 );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_MACHINE_ERRORS, 0 );
   }
 }
 
@@ -220,7 +221,7 @@ static bool _check_low_silos_flag( void )
 {
   uint32_t flag = parameters_getValue( PARAM_LOW_LEVEL_SILOS );
 
-  LOG( PRINT_INFO, "------SILOS FLAG %d---------", flag );
+  LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
   if ( flag > 0 )
   {
     if ( ctx.low_silos_ckeck_timeout < xTaskGetTickCount() )
@@ -834,7 +835,7 @@ static bool menu_enter_cb( void* arg )
     change_state( STATE_INIT );
   }
 
-  cmdClientSetValueWithoutResp( PARAM_START_SYSTEM, 1 );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
 
   ctx.data.motor_value = parameters_getValue( PARAM_MOTOR );
   ctx.data.servo_value = parameters_getValue( PARAM_SERVO );
@@ -846,10 +847,10 @@ static bool menu_enter_cb( void* arg )
     ctx.data.servo_vibro_on = 0;
   }
 
-  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
-  cmdClientSetValueWithoutResp( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
-  cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-  cmdClientSetValueWithoutResp( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
   backendEnterMenuStart();
 
   ctx.error_flag = 0;
@@ -877,6 +878,8 @@ static bool menu_exit_cb( void* arg )
 
   MOTOR_LED_SET_GREEN( 0 );
   SERVO_VIBRO_LED_SET_GREEN( 0 );
+  MOTOR_LED_SET_RED( 0 );
+  SERVO_VIBRO_LED_SET_RED( 0 );
   return true;
 }
 
@@ -920,8 +923,9 @@ static void menu_check_connection( void )
     LOG( PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i );
     osDelay( 250 );
 
-    if ( ( cmdClientSetValue( PARAM_EMERGENCY_DISABLE, 0, 1000 ) == ERROR_CODE_OK ) && ( cmdClientSetValue( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ), 1000 ) == ERROR_CODE_OK ) )
+    if ( ( HTTPParamClient_SetU32Value( PARAM_EMERGENCY_DISABLE, 0, 1000 ) == ERROR_CODE_OK ) && ( HTTPParamClient_SetU32Value( PARAM_PERIOD, parameters_getValue( PARAM_PERIOD ), 1000 ) == ERROR_CODE_OK ) )
     {
+      ret = true;
       break;
     }
   }
@@ -931,7 +935,8 @@ static void menu_check_connection( void )
     LOG( PRINT_INFO, "%s: error get parameters", __func__ );
     ctx.data.motor_on = 0;
     ctx.data.servo_vibro_on = 0;
-    change_state( STATE_IDLE );
+    change_state( STATE_RECONNECT );
+    return;
   }
 
   change_state( STATE_IDLE );
@@ -941,15 +946,15 @@ static void menu_start_idle( void )
 {
   if ( backendIsConnected() )
   {
-    cmdClientSetValueWithoutResp( PARAM_START_SYSTEM, 1 );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
     ctx.data.motor_on = 0;
     ctx.data.motor_value = parameters_getValue( PARAM_MOTOR );
     ctx.data.servo_value = parameters_getValue( PARAM_SERVO );
     ctx.data.servo_vibro_on = 0;
-    cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
-    cmdClientSetValueWithoutResp( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
-    cmdClientSetValueWithoutResp( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-    cmdClientSetValueWithoutResp( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
     change_state( STATE_START );
   }
   else
@@ -1013,31 +1018,10 @@ static void menu_start_ready( void )
 
   drawMotorCircle( 5, 2, cnt );
 
-  // if (cnt < 4)
-  // {
-  //     if (cnt < 2)
-  //     {
-  //         drawMotor(2, 2 - cnt);
-  //     }
-  //     else
-  //     {
-  //         drawMotor(2, cnt - 2);
-  //     }
-  // }
-  // else
-  // {
-  //     if (cnt < 6)
-  //     {
-  //         drawMotor(2, cnt - 2);
-  //     }
-  //     else
-  //     {
-  //         drawMotor(2, 10 - cnt);
-  //     }
-  // }
-
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
+  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA || wifiMenu_GetDevType() == T_DEV_TYPE_SIEWNIK )
   {
+    draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+
     if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
     {
       uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
@@ -1057,24 +1041,6 @@ static void menu_start_ready( void )
     }
     if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
     {
-      draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );    //Mariusz
-      if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
-      {
-        uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
-        sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
-        if ( silos_level > 99 )
-        {
-          oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
-        }
-        else if ( silos_level < 100 && silos_level > 9 )
-        {
-          oled_printFixed( 14, 10, str, OLED_FONT_SIZE_11 );
-        }
-        else if ( silos_level < 10 )
-        {
-          oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
-        }
-      }
 #if MENU_VIRO_ON_OFF_VERSION
       /* PERIOD CURSOR */
       char menu_buff[32];
@@ -1135,6 +1101,10 @@ static void menu_start_ready( void )
       }
     }
     backendEnterMenuStart();
+  }
+  else
+  {
+    oled_printFixed( 2, 2 * LINE_HEIGHT, "Unsupported\ndevice type", OLED_FONT_SIZE_11 );
   }
 }
 
@@ -1382,7 +1352,7 @@ static void menu_wait_connect( void )
 
     _show_wait_connection();
     osDelay( 50 );
-  } while ( !cmdClientIsConnected() );
+  } while ( !backendIsConnected() );
 
   oled_clearScreen();
   menuPrintfInfo( dictionary_get_string( DICT_CONNECTED_TRY_READ_DATA ) );
