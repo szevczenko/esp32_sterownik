@@ -34,6 +34,7 @@ typedef enum
 
 typedef enum
 {
+  SETTINGS_SN,
   SETTINGS_BOOTUP_MENU,
   SETTINGS_BUZZER,
   SETTINGS_BRIGHTNESS,
@@ -56,6 +57,7 @@ typedef enum
   UNIT_ON_OFF,
   UNIT_LANGUAGE,
   UNIT_BOOL,
+  UNIT_STR,
 } unit_type_t;
 
 typedef struct
@@ -63,6 +65,7 @@ typedef struct
   enum dictionary_phrase name_dict;
   parameters_type_t param_type;
   uint32_t value;
+  const char* str_value;
   uint32_t max_value;
   uint32_t min_value;
   const char* unit_name;
@@ -71,6 +74,7 @@ typedef struct
   void ( *get_max_value )( uint32_t* value );
   void ( *get_min_value )( uint32_t* value );
   void ( *set_value )( uint32_t value );
+  const char* ( *get_str_value )( void );
   void ( *enter )( void );
   void ( *exit )( void );
 } parameters_t;
@@ -135,6 +139,8 @@ static void get_min_brightness( uint32_t* value );
 static void enter_brightness( void );
 static void exit_brightness( void );
 
+static const char* get_serial_number( void );
+
 static const char* language[] =
   {
     [MENU_LANGUAGE_ENGLISH] = "English",
@@ -148,6 +154,11 @@ static uint32_t parameters_size;
 
 static parameters_t parameters_list_siewnik[] =
   {
+    { .param_type = SETTINGS_SN,
+     .name_dict = DICT_SERIAL_NUMBER,
+     .unit_type = UNIT_STR,
+     .get_str_value = get_serial_number },
+
     { .param_type = SETTINGS_BOOTUP_MENU,
      .name_dict = DICT_BOOTING,
      .unit_type = UNIT_ON_OFF,
@@ -242,6 +253,10 @@ static parameters_t parameters_list_siewnik[] =
 
 static parameters_t parameters_list_solarka[] =
   {
+    { .param_type = SETTINGS_SN,
+     .name_dict = DICT_SERIAL_NUMBER,
+     .unit_type = UNIT_STR,
+     .get_str_value = get_serial_number },
 
     { .param_type = SETTINGS_BOOTUP_MENU,
      .name_dict = DICT_BOOTING,
@@ -600,16 +615,13 @@ static void exit_brightness( void )
   SERVO_VIBRO_LED_SET_GREEN( 0 );
 }
 
-static void menu_button_up_callback( void* arg )
+const char* get_serial_number( void )
 {
-  menu_token_t* menu = arg;
+  return DevConfig_GetSerialNumber();
+}
 
-  if ( menu == NULL )
-  {
-    NULL_ERROR_MSG();
-    return;
-  }
-
+static void _set_and_exit( menu_token_t* menu )
+{
   if ( _state == MENU_EDIT_PARAMETERS )
   {
     if ( parameters_list[menu->position].set_value != NULL )
@@ -622,13 +634,10 @@ static void menu_button_up_callback( void* arg )
       parameters_list[menu->position].exit();
     }
   }
+}
 
-  menu->last_button = LAST_BUTTON_UP;
-  if ( menu->position > 0 )
-  {
-    menu->position--;
-  }
-
+static void _get_values( menu_token_t* menu )
+{
   if ( _state == MENU_EDIT_PARAMETERS )
   {
     if ( parameters_list[menu->position].get_value != NULL )
@@ -650,7 +659,33 @@ static void menu_button_up_callback( void* arg )
     {
       parameters_list[menu->position].enter();
     }
+
+    if ( parameters_list[menu->position].get_str_value != NULL )
+    {
+      parameters_list[menu->position].str_value = parameters_list[menu->position].get_str_value();
+    }
   }
+}
+
+static void menu_button_up_callback( void* arg )
+{
+  menu_token_t* menu = arg;
+
+  if ( menu == NULL )
+  {
+    NULL_ERROR_MSG();
+    return;
+  }
+
+  _set_and_exit( menu );
+
+  menu->last_button = LAST_BUTTON_UP;
+  if ( menu->position > 0 )
+  {
+    menu->position--;
+  }
+
+  _get_values( menu );
 }
 
 static void menu_button_down_callback( void* arg )
@@ -663,18 +698,7 @@ static void menu_button_down_callback( void* arg )
     return;
   }
 
-  if ( _state == MENU_EDIT_PARAMETERS )
-  {
-    if ( parameters_list[menu->position].set_value != NULL )
-    {
-      parameters_list[menu->position].set_value( parameters_list[menu->position].value );
-    }
-
-    if ( parameters_list[menu->position].exit != NULL )
-    {
-      parameters_list[menu->position].exit();
-    }
-  }
+  _set_and_exit( menu );
 
   menu->last_button = LAST_BUTTON_DOWN;
 
@@ -683,28 +707,7 @@ static void menu_button_down_callback( void* arg )
     menu->position++;
   }
 
-  if ( _state == MENU_EDIT_PARAMETERS )
-  {
-    if ( parameters_list[menu->position].get_value != NULL )
-    {
-      parameters_list[menu->position].get_value( &parameters_list[menu->position].value );
-    }
-
-    if ( parameters_list[menu->position].get_max_value != NULL )
-    {
-      parameters_list[menu->position].get_max_value( &parameters_list[menu->position].max_value );
-    }
-
-    if ( parameters_list[menu->position].get_min_value != NULL )
-    {
-      parameters_list[menu->position].get_min_value( &parameters_list[menu->position].min_value );
-    }
-
-    if ( parameters_list[menu->position].enter != NULL )
-    {
-      parameters_list[menu->position].enter();
-    }
-  }
+  _get_values( menu );
 }
 
 static void menu_button_plus_callback( void* arg )
@@ -838,25 +841,7 @@ static void menu_button_enter_callback( void* arg )
   else
   {
     _state = MENU_EDIT_PARAMETERS;
-    if ( parameters_list[menu->position].get_value != NULL )
-    {
-      parameters_list[menu->position].get_value( &parameters_list[menu->position].value );
-    }
-
-    if ( parameters_list[menu->position].get_max_value != NULL )
-    {
-      parameters_list[menu->position].get_max_value( &parameters_list[menu->position].max_value );
-    }
-
-    if ( parameters_list[menu->position].get_min_value != NULL )
-    {
-      parameters_list[menu->position].get_min_value( &parameters_list[menu->position].min_value );
-    }
-
-    if ( parameters_list[menu->position].enter != NULL )
-    {
-      parameters_list[menu->position].enter();
-    }
+    _get_values( menu );
   }
 }
 
@@ -873,15 +858,7 @@ static void menu_button_exit_callback( void* arg )
   parameters_save();
   if ( _state == MENU_EDIT_PARAMETERS )
   {
-    if ( parameters_list[menu->position].set_value != NULL )
-    {
-      parameters_list[menu->position].set_value( parameters_list[menu->position].value );
-    }
-
-    if ( parameters_list[menu->position].exit != NULL )
-    {
-      parameters_list[menu->position].exit();
-    }
+    _set_and_exit( menu );
 
     _state = MENU_LIST_PARAMETERS;
     return;
@@ -1053,6 +1030,11 @@ static bool menu_process( void* arg )
 
         case UNIT_LANGUAGE:
           sprintf( buff, "%s", language[parameters_list[menu->position].value] );
+          oled_printFixed( 30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16 );
+          break;
+
+        case UNIT_STR:
+          sprintf( buff, "%s", parameters_list[menu->position].str_value );
           oled_printFixed( 30, MENU_HEIGHT + 15, buff, OLED_FONT_SIZE_16 );
           break;
         default:

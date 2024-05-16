@@ -33,12 +33,12 @@
 #include "parameters_api.h"
 #include "pcf8574.h"
 #include "power_on.h"
+#include "pwm_drv.h"
 #include "server_controller.h"
 #include "sleep_e.h"
 #include "ssd1306.h"
 #include "vibro.h"
 #include "wifidrv.h"
-#include "pwm_drv.h"
 
 extern void ultrasonar_start( void );
 
@@ -114,6 +114,7 @@ void app_init( void )
 
 static void _init_server( void )
 {
+  parameters_setString( PARAM_STR_CONTROLLER_SN, DevConfig_GetSerialNumber() );
   wifiDrvInit();
   keepAliveStartTask();
   parameters_init();
@@ -175,7 +176,6 @@ static void _init_client( void )
     dictionary_init();
     fastProcessStartTask();
     power_on_start_task();
-    // cmdClientStartTask();
     HTTPParamClient_Init();
     init_sleep();
   }

@@ -3,6 +3,7 @@
 #include "cmd_server.h"
 #include "error_siewnik.h"
 #include "error_solarka.h"
+#include "http_server.h"
 #include "measure.h"
 #include "motor.h"
 #include "parameters.h"
@@ -11,7 +12,6 @@
 #include "server_controller.h"
 #include "servo.h"
 #include "vibro.h"
-#include "http_server.h"
 
 #define MODULE_NAME "[Srvr Ctrl] "
 #define DEBUG_LVL   PRINT_INFO
@@ -434,7 +434,6 @@ static void state_error( void )
 
 static void _task( void* arg )
 {
-  parameters_setString( PARAM_STR_CONTROLLER_SN, DevConfig_GetSerialNumber() );
   while ( 1 )
   {
     switch ( ctx.state )

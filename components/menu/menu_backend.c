@@ -256,7 +256,7 @@ static void backend_start( void )
     HTTPParamClient_GetU32Value( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_LEVEL, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
-    // cmdClientGetString( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 );
+    HTTPParamClient_GetStrValue( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 );
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
   }
 
