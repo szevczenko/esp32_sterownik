@@ -1020,7 +1020,7 @@ static void menu_start_ready( void )
 
   if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA || wifiMenu_GetDevType() == T_DEV_TYPE_SIEWNIK )
   {
-    draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+    ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
 
     if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
     {
@@ -1104,7 +1104,7 @@ static void menu_start_ready( void )
   }
   else
   {
-    oled_printFixed( 2, 2 * LINE_HEIGHT, "Unsupported\ndevice type", OLED_FONT_SIZE_11 );
+    oled_printFixed( 2, 3 * LINE_HEIGHT, "Unsupported\ndevice type", OLED_FONT_SIZE_11 );
   }
 }
 
@@ -1224,7 +1224,7 @@ static void menu_start_motor_change( void )
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
     return;
   }
-  draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+  ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
   sprintf( ctx.buff, "%ld%%", ctx.data.motor_value );
   oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );    // Font_16x26
@@ -1237,7 +1237,7 @@ static void menu_start_motor_change( void )
 
 static void menu_start_vibro_change( void )
 {
-  draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+  ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
 
   if ( !backendIsConnected() )
   {
@@ -1273,7 +1273,7 @@ static void menu_start_vibro_change( void )
   }
   else
   {
-    draw_low_accu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+    ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
     oled_printFixed( 0, 0, dictionary_get_string( DICT_SERVO ), OLED_FONT_SIZE_26 );
     sprintf( ctx.buff, "%ld%%", ctx.data.servo_value );
     oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );

@@ -29,6 +29,6 @@ void drawServo( uint8_t x, uint8_t y, uint8_t open );
 void drawBattery( uint8_t x, uint8_t y, float accum_voltage, bool is_charging );
 void drawSignal( uint8_t x, uint8_t y, uint8_t signal_lvl );
 void drawQR( uint8_t x, uint8_t y );
-void draw_low_accu( uint8_t x, uint8_t y, float acc_voltage, float acc_current );
+void ssdFigure_DrawLowAccu( uint8_t x, uint8_t y, float acc_voltage, float acc_current );
 
 #endif

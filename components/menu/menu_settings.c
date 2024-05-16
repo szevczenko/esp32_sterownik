@@ -981,7 +981,7 @@ static bool menu_process( void* arg )
             menu->line.start = menu->line.end - MAX_LINE + 1;
           }
 
-          LOG( PRINT_INFO, "menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n",
+          LOG( PRINT_DEBUG, "menu->line.start %d, menu->line.end %d, position %d, menu->last_button %d\n",
                menu->line.start, menu->line.end, menu->position, menu->last_button );
         }
 

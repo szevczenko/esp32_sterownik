@@ -159,7 +159,7 @@ static void set_working_data( void )
   else
   {
 #if CONFIG_DEVICE_SIEWNIK
-    PWMDrv_Stop( &ctx.motor1_pwm, false );
+    PWMDrv_Stop( &ctx.motor1_pwm, true );
     PWMDrv_Stop( &ctx.motor2_pwm, true );
 #endif
 
@@ -203,11 +203,9 @@ static void state_init( void )
 
 #if CONFIG_DEVICE_SOLARKA
   PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN );
-  // PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, MOTOR_PWM_PIN2 );
   PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, SERVO_PWM_PIN );
   PWMDrv_Stop( &ctx.servo_pwm_drv, true );
   PWMDrv_Stop( &ctx.motor1_pwm, false );
-  // PWMDrv_Stop( &ctx.motor2_pwm, true );
 #endif
 
 #if CONFIG_DEVICE_SIEWNIK
