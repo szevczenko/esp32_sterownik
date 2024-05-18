@@ -981,6 +981,8 @@ static void menu_start_ready( void )
     return;
   }
 
+  backendEnterMenuStart();
+
   if ( _check_low_silos_flag() )
   {
     return;
@@ -1100,7 +1102,6 @@ static void menu_start_ready( void )
         drawServo( 10, 35, 0 );
       }
     }
-    backendEnterMenuStart();
   }
   else
   {
@@ -1487,7 +1488,10 @@ void menuStartSetError( error_type_t error )
 {
   LOG( PRINT_DEBUG, "%s %d", __func__, error );
   ctx.error_dev = error;
-  change_state( STATE_ERROR );
+  if ( ctx.state == STATE_READY )
+  {
+    change_state( STATE_ERROR );
+  }
   ctx.data.motor_on = false;
   ctx.data.servo_vibro_on = false;
 }

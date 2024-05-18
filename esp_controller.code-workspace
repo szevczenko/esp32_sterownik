@@ -165,7 +165,9 @@
             "http_parameters_client.h": "c",
             "stdbool.h": "c",
             "esp_heap_trace.h": "c",
-            "esp_debug_helpers.h": "c"
+            "esp_debug_helpers.h": "c",
+            "ssd1306_i2c.h": "c",
+            "ssd1306.h": "c"
         },
         "cSpell.words": [
             "Dmytro",

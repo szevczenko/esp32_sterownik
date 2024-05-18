@@ -169,11 +169,18 @@ static void backend_send_control_data( void )
 
   if ( ctx.send_all_data )
   {
-    if ( HTTPParamClient_SetU32Value( PARAM_MOTOR, data->motor_value, 1000 ) == ERROR_CODE_OK && HTTPParamClient_SetU32Value( PARAM_SERVO, data->servo_value, 1000 ) == ERROR_CODE_OK &&
+    bool result = HTTPParamClient_GetStrValue( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_VIBRO_DUTY_PWM, parameters_getValue( PARAM_VIBRO_DUTY_PWM ), 2000 );
+    result &= HTTPParamClient_SetU32Value( PARAM_MOTOR, data->motor_value, 1000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SERVO, data->servo_value, 1000 ) == ERROR_CODE_OK;
 #if MENU_VIRO_ON_OFF_VERSION
-         HTTPParamClient_SetU32Value( PARAM_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == ERROR_CODE_OK && HTTPParamClient_SetU32Value( PARAM_VIBRO_ON_S, data->vibro_on_s, 1000 ) == ERROR_CODE_OK &&
+    result &= HTTPParamClient_SetU32Value( PARAM_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_VIBRO_ON_S, data->vibro_on_s, 1000 ) == ERROR_CODE_OK;
 #endif
-         HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, data->motor_on, 1000 ) == ERROR_CODE_OK && HTTPParamClient_SetU32Value( PARAM_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == ERROR_CODE_OK )
+    result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, data->motor_on, 1000 );
+    result &= HTTPParamClient_SetU32Value( PARAM_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == ERROR_CODE_OK;
+
+    if ( result )
     {
       ctx.send_all_data = false;
       ctx.sended_data.motor_value = data->motor_value;
@@ -238,7 +245,7 @@ static void backend_send_control_data( void )
 
 static void backend_start( void )
 {
-  if ( ctx.get_data_cnt % 20 == 0 )
+  if ( ctx.get_data_cnt % 5 == 0 )
   {
     bool errors = _check_error() > 0;
     if ( errors )
@@ -256,8 +263,12 @@ static void backend_start( void )
     HTTPParamClient_GetU32Value( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_LEVEL, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
-    HTTPParamClient_GetStrValue( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 );
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
+  }
+
+  if ( ctx.get_data_cnt % 20 == 0 )
+  {
+    ctx.send_all_data = true;
   }
 
   ctx.get_data_cnt++;
@@ -276,7 +287,7 @@ static void backend_start( void )
 
   backend_send_control_data();
 
-  osDelay( 10 );
+  osDelay( 50 );
 }
 
 static void backend_exit_start( void )

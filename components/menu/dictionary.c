@@ -453,6 +453,12 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "SN",
                              "SN",
                              "SN" },
+  [DICT_VIBRO_PWM_DUTY] = 
+  {
+                             "Power vibro",
+                             "Мощность вибратора",
+                             "Wydajność wibro",
+                             "Vibratorleistung" },
 };
 
 void dictionary_init( void )

@@ -48,6 +48,7 @@ typedef enum
   SETTINGS_SERVO_CLOSE_CALIBRATION,
   SETTINGS_SERVO_OPEN_CALIBRATION,
   SETTINGS_SILOS_HEIGHT,
+  SETTINGS_VIBRO_PWM_DUTY,
   SETTINGS_TOP,
 } parameters_type_t;
 
@@ -138,6 +139,11 @@ static void get_max_brightness( uint32_t* value );
 static void get_min_brightness( uint32_t* value );
 static void enter_brightness( void );
 static void exit_brightness( void );
+
+static void get_vibro_duty_pwm( uint32_t* value );
+static void set_vibro_duty_pwm( uint32_t value );
+static void get_max_vibro_duty_pwm( uint32_t* value );
+static void get_min_vibro_duty_pwm( uint32_t* value );
 
 static const char* get_serial_number( void );
 
@@ -312,6 +318,15 @@ static parameters_t parameters_list_solarka[] =
      .set_value = set_servo_error,
      .get_max_value = get_max_servo_error,
      .exit = exit_servo_error },
+    
+    { .param_type = SETTINGS_VIBRO_PWM_DUTY,
+     .name_dict = DICT_VIBRO_PWM_DUTY,
+     .unit_type = UNIT_INT,
+     .get_value = get_vibro_duty_pwm,
+     .set_value = set_vibro_duty_pwm,
+     .get_max_value = get_max_vibro_duty_pwm,
+     .get_min_value = get_min_vibro_duty_pwm,
+     .unit_name = "[%]" },
 
     { .param_type = SETTINGS_PERIOD,
      .name_dict = DICT_PERIOD,
@@ -613,6 +628,26 @@ static void exit_brightness( void )
 {
   MOTOR_LED_SET_RED( 0 );
   SERVO_VIBRO_LED_SET_GREEN( 0 );
+}
+
+static void get_vibro_duty_pwm( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_VIBRO_DUTY_PWM );
+}
+
+static void set_vibro_duty_pwm( uint32_t value )
+{
+  parameters_setValue( PARAM_VIBRO_DUTY_PWM, value );
+}
+
+static void get_max_vibro_duty_pwm( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_VIBRO_DUTY_PWM );
+}
+
+static void get_min_vibro_duty_pwm( uint32_t* value )
+{
+  *value = parameters_getMinValue( PARAM_VIBRO_DUTY_PWM );
 }
 
 const char* get_serial_number( void )

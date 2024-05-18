@@ -172,9 +172,6 @@ static void bootup_wait_connect( void )
   } while ( !backendIsConnected() );
 
   oled_clearScreen();
-  char ap_name[64] = {};
-  wifiDrvGetAPName( ap_name );
-  wifiMenu_SetDevType( ap_name );
   menuPrintfInfo( dictionary_get_string( DICT_CONNECTED_TRY_READ_DATA ) );
   change_state( STATE_GET_SERVER_DATA );
 }

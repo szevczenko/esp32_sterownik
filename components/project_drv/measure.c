@@ -401,7 +401,7 @@ float accum_get_voltage( void )
 #if CONFIG_DEVICE_SOLARKA
   voltage = (float) measure_get_filtered_value( MEAS_CH_12V ) / 4096.0 / 2.5;
 #else
-  voltage = (float) measure_get_filtered_value( MEAS_CH_12V ) / 4096.0 / 2.6;
+  voltage = (float) measure_get_filtered_value( MEAS_CH_12V ) / 4096.0 / 2.6 + 0.01;
 #endif
   return voltage;
 }

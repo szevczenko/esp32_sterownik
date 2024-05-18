@@ -26,7 +26,8 @@
 #define SYSTEM_ON_PIN 15
 
 #define MOTOR_PWM_PIN  27
-#define SERVO_PWM_PIN  25
+#define VIBRO_PWM_PIN  25
+#define SERVO_PWM_PIN  26
 #define MOTOR_PWM_PIN2 25
 
 typedef enum
@@ -73,6 +74,9 @@ typedef struct
 } server_conroller_ctx;
 
 static server_conroller_ctx ctx;
+
+static bool test_last_motor_state;
+
 static char* state_name[] =
   {
     [STATE_INIT] = "STATE_INIT",
@@ -172,7 +176,7 @@ static void set_working_data( void )
   if ( vibro_is_on() && ctx.servo_on )
   {
     // ToDo napiecie 2 progi
-    PWMDrv_SetDuty( &ctx.servo_pwm_drv, 50 );
+    PWMDrv_SetDuty( &ctx.servo_pwm_drv, parameters_getValue( PARAM_VIBRO_DUTY_PWM ) );
   }
   else
   {
@@ -196,22 +200,22 @@ static void state_init( void )
   gpio_config_t io_conf;
   io_conf.intr_type = GPIO_INTR_DISABLE;
   io_conf.mode = GPIO_MODE_OUTPUT;
-  io_conf.pin_bit_mask = ( 1 << SYSTEM_ON_PIN ) | ( 1 << SERVO_PWM_PIN );
+  io_conf.pin_bit_mask = ( 1 << SYSTEM_ON_PIN ) | ( 1 << VIBRO_PWM_PIN );
   io_conf.pull_down_en = 0;
   io_conf.pull_up_en = 0;
   gpio_config( &io_conf );
 
 #if CONFIG_DEVICE_SOLARKA
-  PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN );
-  PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, SERVO_PWM_PIN );
+  PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_HIGH, 16000, 0, MOTOR_PWM_PIN );
+  PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 1, VIBRO_PWM_PIN );
   PWMDrv_Stop( &ctx.servo_pwm_drv, true );
   PWMDrv_Stop( &ctx.motor1_pwm, false );
 #endif
 
 #if CONFIG_DEVICE_SIEWNIK
-  PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_HIGH, 16000, 0, MOTOR_PWM_PIN );
-  PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_HIGH, 16000, 0, MOTOR_PWM_PIN2 );
-  PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_LOW, 50, 1, SERVO_PWM_PIN );
+  PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN );
+  PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN2 );
+  PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_HIGH, 50, 1, SERVO_PWM_PIN );
 #endif
 
   change_state( STATE_IDLE );
@@ -493,6 +497,20 @@ static void _task( void* arg )
     }
     count_working_data();
     set_working_data();
+
+    //TEST
+    if ( ctx.motor_on != test_last_motor_state )
+    {
+      test_last_motor_state = ctx.motor_on;
+      if ( ctx.motor_on )
+      {
+        LOG( PRINT_DEBUG, "----MOTOR ON" );
+      }
+      else
+      {
+        LOG( PRINT_DEBUG, "----MOTOR OFF" );
+      }
+    }
   }
 }
 

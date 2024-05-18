@@ -1,3 +1,5 @@
+#include "wifi_menu.h"
+
 #include "app_config.h"
 #include "cmd_client.h"
 #include "dictionary.h"

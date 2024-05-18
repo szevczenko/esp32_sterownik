@@ -38,6 +38,7 @@
 #include "sleep_e.h"
 #include "ssd1306.h"
 #include "vibro.h"
+#include "wifi_menu.h"
 #include "wifidrv.h"
 
 extern void ultrasonar_start( void );
@@ -112,6 +113,13 @@ void app_init( void )
   OTA_Init();
 }
 
+static void _on_connect_cb( void )
+{
+  char ap_name[64] = {};
+  wifiDrvGetAPName( ap_name );
+  wifiMenu_SetDevType( ap_name );
+}
+
 static void _init_server( void )
 {
   parameters_setString( PARAM_STR_CONTROLLER_SN, DevConfig_GetSerialNumber() );
@@ -171,6 +179,7 @@ static void _init_client( void )
   {
     menuDrvInit( MENU_DRV_NORMAL_INIT, _toggle_emergency_disable );
     wifiDrvInit();
+    wifiDrvRegisterConnectCb( _on_connect_cb );
     osDelay( 1000 );
     keepAliveStartTask();
     dictionary_init();
