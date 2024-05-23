@@ -12,6 +12,7 @@
 #include "server_controller.h"
 #include "servo.h"
 #include "vibro.h"
+#include "wifidrv.h"
 
 #define MODULE_NAME "[Srvr Ctrl] "
 #define DEBUG_LVL   PRINT_INFO
@@ -71,9 +72,9 @@ typedef struct
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
   pwm_drv_t servo_pwm_drv;
-} server_conroller_ctx;
+} server_controller_ctx;
 
-static server_conroller_ctx ctx;
+static server_controller_ctx ctx;
 
 static bool test_last_motor_state;
 
@@ -227,10 +228,13 @@ static void state_idle( void )
   ctx.motor_value = 0;
   ctx.motor_on = false;
   ctx.servo_on = false;
+  ctx.system_on = 0;
 
   ctx.working_state_req = (bool) parameters_getValue( PARAM_START_SYSTEM );
   ctx.emergency_disable = (bool) parameters_getValue( PARAM_EMERGENCY_DISABLE );
   vibro_stop();
+  parameters_setValue( PARAM_MOTOR_IS_ON, 0 );
+  parameters_setValue( PARAM_SERVO_IS_ON, 0 );
 
   if ( ctx.emergency_disable )
   {
@@ -238,7 +242,21 @@ static void state_idle( void )
     return;
   }
 
-  if ( ctx.working_state_req && HTTPServer_IsClientConnected() )
+  if ( ctx.servo_open_calibration_req )
+  {
+    vibro_stop();
+    change_state( STATE_SERVO_OPEN_REGULATION );
+    return;
+  }
+
+  if ( ctx.servo_close_calibration_req )
+  {
+    vibro_stop();
+    change_state( STATE_SERVO_CLOSE_REGULATION );
+    return;
+  }
+
+  if ( ctx.working_state_req && wifiDrvIsConnected() )
   {
     measure_meas_calibration_value();
     count_working_data();
@@ -257,7 +275,7 @@ static void state_working( void )
   ctx.system_on = (bool) parameters_getValue( PARAM_START_SYSTEM );
   ctx.servo_value = (uint8_t) parameters_getValue( PARAM_SERVO );
   ctx.motor_value = (uint8_t) parameters_getValue( PARAM_MOTOR );
-  ctx.motor_on = (uint16_t) parameters_getValue( PARAM_MOTOR_IS_ON );
+  ctx.motor_on = (uint8_t) parameters_getValue( PARAM_MOTOR_IS_ON );
   ctx.servo_on = parameters_getValue( PARAM_SERVO_IS_ON ) > 0;
 
   ctx.working_state_req = (bool) parameters_getValue( PARAM_START_SYSTEM );
@@ -288,7 +306,7 @@ static void state_working( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
+  if ( !ctx.working_state_req || !wifiDrvIsConnected() )
   {
     vibro_stop();
     change_state( STATE_IDLE );
@@ -338,7 +356,7 @@ static void state_servo_open_regulation( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
+  if ( !ctx.working_state_req || !wifiDrvIsConnected() )
   {
     parameters_save();
     parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
@@ -375,7 +393,7 @@ static void state_servo_close_regulation( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
+  if ( !ctx.working_state_req || !wifiDrvIsConnected() )
   {
     parameters_save();
     parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
@@ -436,6 +454,8 @@ static void state_error( void )
 
 static void _task( void* arg )
 {
+  parameters_setValue( PARAM_CLOSE_SERVO_REGULATION_FLAG, 0 );
+  parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
   while ( 1 )
   {
     switch ( ctx.state )

@@ -100,7 +100,7 @@ static bool _is_overcurrent( float motor_current )
   float calibration = ( (float) parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) - 50.0 ) * (float) parameters_getValue( PARAM_MOTOR ) / 500.0;
   float overcurrent = max_current + calibration;
 
-  LOG( PRINT_INFO, "Motor current %.2f overcurrent %.2f calib_val %d calib %.2f", motor_current, overcurrent, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ), calibration );
+  LOG( PRINT_DEBUG, "Motor current %.2f overcurrent %.2f calib_val %d calib %.2f", motor_current, overcurrent, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ), calibration );
 
   return motor_current > overcurrent;
 }
@@ -171,7 +171,7 @@ static void _state_working( void )
   {
     if ( ctx.motor_find_overcurrent )
     {
-      LOG( PRINT_INFO, "reset motor overcurrent" );
+      LOG( PRINT_DEBUG, "reset motor overcurrent" );
     }
 
     ctx.motor_find_overcurrent = false;
@@ -211,24 +211,24 @@ static void _state_working( void )
   {
     if ( ctx.servo_error_reset_timer < xTaskGetTickCount() )
     {
-      LOG( PRINT_INFO, "reset servo counter" );
+      LOG( PRINT_DEBUG, "reset servo counter" );
       ctx.servo_try_counter = 0;
     }
 
     if ( ctx.servo_find_overcurrent )
     {
-      LOG( PRINT_INFO, "reset servo overcurrent" );
+      LOG( PRINT_DEBUG, "reset servo overcurrent" );
     }
     ctx.servo_find_overcurrent = false;
   }
 
   uint32_t temperature = parameters_getValue( PARAM_TEMPERATURE );
-  LOG( PRINT_INFO, "Temperature %d", temperature );
+  LOG( PRINT_DEBUG, "Temperature %d", temperature );
   if ( temperature > 90 && parameters_getValue( PARAM_ERROR_MOTOR ) )
   {
     if ( !ctx.temperature_find_overcurrent )
     {
-      LOG( PRINT_INFO, "find temperature" );
+      LOG( PRINT_DEBUG, "find temperature" );
       ctx.temperature_find_overcurrent = true;
       ctx.temperature_error_timer = MS2ST( 1500 ) + xTaskGetTickCount();
     }
@@ -244,7 +244,7 @@ static void _state_working( void )
   {
     if ( ctx.temperature_find_overcurrent )
     {
-      LOG( PRINT_INFO, "reset temperature overcurrent" );
+      LOG( PRINT_DEBUG, "reset temperature overcurrent" );
     }
 
     ctx.temperature_find_overcurrent = false;
@@ -282,9 +282,18 @@ static void _state_working( void )
 
 static void _state_error_temperature( void )
 {
+  if ( srvrConrollerSetError( ERROR_OVER_TEMPERATURE ) )
+  {
+    _change_state( STATE_WAIT_RESET_ERROR );
+  }
+  else
+  {
+    _reset_error();
+    _change_state( STATE_IDLE );
+  }
 }
 
-static void _state_error_mototr_current( void )
+static void _state_error_motor_current( void )
 {
   if ( srvrConrollerSetError( ERROR_MOTOR_OVER_CURRENT ) )
   {
@@ -356,7 +365,7 @@ static void _error_task( void* arg )
         break;
 
       case STATE_ERROR_MOTOR_CURRENT:
-        _state_error_mototr_current();
+        _state_error_motor_current();
         break;
 
       case STATE_ERROR_MOTOR_NOT_CONNECTED:

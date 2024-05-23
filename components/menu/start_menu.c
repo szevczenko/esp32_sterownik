@@ -1488,7 +1488,7 @@ void menuStartSetError( error_type_t error )
 {
   LOG( PRINT_DEBUG, "%s %d", __func__, error );
   ctx.error_dev = error;
-  if ( ctx.state == STATE_READY )
+  if ( ctx.state == STATE_READY || ctx.state == STATE_MOTOR_CHANGE || ctx.state == STATE_SERVO_VIBRO_CHANGE )
   {
     change_state( STATE_ERROR );
   }

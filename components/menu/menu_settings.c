@@ -78,6 +78,7 @@ typedef struct
   const char* ( *get_str_value )( void );
   void ( *enter )( void );
   void ( *exit )( void );
+  void ( *fast_add )( uint32_t value );
 } parameters_t;
 
 static void get_servo_close_calibration( uint32_t* value );
@@ -90,6 +91,8 @@ static void enter_servo_close_calibration( void );
 static void exit_servo_close_calibration( void );
 static void enter_servo_open_calibration( void );
 static void exit_servo_open_calibration( void );
+static void fast_add_open_servo_cb( uint32_t value );
+static void fast_add_close_servo_cb( uint32_t value );
 
 static void get_silos_height( uint32_t* value );
 static void set_silos_height( uint32_t value );
@@ -236,7 +239,8 @@ static parameters_t parameters_list_siewnik[] =
      .set_value = set_servo_close_calibration,
      .get_max_value = get_max_servo_close_calibration,
      .enter = enter_servo_close_calibration,
-     .exit = exit_servo_close_calibration },
+     .exit = exit_servo_close_calibration,
+     .fast_add = fast_add_close_servo_cb },
 
     { .param_type = SETTINGS_SERVO_OPEN_CALIBRATION,
      .name_dict = DICT_SERVO_OPEN,
@@ -245,7 +249,8 @@ static parameters_t parameters_list_siewnik[] =
      .set_value = set_servo_open_calibration,
      .get_max_value = get_max_servo_open_calibration,
      .enter = enter_servo_open_calibration,
-     .exit = exit_servo_open_calibration },
+     .exit = exit_servo_open_calibration,
+     .fast_add = fast_add_open_servo_cb },
 
     { .param_type = SETTINGS_SILOS_HEIGHT,
      .name_dict = DICT_SILOS_HEIGHT,
@@ -318,7 +323,7 @@ static parameters_t parameters_list_solarka[] =
      .set_value = set_servo_error,
      .get_max_value = get_max_servo_error,
      .exit = exit_servo_error },
-    
+
     { .param_type = SETTINGS_VIBRO_PWM_DUTY,
      .name_dict = DICT_VIBRO_PWM_DUTY,
      .unit_type = UNIT_INT,
@@ -393,6 +398,18 @@ static void set_servo_open_calibration( uint32_t value )
 {
   LOG( PRINT_DEBUG, "%s: %d", __func__, value );
   HTTPParamClient_SetU32ValueDontWait( PARAM_OPEN_SERVO_REGULATION, value );
+}
+
+static void fast_add_open_servo_cb( uint32_t value )
+{
+  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_OPEN_SERVO_REGULATION, value );
+}
+
+static void fast_add_close_servo_cb( uint32_t value )
+{
+  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_CLOSE_SERVO_REGULATION, value );
 }
 
 static void get_silos_height( uint32_t* value )
@@ -790,7 +807,14 @@ static void menu_button_plus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, 0, FP_PLUS, _fast_add_cb );
+  if ( parameters_list[menu->position].fast_add == NULL )
+  {
+    fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, 0, FP_PLUS, _fast_add_cb );
+  }
+  else
+  {
+    fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, 0, FP_PLUS, parameters_list[menu->position].fast_add );
+  }
 }
 
 static void menu_button_minus_time_cb( void* arg )

@@ -296,7 +296,7 @@ static void _state_error_temperature( void )
   }
 }
 
-static void _state_error_mototr_current( void )
+static void _state_error_motor_current( void )
 {
   if ( srvrConrollerSetError( ERROR_MOTOR_OVER_CURRENT ) )
   {
@@ -382,7 +382,7 @@ static void _error_task( void* arg )
         break;
 
       case STATE_ERROR_MOTOR_CURRENT:
-        _state_error_mototr_current();
+        _state_error_motor_current();
         break;
 
       case STATE_ERROR_MOTOR_NOT_CONNECTED:
