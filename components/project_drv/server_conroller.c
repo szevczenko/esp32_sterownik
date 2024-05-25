@@ -256,7 +256,7 @@ static void state_idle( void )
     return;
   }
 
-  if ( ctx.working_state_req && wifiDrvIsConnected() )
+  if ( ctx.working_state_req && HTTPServer_IsClientConnected() )
   {
     measure_meas_calibration_value();
     count_working_data();
@@ -306,7 +306,7 @@ static void state_working( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !wifiDrvIsConnected() )
+  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
   {
     vibro_stop();
     change_state( STATE_IDLE );
@@ -356,7 +356,7 @@ static void state_servo_open_regulation( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !wifiDrvIsConnected() )
+  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
   {
     parameters_save();
     parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );
@@ -393,7 +393,7 @@ static void state_servo_close_regulation( void )
     return;
   }
 
-  if ( !ctx.working_state_req || !wifiDrvIsConnected() )
+  if ( !ctx.working_state_req || !HTTPServer_IsClientConnected() )
   {
     parameters_save();
     parameters_setValue( PARAM_OPEN_SERVO_REGULATION_FLAG, 0 );

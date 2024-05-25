@@ -832,7 +832,15 @@ static void menu_button_minus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, parameters_list[menu->position].min_value, FP_MINUS, _fast_add_cb );
+  if ( parameters_list[menu->position].fast_add == NULL )
+  {
+    fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, parameters_list[menu->position].min_value, FP_MINUS, _fast_add_cb );
+  }
+  else
+  {
+    fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, parameters_list[menu->position].min_value, FP_MINUS, parameters_list[menu->position].fast_add );
+  }
+  
 }
 
 static void menu_button_m_p_pull_cb( void* arg )
