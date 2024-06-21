@@ -1,0 +1,124 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "espidf",
+      "name": "espidf",
+      "request": "launch",
+      "logLevel": 2,
+      "mode": "manual",
+      "verifyAppBinBeforeDebug": false,
+      "tmoScaleFactor": 1,
+      "initGdbCommands": [
+        "target remote :3333",
+        "symbol-file ${workspaceFolder}\\build\\sterownik.elf",
+        "mon reset halt",
+        "flushregs",
+        "thb app_main"
+      ],
+      "preLaunchTask": "OpenOCD ESP32",
+      "postDebugTask": "Terminate All Tasks",
+    },
+    {
+      "type": "cppdbg",
+      "request": "launch",
+      "name": "Debug ESP32",
+      "program": "${workspaceFolder}\\build\\sterownik.elf",
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "${config:idf.customExtraPaths}"
+        }
+      ],
+      "miDebuggerPath": "C:/projekty/esp_tools/tools/xtensa-esp-elf-gdb/12.1_20221002/xtensa-esp-elf-gdb/bin/xtensa-esp32-elf-gdb.exe", // Path of the toolchain
+      "setupCommands": [
+        // {
+        //   "text": "mon esp appimage_offset 0x100000"
+        // },
+        // {
+        //   "text": "disconnect"
+        // },
+        {
+          "text": "target extended-remote :3333"
+        },
+        {
+          "text": "set remote hardware-watchpoint-limit 2"
+        },
+        {
+          "text": "mon reset halt"
+        },
+        {
+          "text": "thb app_main"
+        },
+        {
+          "text": "flushregs"
+        }
+      ],
+      "preLaunchTask": "OpenOCD ESP32",
+      "postDebugTask": "Terminate All Tasks",
+    },
+    {
+      "type": "cppdbg",
+      "request": "launch",
+      "name": "Debug ESP32S2",
+      "program": "${workspaceFolder}\\build\\sterownik.elf",
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "${config:idf.customExtraPaths}"
+        }
+      ],
+      "miDebuggerPath": "C:/projekty/esp_tools/tools/xtensa-esp-elf-gdb/12.1_20221002/xtensa-esp-elf-gdb/bin/xtensa-esp32s2-elf-gdb.exe", // Path of the toolchain
+      "setupCommands": [
+        // {
+        //   "text": "mon esp appimage_offset 0x100000"
+        // },
+        // {
+        //   "text": "disconnect"
+        // },
+        {
+          "text": "target extended-remote :3333"
+        },
+        {
+          "text": "set remote hardware-watchpoint-limit 2"
+        },
+        {
+          "text": "mon reset halt"
+        },
+        {
+          "text": "thb app_main"
+        },
+        {
+          "text": "flushregs"
+        }
+      ],
+      "preLaunchTask": "OpenOCD",
+      "postDebugTask": "Terminate All Tasks",
+    },
+    {
+      "name": "Debug Unit Tests",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/test/build/test.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}/test",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:\\msys64\\usr\\bin\\gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}

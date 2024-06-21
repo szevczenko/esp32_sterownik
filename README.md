@@ -1,11 +1,21 @@
-ESP-IDF template app
-====================
-
-This is a template application to be used with [Espressif IoT Development Framework](https://github.com/espressif/esp-idf).
-
-Please check [ESP-IDF docs](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for getting started instructions.
-
-*Code in this repository is in the Public Domain (or CC0 licensed, at your option.)
-Unless required by applicable law or agreed to in writing, this
-software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-CONDITIONS OF ANY KIND, either express or implied.*
+Build the project
+======================
+1. Install esp-idf 5.1.2 https://docs.espressif.com/projects/esp-idf/en/v5.1.2/esp32/get-started/index.html
+2. Intsall Git
+3. Clone the project:
+```
+git clone --recurse-submodules https://github.com/szevczenko/esp32_valves_regulator.git
+```
+4. Init submodules for hq_components:
+```
+git submodule update --init --recursive
+```
+5. Run ESP-IDF 5.1 CMD and enter to cloned folder.
+6. build by running command:
+```
+idf.py build
+```
+7. flash esp32:
+```
+idf.py flash -p COM8
+```

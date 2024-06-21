@@ -1,11 +1,13 @@
 #include "ssdFigure.h"
-#include "ssd1306.h"
-#include "oled.h"
+
+#include "buzzer.h"
 #include "math.h"
+#include "oled.h"
+#include "ssd1306.h"
 
 //#undef LOG
 //#define LOG(...) //LOG( __VA_ARGS__)
-
+// clang-format off
 bool motor_bitmap_1[] = 
 {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -451,6 +453,109 @@ bool battery[] =
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
+bool batteryfull[] =
+{
+    1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0,
+    1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+bool low_accu[] =
+{
+
+     0,1,1,0,0,0,0,1,1,1,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,0,0,1,0,0,0,
+     0,1,1,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,1,1,1,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,1,1,0,0,
+     0,1,1,0,0,0,1,0,0,0,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,1,1,0,0,
+     0,1,1,0,0,1,1,0,0,0,0,1,1,0,0,1,0,1,1,1,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,1,1,0,0,
+     0,1,1,0,0,1,1,0,0,0,0,1,1,0,0,1,1,1,0,1,1,1,1,0,0,0,0,0,1,0,0,1,1,0,1,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,1,0,0,0,
+     0,1,1,0,0,0,1,0,0,0,0,1,0,0,0,1,1,1,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,1,0,0,0,
+     0,1,1,0,0,0,1,1,0,0,1,1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,1,1,0,0,1,1,0,1,1,0,0,1,0,1,1,0,0,1,1,0,1,1,0,1,1,0,0,0,
+     0,1,1,1,1,0,0,1,1,1,1,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,
+
+};
+
+
+
+bool low_accu4[] =
+{
+
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+};
+
+
+
+bool low_accu3[] =
+{
+
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+};
+
+
+
+
+bool low_accu2[] =
+{
+
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+};
+
+bool low_accu1[] =
+{
+
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+};
+
+bool low_accu0[] =
+{
+
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+};
+
 bool signal0[] = 
 {
     1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 
@@ -517,329 +622,527 @@ bool signal5[] =
     0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1
 };
 
-void drawSignal(uint8_t x, uint8_t y, uint8_t signal_lvl)
-{
-    if (signal_lvl > 5)
-    {
-        signal_lvl = 0;
-    }
+// clang-format on
 
-    bool *signal[] = {signal0, signal1, signal2, signal3, signal4, signal5};
-    
-    for (int i = 0; i < 11; i++)
+void drawSignal( uint8_t x, uint8_t y, uint8_t signal_lvl )
+{
+  if ( signal_lvl > 5 )
+  {
+    signal_lvl = 0;
+  }
+
+  bool* signal[] = { signal0, signal1, signal2, signal3, signal4, signal5 };
+
+  for ( int i = 0; i < 11; i++ )
+  {
+    for ( int j = 0; j < 7; j++ )
     {
-        for (int j = 0; j < 7; j++)
-        {
-            if (signal[signal_lvl][j * 11 + i])
-            {
-                oled_putPixel(i + x, j + y);
-            }
-        }
+      if ( signal[signal_lvl][j * 11 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
     }
+  }
 }
 
-int ssdFigureDrawLoadBar(loadBar_t *figure)
+int ssdFigureDrawLoadBar( loadBar_t* figure )
 {
-    if (figure->width + figure->x > SSD1306_WIDTH)
+  if ( figure->width + figure->x > SSD1306_WIDTH )
+  {
+    return FALSE;
+  }
+
+  if ( figure->height + figure->y > SSD1306_HEIGHT )
+  {
+    return FALSE;
+  }
+
+  if ( figure->fill > 100 )
+  {
+    figure->fill = 100;
+  }
+
+  int scaling_fill_x = figure->width * figure->fill / 100 + figure->x;
+
+  for ( int x = figure->x; x < figure->width + figure->x; x++ )
+  {
+    for ( int y = figure->y; y < figure->height + figure->y; y++ )
     {
-        return FALSE;
+      if ( ( x <= scaling_fill_x ) || ( x == figure->width + figure->x - 1 ) )
+      {
+        oled_putPixel( x, y );
+      }
+      else if ( ( y == figure->y ) || ( y == figure->height + figure->y - 1 ) )
+      {
+        oled_putPixel( x, y );
+      }
     }
+  }
 
-    if (figure->height + figure->y > SSD1306_HEIGHT)
-    {
-        return FALSE;
-    }
-
-    if (figure->fill > 100)
-    {
-        figure->fill = 100;
-    }
-
-    int scaling_fill_x = figure->width * figure->fill / 100 + figure->x;
-
-    for (int x = figure->x; x < figure->width + figure->x; x++)
-    {
-        for (int y = figure->y; y < figure->height + figure->y; y++)
-        {
-            if ((x <= scaling_fill_x) || (x == figure->width + figure->x - 1))
-            {
-                oled_putPixel(x, y);
-            }
-            else if ((y == figure->y) || (y == figure->height + figure->y - 1))
-            {
-                oled_putPixel(x, y);
-            }
-        }
-    }
-
-    return TRUE;
+  return TRUE;
 }
 
-int ssdFigureDrawScrollBar(scrollBar_t *figure)
+int ssdFigureDrawScrollBar( scrollBar_t* figure )
 {
-    if (figure == NULL)
+  if ( figure == NULL )
+  {
+    return FALSE;
+  }
+
+  if ( figure->y_start > SSD1306_HEIGHT )
+  {
+    return FALSE;
+  }
+
+  if ( figure->all_line == 0 )
+  {
+    return FALSE;
+  }
+
+  float width = (float) figure->line_max / ( (float) figure->all_line );
+
+  if ( width >= 1.0 )
+  {
+    return FALSE;
+  }
+
+  int width_px = width * ( SSD1306_HEIGHT - figure->y_start );
+  int step = ( SSD1306_HEIGHT - figure->y_start - width_px ) / figure->all_line;
+  int start_scroll_y = step * ( figure->actual_line + 1 ) + figure->y_start;
+
+  //LOG("width_px %d, step %d, start_scroll_y %d\n", width_px, step, start_scroll_y);
+  for ( int x = SSD1306_WIDTH - 4; x < SSD1306_WIDTH; x++ )
+  {
+    for ( int y = figure->y_start; y < SSD1306_HEIGHT; y++ )
     {
-        return FALSE;
+      if ( ( x <= SSD1306_WIDTH - 4 ) || ( x == SSD1306_WIDTH - 1 ) )
+      {
+        oled_putPixel( x, y );
+        continue;
+      }
+      else if ( ( y == figure->y_start ) || ( ( y >= start_scroll_y ) && ( y <= start_scroll_y + width_px ) ) || ( y == SSD1306_HEIGHT ) )
+      {
+        oled_putPixel( x, y );
+        continue;
+      }
+
+      oled_clearPixel( x, y );
     }
+  }
 
-    if (figure->y_start > SSD1306_HEIGHT)
-    {
-        return FALSE;
-    }
-
-    if (figure->all_line == 0)
-    {
-        return FALSE;
-    }
-
-    float width = (float)figure->line_max / ((float)figure->all_line);
-
-    if (width >= 1.0)
-    {
-        return FALSE;
-    }
-
-    int width_px = width * (SSD1306_HEIGHT - figure->y_start);
-    int step = (SSD1306_HEIGHT - figure->y_start - width_px) / figure->all_line;
-    int start_scroll_y = step * (figure->actual_line + 1) + figure->y_start;
-
-    //LOG("width_px %d, step %d, start_scroll_y %d\n", width_px, step, start_scroll_y);
-    for (int x = SSD1306_WIDTH - 4; x < SSD1306_WIDTH; x++)
-    {
-        for (int y = figure->y_start; y < SSD1306_HEIGHT; y++)
-        {
-            if ((x <= SSD1306_WIDTH - 4) || (x == SSD1306_WIDTH - 1))
-            {
-                oled_putPixel(x, y);
-                continue;
-            }
-            else if ((y == figure->y_start) || ((y >= start_scroll_y) && (y <= start_scroll_y + width_px)) ||
-                (y == SSD1306_HEIGHT))
-            {
-                oled_putPixel(x, y);
-                continue;
-            }
-
-            oled_clearPixel(x, y);
-        }
-    }
-
-    return TRUE;
+  return TRUE;
 }
 
-int ssdFigureFillLine(int y_start, int height)
+int ssdFigureFillLine( int y_start, int height )
 {
-    for (int y = y_start; y <= y_start + height; y++)
+  for ( int y = y_start; y <= y_start + height; y++ )
+  {
+    for ( int x = 0; x < SSD1306_WIDTH; x++ )
     {
-        for (int x = 0; x < SSD1306_WIDTH; x++)
-        {
-            oled_putPixel(x, y);
-        }
+      oled_putPixel( x, y );
     }
+  }
 
-    return TRUE;
+  return TRUE;
 }
 
-void drawVibro(uint8_t x, uint8_t y, uint8_t cnt)
+void drawVibro( uint8_t x, uint8_t y, uint8_t cnt )
 {
-    if (cnt > 3)
-    {
-        return;
-    }
+  if ( cnt > 3 )
+  {
+    return;
+  }
 
-    bool *vibro[] = {vibro_bitmap_1, vibro_bitmap_2, vibro_bitmap_3, vibro_bitmap_4};
+  bool* vibro[] = { vibro_bitmap_1, vibro_bitmap_2, vibro_bitmap_3, vibro_bitmap_4 };
 
-    for (int i = 0; i < 40; i++)
+  for ( int i = 0; i < 40; i++ )
+  {
+    for ( int j = 0; j < 27; j++ )
     {
-        for (int j = 0; j < 27; j++)
-        {
-            if (vibro[cnt][j * 40 + i])
-            {
-                oled_putPixel(i + x, j + y);
-            }
-        }
+      if ( vibro[cnt][j * 40 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
     }
+  }
 }
 
-void drawMotorCircle(uint8_t x, uint8_t y, uint8_t cnt)
+void drawMotorCircle( uint8_t x, uint8_t y, uint8_t cnt )
 {
-    if (cnt > 5)
-    {
-        return;
-    }
+  if ( cnt > 5 )
+  {
+    return;
+  }
 
-    bool *motor[] = {motor_bitmap_1, motor_bitmap_2, motor_bitmap_3, motor_bitmap_4, motor_bitmap_5, motor_bitmap_6};
+  bool* motor[] = { motor_bitmap_1, motor_bitmap_2, motor_bitmap_3, motor_bitmap_4, motor_bitmap_5, motor_bitmap_6 };
 
-    for (int i = 0; i < 30; i++)
+  for ( int i = 0; i < 30; i++ )
+  {
+    for ( int j = 0; j < 29; j++ )
     {
-        for (int j = 0; j < 29; j++)
-        {
-            if (motor[cnt][j * 30 + i])
-            {
-                oled_putPixel(i + x, j + y);
-            }
-        }
+      if ( motor[cnt][j * 30 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
     }
+  }
 }
 
-void drawMotor(uint8_t x, uint8_t y)
+void drawMotor( uint8_t x, uint8_t y )
 {
-    for (int i = 0; i < 30; i++)
+  for ( int i = 0; i < 30; i++ )
+  {
+    for ( int j = 0; j < 23; j++ )
     {
-        for (int j = 0; j < 23; j++)
-        {
-            if (bitmap[j * 30 + i])
-            {
-                oled_putPixel(i + x, j + y);
-            }
-        }
+      if ( bitmap[j * 30 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
     }
+  }
 }
 
-void drawQR(uint8_t x, uint8_t y)
+void drawQR( uint8_t x, uint8_t y )
 {
-    for (int i = 0; i < 40; i++)
+  for ( int i = 0; i < 40; i++ )
+  {
+    for ( int j = 0; j < 40; j++ )
     {
-        for (int j = 0; j < 40; j++)
-        {
-            if (qr_code[j * 40 + i])
-            {
-                oled_putPixel(i + x, j + y);
-            }
-        }
+      if ( qr_code[j * 40 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
     }
+  }
 }
 
-#define DIAMETR    22
-void drawServo(uint8_t x, uint8_t y, uint8_t open)
+#define DIAMETR 22
+
+void drawServo( uint8_t x, uint8_t y, uint8_t open )
 {
-    uint8_t x_open = x + DIAMETR * open / 100;
-    uint8_t start_flag;
+  uint8_t x_open = x + DIAMETR * open / 100;
+  uint8_t start_flag;
 
-    for (int i = 0; i < 22; i++)
+  for ( int i = 0; i < 22; i++ )
+  {
+    start_flag = 0;
+    for ( int j = 0; j < 22; j++ )
     {
-        start_flag = 0;
-        for (int j = 0; j < 22; j++)
+      if ( circle[j * 22 + i] )
+      {
+        if ( start_flag == 0 )
         {
-            if (circle[j * 22 + i])
-            {
-                if (start_flag == 0)
-                {
-                    //LOG("find_start\n", x_open);
-                    start_flag = 1;
-                }
-                else
-                {
-                    //LOG("find_end\n", x_open);
-                    start_flag = 0;
-                }
-
-                oled_putPixel(i + x, j + y);
-            }
-
-            if ((start_flag == 1) && (i + x > x_open))
-            {
-                oled_putPixel(i + x, j + y);
-            }
+          //LOG("find_start\n", x_open);
+          start_flag = 1;
         }
+        else
+        {
+          //LOG("find_end\n", x_open);
+          start_flag = 0;
+        }
+
+        oled_putPixel( i + x, j + y );
+      }
+
+      if ( ( start_flag == 1 ) && ( i + x > x_open ) )
+      {
+        oled_putPixel( i + x, j + y );
+      }
     }
+  }
 }
 
 typedef enum
 {
-    BATTERY_NORMAL,
-    BATTERY_CHARGING,
-    BATTERY_LOW_VOLTAGE,
+  BATTERY_NORMAL,
+  BATTERY_CHARGING,
+  BATTERY_FULL,
+  BATTERY_LOW_VOLTAGE,
+
 } battery_state_t;
 
-#define ANIMATION_TIMEOUT    500
+typedef enum
+{
+  ACC_4,
+  ACC_3,
+  ACC_2,
+  ACC_1,
+  ACC_0,
+  ACC_0_blink,
+
+} acc_state_t;
+
+#define ANIMATION_TIMEOUT 500
 
 static uint32_t animation_timer;
 static uint32_t animation_cnt;
 
-static void animation_counter_process(void)
+static void animation_counter_process( void )
 {
-    uint32_t time_now = xTaskGetTickCount();
+  uint32_t time_now = xTaskGetTickCount();
 
-    if (animation_timer < time_now)
-    {
-        animation_timer = time_now + MS2ST(ANIMATION_TIMEOUT);
-        animation_cnt++;
-    }
+  if ( animation_timer < time_now )
+  {
+    animation_timer = time_now + MS2ST( ANIMATION_TIMEOUT );
+    animation_cnt++;
+  }
 }
 
-static void _drawBattery(uint8_t x, uint8_t y, uint8_t chrg)
+static void _drawBattery( uint8_t x, uint8_t y, uint8_t chrg )
 {
-    for (int j = 0; j < 8; j++)
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 11; i++ )
     {
-        for (int i = 0; i < 11; i++)
+      if ( battery[j * 11 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+
+      if ( ( j > 1 ) && ( j < 6 ) && ( i > 1 ) && ( i < 1 + chrg ) )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _drawBatteryfull( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 13; i++ )
+    {
+      if ( batteryfull[j * 13 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _draw_low_accu( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 55; i++ )
+    {
+      if ( low_accu[j * 55 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _draw_low_accu0( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 55; i++ )
+    {
+      if ( low_accu0[j * 55 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _draw_low_accu1( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 55; i++ )
+    {
+      if ( low_accu1[j * 55 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _draw_low_accu2( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 55; i++ )
+    {
+      if ( low_accu2[j * 55 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _draw_low_accu3( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 55; i++ )
+    {
+      if ( low_accu3[j * 55 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+static void _draw_low_accu4( uint8_t x, uint8_t y )
+{
+  for ( int j = 0; j < 8; j++ )
+  {
+    for ( int i = 0; i < 55; i++ )
+    {
+      if ( low_accu4[j * 55 + i] )
+      {
+        oled_putPixel( i + x, j + y );
+      }
+    }
+  }
+}
+
+void ssdFigure_DrawLowAccu( uint8_t x, uint8_t y, float acc_voltage, float acc_current )
+{
+  animation_counter_process();
+  uint8_t x_charge = 0;
+  acc_state_t state = 0;
+  int ds = 10;
+  acc_current = acc_current * ds;
+
+  if ( acc_voltage > 1240 - acc_current && acc_voltage < 1700 - acc_current )
+  {
+    state = ACC_4;
+  }
+  else if ( acc_voltage > 1200 - acc_current && acc_voltage < 1241 - acc_current )
+  {
+    state = ACC_3;
+  }
+  else if ( acc_voltage > 1150 - acc_current && acc_voltage < 1201 - acc_current )
+  {
+    state = ACC_2;
+  }
+  else if ( acc_voltage > 1100 - acc_current && acc_voltage < 1151 - acc_current )
+  {
+    state = ACC_1;
+  }
+  else if ( acc_voltage > 1050 - acc_current && acc_voltage < 1101 - acc_current )
+  {
+    state = ACC_0;
+  }
+  else if ( acc_voltage > 200 - acc_current && acc_voltage < 1051 - acc_current )
+  {
+    state = ACC_0_blink;
+  }
+
+  switch ( state )
+  {
+    case ACC_4:
+      _draw_low_accu4( x, y );
+      break;
+
+    case ACC_3:
+      _draw_low_accu3( x, y );
+      break;
+
+    case ACC_2:
+      _draw_low_accu2( x, y );
+      break;
+
+    case ACC_1:
+      _draw_low_accu1( x, y );
+      break;
+
+    case ACC_0:
+      _draw_low_accu0( x, y );
+      break;
+
+    case ACC_0_blink:
+      {
+        if ( animation_cnt % 2 )
         {
-            if (battery[j * 11 + i])
-            {
-                oled_putPixel(i + x, j + y);
-            }
-
-            if ((j > 1) && (j < 6) && (i > 1) && (i < 1 + chrg))
-            {
-                oled_putPixel(i + x, j + y);
-            }
+          _draw_low_accu0( x, y );
         }
-    }
+      }
+      break;
+
+    default:
+      break;
+  }
 }
 
-void drawBattery(uint8_t x, uint8_t y, float accum_voltage, bool is_charging)
+void drawBattery( uint8_t x, uint8_t y, float accum_voltage, bool is_charging )
 {
-    animation_counter_process();
-    uint8_t x_charge = 0;
+  animation_counter_process();
+  uint8_t x_charge = 0;
 
-    if (accum_voltage < 3.2)
+  //      char buff[20];
+  //   sprintf(buff, "%3f", accum_voltage);
+  //         oled_printFixed(25, 0, buff, OLED_FONT_SIZE_11);
+
+  if ( accum_voltage < 3.2 )
+  {
+    x_charge = 0;
+  }
+  else
+  {
+    x_charge = (uint8_t) ( (float) ( accum_voltage - 3.2 ) * 8.0 );
+
+    if ( x_charge > 7 )
     {
-        x_charge = 0;
+      x_charge = 7;
+    }
+  }
+
+  battery_state_t state = BATTERY_NORMAL;
+
+  if ( accum_voltage < 3.48 )
+  {
+    state = BATTERY_LOW_VOLTAGE;
+  }
+
+  if ( is_charging || accum_voltage > 4.37 )
+  {
+    if ( accum_voltage > 4.36 )
+    {
+      state = BATTERY_FULL;
     }
     else
     {
-        x_charge = (uint8_t)((float)(accum_voltage - 3.2) * 8.0);
-
-        if (x_charge > 7)
-        {
-            x_charge = 7;
-        }
+      state = BATTERY_CHARGING;
     }
+  }
 
-    battery_state_t state = BATTERY_NORMAL;
-
-    if (accum_voltage < 3.48)
-    {
-        state = BATTERY_LOW_VOLTAGE;
-    }
-
-    if (is_charging)
-    {
-        state = BATTERY_CHARGING;
-    }
-
-    switch (state)
-    {
+  switch ( state )
+  {
     case BATTERY_NORMAL:
-        _drawBattery(x, y, x_charge);
-        break;
+      _drawBattery( x, y, x_charge );
+      break;
 
     case BATTERY_CHARGING:
-        _drawBattery(x, y, x_charge + animation_cnt % (8 - x_charge));
-        break;
+      _drawBattery( x, y, x_charge + animation_cnt % ( 8 - x_charge ) );
+      break;
+
+    case BATTERY_FULL:
+      _drawBatteryfull( x, y );
+
+      break;
 
     case BATTERY_LOW_VOLTAGE:
-        if (animation_cnt % 2)
-        {
-            _drawBattery(x, y, x_charge);
-        }
+      if ( animation_cnt % 2 )
+      {
+        _drawBattery( x, y, x_charge );
+      }
 
-        break;
+      break;
 
     default:
-        _drawBattery(x, y, x_charge);
-        break;
-    }
+      _drawBattery( x, y, x_charge );
+      break;
+  }
 
-    //LOG("x %d, cnt %d", x_charge, animation_cnt);
+  //LOG("x %d, cnt %d", x_charge, animation_cnt);
 }
