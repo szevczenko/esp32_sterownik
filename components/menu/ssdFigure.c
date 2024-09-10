@@ -1010,8 +1010,13 @@ void ssdFigure_DrawLowAccu( uint8_t x, uint8_t y, float acc_voltage, float acc_c
   animation_counter_process();
   uint8_t x_charge = 0;
   acc_state_t state = 0;
+#if CONFIG_DEVICE_SOLARKA    ///Mariusz
   int ds = 10;
   acc_current = acc_current * ds;
+#else
+  int ds = 10;
+  acc_current = acc_current / ds;
+#endif
 
   if ( acc_voltage > 1240 - acc_current && acc_voltage < 1700 - acc_current )
   {
