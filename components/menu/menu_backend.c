@@ -173,10 +173,6 @@ static void backend_send_control_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_VIBRO_DUTY_PWM, parameters_getValue( PARAM_VIBRO_DUTY_PWM ), 2000 );
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR, data->motor_value, 1000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SERVO, data->servo_value, 1000 ) == ERROR_CODE_OK;
-#if MENU_VIRO_ON_OFF_VERSION
-    result &= HTTPParamClient_SetU32Value( PARAM_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_VIBRO_ON_S, data->vibro_on_s, 1000 ) == ERROR_CODE_OK;
-#endif
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, data->motor_on, 1000 );
     result &= HTTPParamClient_SetU32Value( PARAM_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == ERROR_CODE_OK;
 
@@ -185,10 +181,6 @@ static void backend_send_control_data( void )
       ctx.send_all_data = false;
       ctx.sended_data.motor_value = data->motor_value;
       ctx.sended_data.servo_value = data->servo_value;
-#if MENU_VIRO_ON_OFF_VERSION
-      ctx.sended_data.vibro_off_s = data->vibro_off_s;
-      ctx.sended_data.vibro_on_s = data->vibro_on_s;
-#endif
       ctx.sended_data.motor_on = data->motor_on;
       ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
     }
@@ -209,23 +201,7 @@ static void backend_send_control_data( void )
       ctx.sended_data.servo_value = data->servo_value;
     }
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( data->vibro_off_s != ctx.sended_data.vibro_off_s )
-  {
-    if ( HTTPParamClient_SetU32Value( PARAM_VIBRO_OFF_S, data->vibro_off_s, 1000 ) == ERROR_CODE_OK )
-    {
-      ctx.sended_data.vibro_off_s = data->vibro_off_s;
-    }
-  }
-
-  if ( data->vibro_on_s != ctx.sended_data.vibro_on_s )
-  {
-    if ( HTTPParamClient_SetU32Value( PARAM_VIBRO_ON_S, data->vibro_on_s, 1000 ) == ERROR_CODE_OK )
-    {
-      ctx.sended_data.vibro_on_s = data->vibro_on_s;
-    }
-  }
-#endif
+  
   if ( data->motor_on != ctx.sended_data.motor_on )
   {
     if ( HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, data->motor_on, 1000 ) == ERROR_CODE_OK )
@@ -263,6 +239,9 @@ static void backend_start( void )
     HTTPParamClient_GetU32Value( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_LEVEL, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_VELOCITY, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_GRAIN_PER_HECTARE, NULL, 2000 );
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
   }
 

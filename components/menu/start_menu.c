@@ -58,10 +58,6 @@ typedef enum
 {
   EDIT_MOTOR,
   EDIT_SERVO,
-#if MENU_VIRO_ON_OFF_VERSION
-  EDIT_VIBRO_OFF_S,
-  EDIT_VIBRO_ON_S,
-#endif
   EDIT_TOP,
 } edit_value_t;
 
@@ -80,10 +76,6 @@ typedef struct
   uint32_t timeout_con;
   uint32_t low_silos_ckeck_timeout;
   error_type_t error_dev;
-
-#if MENU_VIRO_ON_OFF_VERSION
-  edit_value_t edit_value;
-#endif
 
   struct menu_data data;
   TickType_t animation_timeout;
@@ -166,10 +158,6 @@ static void set_change_menu( edit_value_t val )
       case EDIT_MOTOR:
         change_state( STATE_MOTOR_CHANGE );
         break;
-#if MENU_VIRO_ON_OFF_VERSION
-      case EDIT_VIBRO_ON_S:
-      case EDIT_VIBRO_OFF_S:
-#endif
       case EDIT_SERVO:
         change_state( STATE_SERVO_VIBRO_CHANGE );
         break;
@@ -270,10 +258,6 @@ static void menu_button_up_callback( void* arg )
   {
     return;
   }
-
-#if MENU_VIRO_ON_OFF_VERSION
-  ctx.edit_value = EDIT_VIBRO_ON_S;
-#endif
 }
 
 static void menu_button_down_callback( void* arg )
@@ -299,9 +283,6 @@ static void menu_button_down_callback( void* arg )
   {
     return;
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  ctx.edit_value = EDIT_VIBRO_OFF_S;
-#endif
 }
 
 static void menu_button_exit_callback( void* arg )
@@ -568,26 +549,6 @@ static void menu_button_servo_plus_push_cb( void* arg )
   {
     return;
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
-  {
-    if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
-    {
-      if ( ctx.data.vibro_off_s < 100 )
-      {
-        ctx.data.vibro_off_s++;
-      }
-    }
-    else
-    {
-      if ( ctx.data.vibro_on_s < 100 )
-      {
-        ctx.data.vibro_on_s++;
-      }
-    }
-  }
-  else
-#endif
   {
     if ( ctx.data.servo_value < 100 )
     {
@@ -619,20 +580,6 @@ static void menu_button_servo_plus_time_cb( void* arg )
   {
     return;
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
-  {
-    if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
-    {
-      fastProcessStart( &ctx.data.vibro_off_s, 100, 0, FP_PLUS, servo_fast_add_cb );
-    }
-    else
-    {
-      fastProcessStart( &ctx.data.vibro_on_s, 100, 1, FP_PLUS, servo_fast_add_cb );
-    }
-  }
-  else
-#endif
   {
     fastProcessStart( &ctx.data.servo_value, 100, 0, FP_PLUS, servo_fast_add_cb );
   }
@@ -661,31 +608,9 @@ static void menu_button_servo_minus_push_cb( void* arg )
   {
     return;
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
+  if ( ctx.data.servo_value > 0 )
   {
-    if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
-    {
-      if ( ctx.data.vibro_off_s > 0 )
-      {
-        ctx.data.vibro_off_s--;
-      }
-    }
-    else
-    {
-      if ( ctx.data.vibro_on_s > 1 )
-      {
-        ctx.data.vibro_on_s--;
-      }
-    }
-  }
-  else
-#endif
-  {
-    if ( ctx.data.servo_value > 0 )
-    {
-      ctx.data.servo_value--;
-    }
+    ctx.data.servo_value--;
   }
   set_change_menu( EDIT_SERVO );
 }
@@ -712,23 +637,7 @@ static void menu_button_servo_minus_time_cb( void* arg )
   {
     return;
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
-  {
-    if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
-    {
-      fastProcessStart( &ctx.data.vibro_off_s, 100, 0, FP_MINUS, servo_fast_add_cb );
-    }
-    else
-    {
-      fastProcessStart( &ctx.data.vibro_on_s, 100, 1, FP_MINUS, servo_fast_add_cb );
-    }
-  }
-  else
-#endif
-  {
-    fastProcessStart( &ctx.data.servo_value, 100, 0, FP_MINUS, servo_fast_add_cb );
-  }
+  fastProcessStart( &ctx.data.servo_value, 100, 0, FP_MINUS, servo_fast_add_cb );
 }
 
 static void menu_button_servo_p_m_pull_cb( void* arg )
@@ -740,17 +649,8 @@ static void menu_button_servo_p_m_pull_cb( void* arg )
     NULL_ERROR_MSG();
     return;
   }
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
-  {
-    fastProcessStop( &ctx.data.vibro_off_s );
-    fastProcessStop( &ctx.data.vibro_on_s );
-  }
-  else
-#endif
-  {
-    fastProcessStop( &ctx.data.servo_value );
-  }
+
+  fastProcessStop( &ctx.data.servo_value );
 
   _reset_power_save_timer();
 
@@ -910,14 +810,7 @@ static void menu_check_connection( void )
   ctx.data.servo_value = parameters_getValue( PARAM_SERVO );
   ctx.data.motor_on = 0;
   ctx.data.servo_vibro_on = 0;
-#if MENU_VIRO_ON_OFF_VERSION
-  if ( parameters_getValue( PARAM_VIBRO_ON_S ) == 0 )
-  {
-    parameters_setValue( PARAM_VIBRO_ON_S, 1 );
-  }
-  ctx.data.vibro_on_s = parameters_getValue( PARAM_VIBRO_ON_S );
-  ctx.data.vibro_off_s = parameters_getValue( PARAM_VIBRO_OFF_S );
-#endif
+
   for ( uint8_t i = 0; i < 3; i++ )
   {
     LOG( PRINT_INFO, "START_MENU: cmdClientGetAllValue try %d", i );
@@ -1043,34 +936,6 @@ static void menu_start_ready( void )
     }
     if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
     {
-#if MENU_VIRO_ON_OFF_VERSION
-      /* PERIOD CURSOR */
-      char menu_buff[32];
-
-      sprintf( menu_buff, "%s: %d [s]", dictionary_get_string( DICT_VIBRO_ON ), ctx.data.vibro_on_s );
-
-      if ( ctx.edit_value == EDIT_VIBRO_ON_S )
-      {
-        ssdFigureFillLine( MENU_START_OFFSET, LINE_HEIGHT );
-        oled_printFixedBlack( 2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11 );
-      }
-      else
-      {
-        oled_printFixed( 2, MENU_START_OFFSET, menu_buff, OLED_FONT_SIZE_11 );
-      }
-
-      /* WORKING TIME CURSOR */
-      sprintf( menu_buff, "%s: %d [s]", dictionary_get_string( DICT_VIBRO_OFF ), ctx.data.vibro_off_s );
-      if ( ctx.edit_value == EDIT_VIBRO_OFF_S )
-      {
-        ssdFigureFillLine( MENU_START_OFFSET + LINE_HEIGHT, LINE_HEIGHT );
-        oled_printFixedBlack( 2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11 );
-      }
-      else
-      {
-        oled_printFixed( 2, MENU_START_OFFSET + LINE_HEIGHT, menu_buff, OLED_FONT_SIZE_11 );
-      }
-#else
       if ( ctx.data.servo_vibro_on )
       {
         cnt = ctx.animation_cnt % 4;
@@ -1085,7 +950,6 @@ static void menu_start_ready( void )
       sprintf( str, "%d%%", servo_bar.fill );
       ssdFigureDrawLoadBar( &servo_bar );
       oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
-#endif
     }
     else
     {
@@ -1248,29 +1112,9 @@ static void menu_start_vibro_change( void )
 
   if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
   {
-#if MENU_VIRO_ON_OFF_VERSION
-    oled_printFixed( 0, 0, dictionary_get_string( ctx.edit_value == EDIT_VIBRO_OFF_S ? DICT_VIBRO_OFF : DICT_VIBRO_OFF ), OLED_FONT_SIZE_16 );
-    uint32_t x = 0;
-    uint32_t y = MENU_HEIGHT + LINE_HEIGHT;
-    if ( ( ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s ) < 10 )
-    {
-      x = CHANGE_VALUE_DISP_OFFSET;
-    }
-    else if ( ( ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s ) < 100 )
-    {
-      x = CHANGE_VALUE_DISP_OFFSET - 16;
-    }
-    else
-    {
-      x = CHANGE_VALUE_DISP_OFFSET - 32;
-    }
-    sprintf( ctx.buff, "%d [s]", ctx.edit_value == EDIT_VIBRO_OFF_S ? ctx.data.vibro_off_s : ctx.data.vibro_on_s );
-    oled_printFixed( x, y, ctx.buff, OLED_FONT_SIZE_26 );
-#else
     oled_printFixed( 0, 0, dictionary_get_string( DICT_VIBRO_ON ), OLED_FONT_SIZE_26 );
     sprintf( ctx.buff, "%ld%%", ctx.data.servo_value );
     oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
-#endif
   }
   else
   {
@@ -1474,9 +1318,7 @@ void menuStartReset( void )
 void menuInitStartMenu( menu_token_t* menu )
 {
   memset( &ctx, 0, sizeof( ctx ) );
-#if MENU_VIRO_ON_OFF_VERSION
-  ctx.edit_value = EDIT_VIBRO_ON_S;
-#endif
+
   menu->menu_cb.enter = menu_enter_cb;
   menu->menu_cb.button_init_cb = menu_button_init_cb;
   menu->menu_cb.exit = menu_exit_cb;
