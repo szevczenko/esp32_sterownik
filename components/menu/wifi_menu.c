@@ -321,7 +321,7 @@ static void menu_wifi_find_devices( void )
            || ( memcmp( WIFI_SOLARKA_NAME, dev_name, strlen( WIFI_SOLARKA_NAME ) - 1 ) == 0 )
            || ( memcmp( WIFI_VALVE_NAME, dev_name, strlen( WIFI_VALVE_NAME ) - 1 ) == 0 ) )
       {
-        LOG( PRINT_INFO, "%s\n", dev_name );
+        LOG( PRINT_DEBUG, "Add to list %s\n", dev_name );
         strncpy( ctx.devices_list[ctx.devices_count++], dev_name, 33 );
       }
     }
