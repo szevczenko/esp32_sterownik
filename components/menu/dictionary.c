@@ -56,7 +56,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "\n          Система готова \n                 к запуску",
                              "\n             System gotowy\n             do uruchomienia",
                              "\n                  System ist \n                  startbereit" },
- /* MENU */
+  /* MENU */
   [DICT_SETTINGS] =
     {
                              "Settings",
@@ -93,7 +93,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Меню",
                              "MENU",
                              "Menü" },
- /* MENU DRV */
+  /* MENU DRV */
   [DICT_WAIT_TO_INIT] =
     {
                              "Wait to init",
@@ -118,7 +118,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "  Выключение",
                              "  Wyłączanie",
                              "Ausschalten" },
- /* SETTINGS */
+  /* SETTINGS */
   [DICT_BOOTING] =
     {
                              "Booting",
@@ -209,7 +209,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "выкл",
                              "Wyłączony",
                              "Aus" },
- /* PARAMETERS */
+  /* PARAMETERS */
   [DICT_CURRENT] =
     {
                              "Current",
@@ -253,7 +253,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "\n           устройство не \n             подключено",
                              "\n                 Urządzenie \n               niepołączone",
                              "\n                  Gerät nicht\n                  verbunden" },
- /* WIFI */
+  /* WIFI */
   [DICT_WAIT_TO_WIFI_INIT] =
     {
                              "Wait to wifi init",
@@ -320,7 +320,7 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "ошибка подключения",
                              "Błąd połączenia",
                              "Verbunden mit" },
- /* LOW BATTERY */
+  /* LOW BATTERY */
   [DICT_LOW_BATTERY] =
     {
                              "      LOW BATTERY",
@@ -453,12 +453,48 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "SN",
                              "SN",
                              "SN" },
-  [DICT_VIBRO_PWM_DUTY] = 
-  {
+  [DICT_VIBRO_PWM_DUTY] =
+    {
                              "Power vibro",
                              "Мощность вибратора",
                              "Wydajność wibro",
                              "Vibratorleistung" },
+  [DICT_SIZE_OF_GRAIN] =
+    {
+                             "Grain size",
+                             "Размер зерна",
+                             "Rozmiar ziarna",
+                             "Körnung" },
+  [DICT_SIZE_OF_GRAIN_SMALL] =
+    {
+                             "Small",
+                             "Маленький",
+                             "Mały",
+                             "Klein" },
+  [DICT_SIZE_OF_GRAIN_MEDIUM] =
+    {
+                             "Medium",
+                             "Средний",
+                             "Średni",
+                             "Mittel" },
+  [DICT_SIZE_OF_GRAIN_LARGE] =
+    {
+                             "Large",
+                             "Большой",
+                             "Duży",
+                             "Groß" },
+  [DICT_HIGH_OF_MACHINE] =
+    {
+                             "Height of machine",
+                             "Высота машины",
+                             "Wysokość maszyny",
+                             "Großes Massagegerät" },
+  [DICT_AUTO_MODE] =
+    {
+                             "Auto mode",
+                             "Автоматический режим",
+                             "Tryb automatyczny",
+                             "Automatikmodus" },
 };
 
 void dictionary_init( void )

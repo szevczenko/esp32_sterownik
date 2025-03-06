@@ -53,6 +53,12 @@
   PARAM( PARAM_OPEN_SERVO_REGULATION_FLAG, 0, 1, 0, "open_servo_regulation_flag" )   \
   PARAM( PARAM_CLOSE_SERVO_REGULATION, 0, 99, 50, "close_servo_regulation" )         \
   PARAM( PARAM_OPEN_SERVO_REGULATION, 0, 99, 50, "open_servo_regulation" )           \
-  PARAM( PARAM_TRY_OPEN_CALIBRATION, 0, 10, 8, "try_open_calibration" )
+  PARAM( PARAM_TRY_OPEN_CALIBRATION, 0, 10, 8, "try_open_calibration" )              \
+  PARAM( PARAM_SIZE_OF_GRAIN, 0, 2, 1, "size_of_grain" )                             \
+  PARAM( PARAM_HIGH_OF_MACHINE, 0, 1000, 50, "hight_of_machine" )                    \
+  PARAM( PARAM_VELOCITY, 0, 200, 45, "velocity" )                                    \
+  PARAM( PARAM_WORK_AREA, 0, 100, 50, "work_area" )                                  \
+  PARAM( PARAM_GRAIN_PER_HECTARE, 0, 1000, 50, "grain_per_hectare" )                 \
+  PARAM( PARAM_AUTO_MODE, 0, 1, 1, "auto_mode" )
 
 #endif

@@ -49,6 +49,9 @@ typedef enum
   SETTINGS_SERVO_OPEN_CALIBRATION,
   SETTINGS_SILOS_HEIGHT,
   SETTINGS_VIBRO_PWM_DUTY,
+  SETTINGS_SIZE_OF_GRAIN,
+  SETTINGS_HIGH_OF_MACHINE,
+  SETTINGS_AUTO_MODE,
   SETTINGS_TOP,
 } parameters_type_t;
 
@@ -158,6 +161,21 @@ static const char* language[] =
     [MENU_LANGUAGE_GERMANY] = "Deutsch",
 };
 
+static void get_size_of_grain( uint32_t* value );
+static void set_size_of_grain( uint32_t value );
+static void get_max_size_of_grain( uint32_t* value );
+static void get_min_size_of_grain( uint32_t* value );
+static const char* get_size_of_grain_str( void );
+
+static void get_high_of_machine( uint32_t* value );
+static void set_high_of_machine( uint32_t value );
+static void get_max_high_of_machine( uint32_t* value );
+static void get_min_high_of_machine( uint32_t* value );
+
+static void get_auto_mode( uint32_t* value );
+static void set_auto_mode( uint32_t value );
+static void get_max_auto_mode( uint32_t* value );
+
 static parameters_t* parameters_list;
 static uint32_t parameters_size;
 
@@ -260,6 +278,32 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_silos_height,
      .get_min_value = get_min_silos_height,
      .unit_name = "[cm]" },
+
+    { .param_type = SETTINGS_SIZE_OF_GRAIN,
+     .name_dict = DICT_SIZE_OF_GRAIN,
+     .unit_type = UNIT_STR,
+     .get_value = get_size_of_grain,
+     .set_value = set_size_of_grain,
+     .get_max_value = get_max_size_of_grain,
+     .get_min_value = get_min_size_of_grain,
+     .get_str_value = get_size_of_grain_str,
+     .unit_name = "[mm]" },
+
+    { .param_type = SETTINGS_HIGH_OF_MACHINE,
+     .name_dict = DICT_HIGH_OF_MACHINE,
+     .unit_type = UNIT_INT,
+     .get_value = get_high_of_machine,
+     .set_value = set_high_of_machine,
+     .get_max_value = get_max_high_of_machine,
+     .get_min_value = get_min_high_of_machine,
+     .unit_name = "[cm]" },
+
+    { .param_type = SETTINGS_AUTO_MODE,
+     .name_dict = DICT_AUTO_MODE,
+     .unit_type = UNIT_ON_OFF,
+     .get_value = get_auto_mode,
+     .set_value = set_auto_mode,
+     .get_max_value = get_max_auto_mode },
 };
 
 static parameters_t parameters_list_solarka[] =
@@ -672,6 +716,77 @@ const char* get_serial_number( void )
   return DevConfig_GetSerialNumber();
 }
 
+static void get_size_of_grain( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_SIZE_OF_GRAIN );
+}
+
+static void set_size_of_grain( uint32_t value )
+{
+  parameters_setValue( PARAM_SIZE_OF_GRAIN, value );
+}
+
+static void get_max_size_of_grain( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_SIZE_OF_GRAIN );
+}
+
+static void get_min_size_of_grain( uint32_t* value )
+{
+  *value = parameters_getMinValue( PARAM_SIZE_OF_GRAIN );
+}
+
+static const char* get_size_of_grain_str( void )
+{
+  uint32_t value = parameters_getValue( PARAM_SIZE_OF_GRAIN );
+  switch ( value )
+  {
+    case 0:
+      return dictionary_get_string( DICT_SIZE_OF_GRAIN_SMALL );
+    case 1:
+      return dictionary_get_string( DICT_SIZE_OF_GRAIN_MEDIUM );
+    case 2:
+      return dictionary_get_string( DICT_SIZE_OF_GRAIN_LARGE );
+    default:
+      return "Unknown";
+  }
+}
+
+static void get_high_of_machine( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_HIGH_OF_MACHINE );
+}
+
+static void set_high_of_machine( uint32_t value )
+{
+  parameters_setValue( PARAM_HIGH_OF_MACHINE, value );
+}
+
+static void get_max_high_of_machine( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_HIGH_OF_MACHINE );
+}
+
+static void get_min_high_of_machine( uint32_t* value )
+{
+  *value = parameters_getMinValue( PARAM_HIGH_OF_MACHINE );
+}
+
+static void get_auto_mode( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_AUTO_MODE );
+}
+
+static void set_auto_mode( uint32_t value )
+{
+  parameters_setValue( PARAM_AUTO_MODE, value );
+}
+
+static void get_max_auto_mode( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_AUTO_MODE );
+}
+
 static void _set_and_exit( menu_token_t* menu )
 {
   if ( _state == MENU_EDIT_PARAMETERS )
@@ -840,7 +955,6 @@ static void menu_button_minus_time_cb( void* arg )
   {
     fastProcessStart( &parameters_list[menu->position].value, parameters_list[menu->position].max_value, parameters_list[menu->position].min_value, FP_MINUS, parameters_list[menu->position].fast_add );
   }
-  
 }
 
 static void menu_button_m_p_pull_cb( void* arg )

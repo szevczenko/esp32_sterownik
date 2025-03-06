@@ -40,6 +40,7 @@
 #include "vibro.h"
 #include "wifi_menu.h"
 #include "wifidrv.h"
+#include "xkc-kl200-uart.h"
 
 extern void ultrasonar_start( void );
 
@@ -129,7 +130,8 @@ static void _init_server( void )
 
   measure_start();
   srvrControllStart();
-  ultrasonar_start();
+  // ultrasonar_start();
+  xkc_init( 1, 9600, 17, 16 );
 
 #if CONFIG_DEVICE_SIEWNIK
   errorSiewnikStart();
