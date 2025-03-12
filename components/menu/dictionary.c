@@ -69,6 +69,12 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "старт",
                              "START",
                              "Start" },
+  [DICT_AUTO_MENU] =
+    {
+                             "Auto",
+                             "Авто",
+                             "AUTO",
+                             "Auto" },
   [DICT_DEVICES] =
     {
                              "Devices",
@@ -495,6 +501,12 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Автоматический режим",
                              "Tryb automatyczny",
                              "Automatikmodus" },
+  [DICT_VELOCITY] =
+    {
+                             "Velocity",
+                             "Скорость",
+                             "Prędkość",
+                             "Geschwindigkeit" },
 };
 
 void dictionary_init( void )
