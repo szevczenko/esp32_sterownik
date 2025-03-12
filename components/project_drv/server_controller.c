@@ -328,7 +328,8 @@ static void _auto_working( void )
   // Motor rpm = max_rpm / 100 % * motor_value %
   double motor_rpm = max_rpm / 100 * ctx.motor_value;
   // Grain throwing speed = motor_rpm * 2 * PI * R / 60
-  double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * ctx.machine_height / 60;
+  float _R = 0.3;    // Example value. 30 [cm]
+  double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * _R / 60;
   // Machine working width R= V0 * (2*h/g)^0.5
   // V0 - grain throwing speed, h - height of machine, g - gravity
   double working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
