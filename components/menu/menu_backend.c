@@ -6,6 +6,7 @@
 #include "dictionary.h"
 #include "freertos/semphr.h"
 #include "http_parameters_client.h"
+#include "menu_auto.h"
 #include "menu_drv.h"
 #include "parameters.h"
 #include "ssdFigure.h"
@@ -34,6 +35,8 @@ typedef enum
   STATE_ERROR_CHECK,
   STATE_EMERGENCY_DISABLE,
   STATE_EMERGENCY_DISABLE_EXIT,
+  STATE_AUTO,
+  STATE_EXIT_AUTO,
   STATE_TOP,
 } state_backend_t;
 
@@ -43,15 +46,16 @@ typedef struct
   bool error_flag;
   char* error_msg;
   uint32_t get_data_cnt;
-
   bool menu_start_is_active;
   bool menu_param_is_active;
   bool emergency_msg_sended;
   bool emergency_exit_msg_sended;
-  bool emergensy_req;
-
+  bool emergency_req;
   bool send_all_data;
+  bool auto_mode_sent;
   struct menu_data sended_data;
+  struct auto_data sended_auto_data;
+  bool menu_auto_is_active;
 } menu_start_context_t;
 
 static menu_start_context_t ctx;
@@ -65,17 +69,16 @@ static char* state_name[] =
     [STATE_MENU_PARAMETERS] = "STATE_MENU_PARAMETERS",
     [STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
     [STATE_EMERGENCY_DISABLE] = "STATE_EMERGENCY_DISABLE",
-    [STATE_EMERGENCY_DISABLE_EXIT] = "STATE_EMERGENCY_DISABLE_EXIT" };
+    [STATE_EMERGENCY_DISABLE_EXIT] = "STATE_EMERGENCY_DISABLE_EXIT",
+    [STATE_AUTO] = "STATE_AUTO",
+    [STATE_EXIT_AUTO] = "STATE_EXIT_AUTO" };
 
 static void change_state( state_backend_t new_state )
 {
-  if ( ctx.state < STATE_TOP )
+  if ( ctx.state < STATE_TOP && ctx.state != new_state )
   {
-    if ( ctx.state != new_state )
-    {
-      LOG( PRINT_INFO, "Backend menu %s", state_name[new_state] );
-      ctx.state = new_state;
-    }
+    LOG( PRINT_INFO, "Backend menu %s", state_name[new_state] );
+    ctx.state = new_state;
   }
 }
 
@@ -113,7 +116,7 @@ static void _send_emergency_msg( void )
 
 static void _check_emergency_disable( void )
 {
-  if ( ctx.emergensy_req )
+  if ( ctx.emergency_req )
   {
     _enter_emergency();
   }
@@ -139,6 +142,8 @@ static void backend_idle( void )
     return;
   }
 
+  ctx.auto_mode_sent = false;
+
   osDelay( 50 );
 }
 
@@ -163,10 +168,9 @@ static bool _check_error( void )
   return false;
 }
 
-static void backend_send_control_data( void )
+static void backend_send_menu_data( void )
 {
   struct menu_data* data = menuStartGetData();
-
   if ( ctx.send_all_data )
   {
     bool result = HTTPParamClient_GetStrValue( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 ) == ERROR_CODE_OK;
@@ -184,6 +188,7 @@ static void backend_send_control_data( void )
       ctx.sended_data.motor_on = data->motor_on;
       ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
     }
+    return;
   }
 
   if ( data->motor_value != ctx.sended_data.motor_value )
@@ -201,7 +206,7 @@ static void backend_send_control_data( void )
       ctx.sended_data.servo_value = data->servo_value;
     }
   }
-  
+
   if ( data->motor_on != ctx.sended_data.motor_on )
   {
     if ( HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, data->motor_on, 1000 ) == ERROR_CODE_OK )
@@ -215,6 +220,63 @@ static void backend_send_control_data( void )
     if ( HTTPParamClient_SetU32Value( PARAM_SERVO_IS_ON, data->servo_vibro_on, 1000 ) == ERROR_CODE_OK )
     {
       ctx.sended_data.servo_vibro_on = data->servo_vibro_on;
+    }
+  }
+}
+
+static void backend_send_auto_data( void )
+{
+  struct auto_data* auto_data = menuAutoGetData();
+  if ( ctx.send_all_data )
+  {
+    bool result = HTTPParamClient_GetStrValue( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY, auto_data->set_velocity, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_GRAIN_PER_HECTARE, auto_data->kg_per_ha, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, auto_data->is_working, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_MOTOR, auto_data->motor_value, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE, parameters_getValue( PARAM_HIGH_OF_MACHINE ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SIZE_OF_GRAIN, parameters_getValue( PARAM_SIZE_OF_GRAIN ), 2000 ) == ERROR_CODE_OK;
+
+    if ( result )
+    {
+      ctx.send_all_data = false;
+      ctx.sended_auto_data.set_velocity = auto_data->set_velocity;
+      ctx.sended_auto_data.kg_per_ha = auto_data->kg_per_ha;
+      ctx.sended_auto_data.is_working = auto_data->is_working;
+      ctx.sended_auto_data.motor_value = auto_data->motor_value;
+    }
+    return;
+  }
+
+  if ( auto_data->set_velocity != ctx.sended_auto_data.set_velocity )
+  {
+    if ( HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY, auto_data->set_velocity, 1000 ) == ERROR_CODE_OK )
+    {
+      ctx.sended_auto_data.set_velocity = auto_data->set_velocity;
+    }
+  }
+
+  if ( auto_data->kg_per_ha != ctx.sended_auto_data.kg_per_ha )
+  {
+    if ( HTTPParamClient_SetU32Value( PARAM_GRAIN_PER_HECTARE, auto_data->kg_per_ha, 1000 ) == ERROR_CODE_OK )
+    {
+      ctx.sended_auto_data.kg_per_ha = auto_data->kg_per_ha;
+    }
+  }
+
+  if ( auto_data->is_working != ctx.sended_auto_data.is_working )
+  {
+    if ( HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, auto_data->is_working, 1000 ) == ERROR_CODE_OK )
+    {
+      ctx.sended_auto_data.is_working = auto_data->is_working;
+    }
+  }
+
+  if ( auto_data->motor_value != ctx.sended_auto_data.motor_value )
+  {
+    if ( HTTPParamClient_SetU32Value( PARAM_MOTOR, auto_data->motor_value, 1000 ) == ERROR_CODE_OK )
+    {
+      ctx.sended_auto_data.motor_value = auto_data->motor_value;
     }
   }
 }
@@ -241,7 +303,6 @@ static void backend_start( void )
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_VELOCITY, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
-    HTTPParamClient_GetU32Value( PARAM_GRAIN_PER_HECTARE, NULL, 2000 );
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
   }
 
@@ -260,18 +321,93 @@ static void backend_start( void )
 
   if ( !ctx.menu_start_is_active )
   {
-    change_state( STATE_EXIT_START );
+    change_state( STATE_EXIT_AUTO );
     return;
   }
 
-  backend_send_control_data();
+  if ( !ctx.auto_mode_sent )
+  {
+    if ( HTTPParamClient_SetU32Value( PARAM_AUTO_MODE, 0, 1000 ) != ERROR_CODE_OK )
+    {
+      LOG( PRINT_INFO, "Failed to set PARAM_AUTO_MODE to 0, retrying..." );
+      return;
+    }
+    ctx.auto_mode_sent = true;
+  }
+
+  backend_send_menu_data();
+
+  osDelay( 50 );
+}
+
+static void backend_auto( void )
+{
+  if ( ctx.get_data_cnt % 5 == 0 )
+  {
+    bool errors = _check_error() > 0;
+    if ( errors )
+    {
+      LOG( PRINT_INFO, "Error detected on machine" );
+    }
+    else
+    {
+      menuStartResetError();
+      LOG( PRINT_DEBUG, "No error" );
+    }
+
+    HTTPParamClient_GetU32Value( PARAM_CURRENT_MOTOR, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_VOLTAGE_ACCUM, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_SILOS_LEVEL, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_VELOCITY, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
+    LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
+  }
+
+  if ( ctx.get_data_cnt % 20 == 0 )
+  {
+    ctx.send_all_data = true;
+  }
+
+  ctx.get_data_cnt++;
+
+  if ( ctx.menu_param_is_active )
+  {
+    change_state( STATE_MENU_PARAMETERS );
+    return;
+  }
+
+  if ( !ctx.menu_auto_is_active )
+  {
+    change_state( STATE_EXIT_AUTO );
+    return;
+  }
+
+  if ( !ctx.auto_mode_sent )
+  {
+    if ( HTTPParamClient_SetU32Value( PARAM_AUTO_MODE, 1, 1000 ) != ERROR_CODE_OK )
+    {
+      LOG( PRINT_INFO, "Failed to set PARAM_AUTO_MODE to 1, retrying..." );
+      return;
+    }
+    ctx.auto_mode_sent = true;
+  }
+
+  backend_send_auto_data();
 
   osDelay( 50 );
 }
 
 static void backend_exit_start( void )
 {
-  backend_send_control_data();
+  change_state( STATE_IDLE );
+  backend_send_menu_data();
+}
+
+static void backend_exit_auto( void )
+{
+  backend_send_auto_data();
   change_state( STATE_IDLE );
 }
 
@@ -319,7 +455,7 @@ static void backend_error_check( void )
 static void backend_emergency_disable_state( void )
 {
   _send_emergency_msg();
-  if ( !ctx.emergensy_req )
+  if ( !ctx.emergency_req )
   {
     LOG( PRINT_INFO, "%s exit", __func__ );
     menuDrvExitEmergencyDisable();
@@ -368,19 +504,20 @@ void backendExitMenuStart( void )
   ctx.menu_start_is_active = false;
 }
 
+void backendEnterMenuAuto( void )
+{
+  ctx.menu_auto_is_active = true;
+  change_state( STATE_AUTO );
+}
+
+void backendExitMenuAuto( void )
+{
+  ctx.menu_auto_is_active = false;
+}
+
 void backendToggleEmergencyDisable( void )
 {
-  if ( ctx.emergensy_req )
-  {
-    ctx.emergensy_req = false;
-  }
-  else
-  {
-    if ( wifiDrvIsConnected() )
-    {
-      ctx.emergensy_req = true;
-    }
-  }
+  ctx.emergency_req = !ctx.emergency_req && wifiDrvIsConnected();
 }
 
 static void menu_task( void* arg )
@@ -421,6 +558,14 @@ static void menu_task( void* arg )
 
       case STATE_EMERGENCY_DISABLE_EXIT:
         backend_emergency_disable_exit();
+        break;
+
+      case STATE_AUTO:
+        backend_auto();
+        break;
+
+      case STATE_EXIT_AUTO:
+        backend_exit_auto();
         break;
 
       default:

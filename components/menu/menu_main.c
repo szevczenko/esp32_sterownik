@@ -1,5 +1,6 @@
 #include "app_config.h"
 #include "dictionary.h"
+#include "menu_auto.h"
 #include "menu_default.h"
 #include "menu_drv.h"
 #include "menu_low_battery.h"
@@ -32,6 +33,13 @@ static menu_token_t start_menu =
     //.menu_list = setting_tokens
 };
 
+static menu_token_t auto_menu =
+  {
+    .name_dict = DICT_AUTO_MENU,
+    .arg_type = T_ARG_TYPE_MENU,
+    //.menu_list = setting_tokens
+};
+
 static menu_token_t wifi_menu =
   {
     .name_dict = DICT_DEVICES,
@@ -48,7 +56,7 @@ static menu_token_t low_battery_menu =
     .name_dict = DICT_LOW_BATTERY,
 };
 
-menu_token_t* main_menu_tokens[] = { &start_menu, &setings, &wifi_menu, &parameters_menu, NULL };
+menu_token_t* main_menu_tokens[] = { &start_menu, &auto_menu, &setings, &wifi_menu, &parameters_menu, NULL };
 
 menu_token_t main_menu =
   {
@@ -65,6 +73,7 @@ void mainMenuInit( menu_drv_init_t init_type )
     menuInitWifiMenu( &wifi_menu );
     menuInitStartMenu( &start_menu );
     menuInitParametersMenu( &parameters_menu );
+    menuAutoInit( &auto_menu );
     menuSetMain( &main_menu );
   }
   else
