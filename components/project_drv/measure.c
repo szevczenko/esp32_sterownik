@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 
-#include "cmd_server.h"
 #include "app_config.h"
+#include "cmd_server.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_oneshot.h"
@@ -11,7 +11,7 @@
 #include "measure.h"
 #include "parameters.h"
 #include "parse_cmd.h"
-#include "ultrasonar.h"
+#include "tank_sensor.h"
 
 #define MODULE_NAME "[Meas] "
 #define DEBUG_LVL   PRINT_WARNING
@@ -55,19 +55,19 @@ typedef struct
 
 static meas_data_t meas_data[MEAS_CH_LAST] =
   {
-    [MEAS_CH_IN] = {.unit = ADC_UNIT_1,  .channel = ADC_IN_CH,     .ch_name = "MEAS_CH_IN"         },
-    [MEAS_CH_MOTOR] = { .unit = ADC_UNIT_1, .channel = ADC_MOTOR_CH,  .ch_name = "MEAS_CH_MOTOR"      },
-    [MEAS_CH_12V] = { .unit = ADC_UNIT_1, .channel = ADC_12V_CH,    .ch_name = "MEAS_CH_12V"        },
+    [MEAS_CH_IN] = {.unit = ADC_UNIT_1, .channel = ADC_IN_CH,     .ch_name = "MEAS_CH_IN"         },
+    [MEAS_CH_MOTOR] = {.unit = ADC_UNIT_1, .channel = ADC_MOTOR_CH,  .ch_name = "MEAS_CH_MOTOR"      },
+    [MEAS_CH_12V] = {.unit = ADC_UNIT_1, .channel = ADC_12V_CH,    .ch_name = "MEAS_CH_12V"        },
 #if CONFIG_DEVICE_SIEWNIK
-    [MEAS_CH_SERVO] = { .unit = ADC_UNIT_1, .channel = ADC_SERVO_CH,  .ch_name = "MEAS_CH_SERVO"      },
-    [MEAS_CH_TEMP] = { .unit = ADC_UNIT_1, .channel = ADC_CE_CH,     .ch_name = "MEAS_CH_TEMP"       },
-    // [MEAS_CH_CHECK_SERVO] = { .unit = ADC_UNIT_1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_CHECK_SERVO"},
+    [MEAS_CH_SERVO] = {.unit = ADC_UNIT_1, .channel = ADC_SERVO_CH,  .ch_name = "MEAS_CH_SERVO"      },
+    [MEAS_CH_TEMP] = {.unit = ADC_UNIT_1, .channel = ADC_CE_CH,     .ch_name = "MEAS_CH_TEMP"       },
+// [MEAS_CH_CHECK_SERVO] = { .unit = ADC_UNIT_1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_CHECK_SERVO"},
 #endif
 
 #if CONFIG_DEVICE_SOLARKA
-    [MEAS_CH_TEMP] = { .unit = ADC_UNIT_1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_TEMP"       },
-    [MEAS_CH_CHECK_VIBRO] = { .unit = ADC_UNIT_1, .channel = ADC_CHANNEL_0, .ch_name = "MEAS_CH_CHECK_VIBRO"},
-    [MEAS_CH_CHECK_MOTOR] = { .unit = ADC_UNIT_1, .channel = ADC_CHANNEL_3, .ch_name = "MEAS_CH_CHECK_MOTOR"},
+    [MEAS_CH_TEMP] = {.unit = ADC_UNIT_1, .channel = ADC_CHANNEL_4, .ch_name = "MEAS_CH_TEMP"       },
+    [MEAS_CH_CHECK_VIBRO] = {.unit = ADC_UNIT_1, .channel = ADC_CHANNEL_0, .ch_name = "MEAS_CH_CHECK_VIBRO"},
+    [MEAS_CH_CHECK_MOTOR] = {.unit = ADC_UNIT_1, .channel = ADC_CHANNEL_3, .ch_name = "MEAS_CH_CHECK_MOTOR"},
 #endif
 };
 
@@ -200,22 +200,22 @@ static void measure_process( void* arg )
     // LOG(PRINT_INFO, "%s %d", meas_data[MEAS_CH_CHECK_VIBRO].ch_name, meas_data[MEAS_CH_CHECK_VIBRO].filtered_adc);
     // LOG(PRINT_INFO, "%s %d", meas_data[MEAS_CH_CHECK_MOTOR].ch_name, meas_data[MEAS_CH_CHECK_MOTOR].filtered_adc);
 
-    if ( ultrasonar_is_connected() )
+    if ( tank_sensor_is_connected() )
     {
-      uint32_t silos_height = parameters_getValue( PARAM_SILOS_HEIGHT ) * 10;
-      uint32_t silos_distance = ultrasonar_get_distance() > SILOS_START_MEASURE ? ultrasonar_get_distance() - SILOS_START_MEASURE : 0;
-      if ( silos_distance > silos_height )
+      uint32_t silos_height_mm = parameters_getValue( PARAM_SILOS_HEIGHT ) * 10;
+      uint32_t silos_distance_mm = tank_sensor_get_distance() > SILOS_START_MEASURE ? tank_sensor_get_distance() : 0;
+      if ( silos_distance_mm > silos_height_mm )
       {
-        silos_distance = silos_height;
+        silos_distance_mm = silos_height_mm;
       }
 
-      int silos_percent = ( silos_height - silos_distance ) * 100 / silos_height;
+      int silos_percent = ( silos_height_mm - silos_distance_mm ) * 100 / silos_height_mm;
       if ( ( silos_percent < 0 ) || ( silos_percent > 100 ) )
       {
         silos_percent = 0;
       }
       uint32_t silos_is_low = silos_percent < 10;
-      LOG( PRINT_INFO, "Silos %d %d", silos_percent, silos_is_low );
+      LOG( PRINT_INFO, "Silos height %lu, dist %lu, %d% %s", silos_height_mm, silos_distance_mm, silos_percent, silos_is_low ? "low" : "normal" );
       parameters_setValue( PARAM_LOW_LEVEL_SILOS, silos_is_low );
       parameters_setValue( PARAM_SILOS_LEVEL, (uint32_t) silos_percent );
       parameters_setValue( PARAM_SILOS_SENSOR_IS_CONNECTED, 1 );
