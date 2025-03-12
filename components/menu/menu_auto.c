@@ -1,3 +1,5 @@
+#include "menu_auto.h"
+
 #include "app_config.h"
 #include "battery.h"
 #include "buzzer.h"
@@ -13,12 +15,11 @@
 #include "parameters.h"
 #include "ssd1306.h"
 #include "ssdFigure.h"
-#include "start_menu.h"
 #include "wifi_menu.h"
 #include "wifidrv.h"
 
 #define MODULE_NAME "[START] "
-#define DEBUG_LVL   PRINT_INFO
+#define DEBUG_LVL   PRINT_DEBUG
 
 #if CONFIG_DEBUG_MENU_AUTO
 #define LOG( _lvl, ... ) \
@@ -27,24 +28,27 @@
 #define LOG( PRINT_INFO, ... )
 #endif
 
-#define CHANGE_MENU_TIMEOUT_MS   1500
-#define CHANGE_VALUE_DISP_OFFSET 40
+#define CHANGE_MENU_TIMEOUT_MS        1500
+#define CHANGE_VALUE_DISP_OFFSET      40
+#define VELOCITY_WARNING_TIMEOUT_MS   5000    // 5 seconds
+#define SIMULTANEOUS_PRESS_TIMEOUT_MS 1000    // Time in ms to detect simultaneous press
 
 typedef enum
 {
   STATE_INIT,
   STATE_CHECK_WIFI,
   STATE_IDLE,
-  STATE_START,
   STATE_READY,
   STATE_ERROR,
   STATE_VELOCITY_CHANGE,
-  STATE_SERVO_VIBRO_CHANGE,
+  STATE_KG_PER_HA_CHANGE,
   STATE_LOW_SILOS,
   STATE_STOP,
   STATE_ERROR_CHECK,
   STATE_RECONNECT,
   STATE_WAIT_CONNECT,
+  STATE_VELOCITY_WARNING,    // Add this line
+  STATE_MOTOR_CHANGE,    // Add this state
   STATE_TOP,
 } state_t;
 
@@ -52,6 +56,7 @@ typedef enum
 {
   EDIT_VELOCITY,
   EDIT_SERVO,
+  EDIT_MOTOR,    // Add this edit value type
   EDIT_TOP,
 } edit_value_t;
 
@@ -67,11 +72,18 @@ typedef struct
   uint32_t timeout_con;
   uint32_t low_silos_ckeck_timeout;
   error_type_t error_dev;
-  struct menu_data data;
+  struct auto_data data;
   TickType_t animation_timeout;
   uint8_t animation_cnt;
   TickType_t change_menu_timeout;
   TickType_t low_silos_timeout;
+  TickType_t velocity_warning_timeout;    // Add this line
+  TickType_t velocity_warning_msg_time;
+  TickType_t simultaneous_press_time;
+  bool velocity_warning_triggered;    // Add this line
+  bool button_up_pressed;    // Add this line
+  bool button_down_pressed;    // Add this line
+  bool both_buttons_pressed;
 } menu_start_context_t;
 
 static menu_start_context_t ctx;
@@ -81,52 +93,60 @@ __attribute__( ( unused ) ) static char* state_name[] =
     [STATE_INIT] = "STATE_INIT",
     [STATE_IDLE] = "STATE_IDLE",
     [STATE_CHECK_WIFI] = "STATE_CHECK_WIFI",
-    [STATE_START] = "STATE_START",
     [STATE_READY] = "STATE_READY",
     [STATE_ERROR] = "STATE_ERROR",
     [STATE_VELOCITY_CHANGE] = "STATE_VELOCITY_CHANGE",
-    [STATE_SERVO_VIBRO_CHANGE] = "STATE_SERVO_VIBRO_CHANGE",
+    [STATE_KG_PER_HA_CHANGE] = "STATE_KG_PER_HA_CHANGE",
     [STATE_LOW_SILOS] = "STATE_LOW_SILOS",
     [STATE_STOP] = "STATE_STOP",
     [STATE_ERROR_CHECK] = "STATE_ERROR_CHECK",
     [STATE_RECONNECT] = "STATE_RECONNECT",
-    [STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT" };
+    [STATE_WAIT_CONNECT] = "STATE_WAIT_CONNECT",
+    [STATE_VELOCITY_WARNING] = "STATE_VELOCITY_WARNING",
+    [STATE_MOTOR_CHANGE] = "STATE_MOTOR_CHANGE" };    // Add this to state_name
 
 extern void enterMenuParameters( void );
+extern void backendEnterMenuAuto( void );    // Add this line
+extern void backendExitMenuAuto( void );    // Add this line
 
 // Group related functions together
 // Button callback functions
 static void _button_up_callback( void* arg );
+static void _button_up_release_callback( void* arg );    // Add this line
+static void _button_up_timer_callback( void* arg );    // Add this line
 static void _button_down_callback( void* arg );
+static void _button_down_release_callback( void* arg );    // Add this line
+static void _button_down_timer_callback( void* arg );    // Add this line
 static void _button_exit_callback( void* arg );
-static void _button_servo_callback( void* arg );
-static void _button_velocity_callback( void* arg );
-static void _button_velocity_plus_push_cb( void* arg );
-static void _button_velocity_plus_time_cb( void* arg );
-static void _button_velocity_minus_push_cb( void* arg );
-static void _button_velocity_minus_time_cb( void* arg );
-static void _button_velocity_p_m_pull_cb( void* arg );
-static void _button_servo_plus_push_cb( void* arg );
-static void _button_servo_plus_time_cb( void* arg );
-static void _button_servo_minus_push_cb( void* arg );
-static void _button_servo_minus_time_cb( void* arg );
-static void _button_servo_p_m_pull_cb( void* arg );
+static void _button_kg_per_ha_callback( void* arg );
+static void _button_motor_callback( void* arg );
+static void _button_motor_plus_push_cb( void* arg );
+static void _button_motor_plus_time_cb( void* arg );
+static void _button_motor_minus_push_cb( void* arg );
+static void _button_motor_minus_time_cb( void* arg );
+static void _button_motor_p_m_pull_cb( void* arg );
+static void _button_kg_per_ha_plus_push_cb( void* arg );
+static void _button_kg_per_ha_plus_time_cb( void* arg );
+static void _button_kg_per_ha_minus_push_cb( void* arg );
+static void _button_kg_per_ha_minus_time_cb( void* arg );
+static void _button_kg_per_ha_p_m_pull_cb( void* arg );
 static void _button_on_off( void* arg );
 
 // State handling functions
 static void _state_init( void );
 static void _state_check_connection( void );
 static void _state_idle( void );
-static void _state_start( void );
 static void _state_ready( void );
 static void _state_low_silos( void );
 static void _state_error( void );
 static void _state_velocity_change( void );
-static void _state_vibro_change( void );
+static void _state_kg_per_ha_change( void );
 static void _state_stop( void );
 static void _state_error_check( void );
 static void _state_reconnect( void );
 static void _state_wait_connect( void );
+static void _state_velocity_warning( void );    // Add this line
+static void _state_motor_change( void );    // Add this line
 
 // Helper functions
 static void _change_state( state_t new_state );
@@ -134,9 +154,9 @@ static void _reset_error( void );
 static void _set_change_menu( edit_value_t val );
 static bool _is_working_state( void );
 static bool _check_low_silos_flag( void );
-static void _menu_enter_parameters_callback( void* arg );
 static void _velocity_fast_add_cb( uint32_t value );
 static void _servo_fast_add_cb( uint32_t value );
+static void _motor_fast_add_cb( uint32_t value );    // Add this line
 static void _show_wait_connection( void );
 static void _menu_set_error_msg( const char* msg );
 
@@ -179,9 +199,11 @@ static void _set_change_menu( edit_value_t val )
         _change_state( STATE_VELOCITY_CHANGE );
         break;
       case EDIT_SERVO:
-        _change_state( STATE_SERVO_VIBRO_CHANGE );
+        _change_state( STATE_KG_PER_HA_CHANGE );
         break;
-
+      case EDIT_MOTOR:    // Add this case
+        _change_state( STATE_MOTOR_CHANGE );
+        break;
       default:
         return;
     }
@@ -192,7 +214,7 @@ static void _set_change_menu( edit_value_t val )
 
 static bool _is_working_state( void )
 {
-  return ( ctx.state == STATE_READY || ctx.state == STATE_SERVO_VIBRO_CHANGE || ctx.state == STATE_VELOCITY_CHANGE || ctx.state == STATE_LOW_SILOS );
+  return ( ctx.state == STATE_READY || ctx.state == STATE_KG_PER_HA_CHANGE || ctx.state == STATE_VELOCITY_CHANGE || ctx.state == STATE_LOW_SILOS || ctx.state == STATE_MOTOR_CHANGE );
 }
 
 static bool _check_low_silos_flag( void )
@@ -219,12 +241,6 @@ static bool _check_low_silos_flag( void )
   return false;
 }
 
-static void _menu_enter_parameters_callback( void* arg )
-{
-  ctx.enter_parameters_menu = true;
-  enterMenuParameters();
-}
-
 static void _velocity_fast_add_cb( uint32_t value )
 {
   (void) value;
@@ -235,6 +251,12 @@ static void _servo_fast_add_cb( uint32_t value )
 {
   (void) value;
   _set_change_menu( EDIT_SERVO );
+}
+
+static void _motor_fast_add_cb( uint32_t value )    // Add this callback
+{
+  (void) value;
+  _set_change_menu( EDIT_MOTOR );
 }
 
 static void _button_up_callback( void* arg )
@@ -248,14 +270,45 @@ static void _button_up_callback( void* arg )
   }
 
   reset_error_and_power_save_timer();
+  ctx.button_up_pressed = true;    // Set button state to pressed
 
   if ( !_is_working_state() )
   {
     return;
   }
+
+  // If down button is also pressed, mark for simultaneous press
+  if ( ctx.button_down_pressed )    // Use stored state instead of Button_GetState
+  {
+    ctx.both_buttons_pressed = true;
+    ctx.simultaneous_press_time = xTaskGetTickCount() + MS2ST( SIMULTANEOUS_PRESS_TIMEOUT_MS );
+    fastProcessStop( &ctx.data.set_velocity );    // Stop fast process immediately
+    return;
+  }
+
+  // Otherwise increment set_velocity
+  if ( ctx.data.set_velocity < 200 )    // Assume 200 is the maximum value
+  {
+    ctx.data.set_velocity++;
+    _set_change_menu( EDIT_VELOCITY );
+  }
 }
 
-static void _button_down_callback( void* arg )
+static void _button_up_release_callback( void* arg )    // Add this function
+{
+  menu_token_t* menu = arg;
+
+  if ( menu == NULL )
+  {
+    NULL_ERROR_MSG();
+    return;
+  }
+
+  ctx.button_up_pressed = false;    // Set button state to released
+  fastProcessStop( &ctx.data.set_velocity );    // Stop fast process if active
+}
+
+static void _button_up_timer_callback( void* arg )    // Add this function
 {
   menu_token_t* menu = arg;
 
@@ -271,6 +324,77 @@ static void _button_down_callback( void* arg )
   {
     return;
   }
+
+  fastProcessStart( &ctx.data.set_velocity, 200, 1, FP_PLUS, _velocity_fast_add_cb );
+}
+
+static void _button_down_callback( void* arg )
+{
+  menu_token_t* menu = arg;
+
+  if ( menu == NULL )
+  {
+    NULL_ERROR_MSG();
+    return;
+  }
+
+  reset_error_and_power_save_timer();
+  ctx.button_down_pressed = true;    // Set button state to pressed
+
+  if ( !_is_working_state() )
+  {
+    return;
+  }
+
+  // If up button is also pressed, mark for simultaneous press
+  if ( ctx.button_up_pressed )    // Use stored state instead of Button_GetState
+  {
+    ctx.both_buttons_pressed = true;
+    ctx.simultaneous_press_time = xTaskGetTickCount() + MS2ST( SIMULTANEOUS_PRESS_TIMEOUT_MS );
+    fastProcessStop( &ctx.data.set_velocity );    // Stop fast process immediately
+    return;
+  }
+
+  // Otherwise decrement set_velocity
+  if ( ctx.data.set_velocity > 1 )    // Assume 1 is the minimum value
+  {
+    ctx.data.set_velocity--;
+    _set_change_menu( EDIT_VELOCITY );
+  }
+}
+
+static void _button_down_release_callback( void* arg )    // Add this function
+{
+  menu_token_t* menu = arg;
+
+  if ( menu == NULL )
+  {
+    NULL_ERROR_MSG();
+    return;
+  }
+
+  ctx.button_down_pressed = false;    // Set button state to released
+  fastProcessStop( &ctx.data.set_velocity );    // Stop fast process if active
+}
+
+static void _button_down_timer_callback( void* arg )    // Add this function
+{
+  menu_token_t* menu = arg;
+
+  if ( menu == NULL )
+  {
+    NULL_ERROR_MSG();
+    return;
+  }
+
+  reset_error_and_power_save_timer();
+
+  if ( !_is_working_state() )
+  {
+    return;
+  }
+
+  fastProcessStart( &ctx.data.set_velocity, 200, 1, FP_MINUS, _velocity_fast_add_cb );
 }
 
 static void _button_exit_callback( void* arg )
@@ -287,7 +411,7 @@ static void _button_exit_callback( void* arg )
   ctx.exit_wait_flag = true;
 }
 
-static void _button_servo_callback( void* arg )
+static void _button_kg_per_ha_callback( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -307,7 +431,7 @@ static void _button_servo_callback( void* arg )
   // ctx.data.servo_vibro_on = ctx.data.servo_vibro_on ? false : true;
 }
 
-static void _button_velocity_callback( void* arg )
+static void _button_motor_callback( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -323,8 +447,6 @@ static void _button_velocity_callback( void* arg )
   {
     return;
   }
-
-  _set_change_menu( EDIT_VELOCITY );
 
   if ( ctx.data.is_working )
   {
@@ -337,7 +459,7 @@ static void _button_velocity_callback( void* arg )
   }
 }
 
-static void _button_velocity_plus_push_cb( void* arg )
+static void _button_motor_plus_push_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -354,15 +476,15 @@ static void _button_velocity_plus_push_cb( void* arg )
     return;
   }
 
-  if ( ctx.data.velocity < 200 )
+  if ( ctx.data.motor_value < 100 )    // Changed to motor_value and limit to 100
   {
-    ctx.data.velocity++;
+    ctx.data.motor_value++;
   }
 
-  _set_change_menu( EDIT_VELOCITY );
+  _set_change_menu( EDIT_MOTOR );    // Change to EDIT_MOTOR
 }
 
-static void _button_velocity_plus_time_cb( void* arg )
+static void _button_motor_plus_time_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -379,10 +501,10 @@ static void _button_velocity_plus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.velocity, 200, 1, FP_PLUS, _velocity_fast_add_cb );
+  fastProcessStart( &ctx.data.motor_value, 100, 1, FP_PLUS, _motor_fast_add_cb );    // Use _motor_fast_add_cb
 }
 
-static void _button_velocity_minus_push_cb( void* arg )
+static void _button_motor_minus_push_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -399,15 +521,15 @@ static void _button_velocity_minus_push_cb( void* arg )
     return;
   }
 
-  if ( ctx.data.velocity > 1 )
+  if ( ctx.data.motor_value > 0 )    // Changed to motor_value and min limit to 0
   {
-    ctx.data.velocity--;
+    ctx.data.motor_value--;
   }
 
-  _set_change_menu( EDIT_VELOCITY );
+  _set_change_menu( EDIT_MOTOR );    // Change to EDIT_MOTOR
 }
 
-static void _button_velocity_minus_time_cb( void* arg )
+static void _button_motor_minus_time_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -424,10 +546,10 @@ static void _button_velocity_minus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.velocity, 200, 1, FP_MINUS, _velocity_fast_add_cb );
+  fastProcessStart( &ctx.data.motor_value, 100, 0, FP_MINUS, _motor_fast_add_cb );    // Use _motor_fast_add_cb
 }
 
-static void _button_velocity_p_m_pull_cb( void* arg )
+static void _button_motor_p_m_pull_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -437,7 +559,7 @@ static void _button_velocity_p_m_pull_cb( void* arg )
     return;
   }
 
-  fastProcessStop( &ctx.data.velocity );
+  fastProcessStop( &ctx.data.motor_value );    // Changed to motor_value
 
   reset_error_and_power_save_timer();
 
@@ -451,7 +573,7 @@ static void _button_velocity_p_m_pull_cb( void* arg )
 
 /*-------------SERVO BUTTONS------------*/
 
-static void _button_servo_plus_push_cb( void* arg )
+static void _button_kg_per_ha_plus_push_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -476,7 +598,7 @@ static void _button_servo_plus_push_cb( void* arg )
   _set_change_menu( EDIT_SERVO );
 }
 
-static void _button_servo_plus_time_cb( void* arg )
+static void _button_kg_per_ha_plus_time_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -496,7 +618,7 @@ static void _button_servo_plus_time_cb( void* arg )
   fastProcessStart( &ctx.data.kg_per_ha, 100, 0, FP_PLUS, _servo_fast_add_cb );
 }
 
-static void _button_servo_minus_push_cb( void* arg )
+static void _button_kg_per_ha_minus_push_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -521,7 +643,7 @@ static void _button_servo_minus_push_cb( void* arg )
   _set_change_menu( EDIT_SERVO );
 }
 
-static void _button_servo_minus_time_cb( void* arg )
+static void _button_kg_per_ha_minus_time_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -541,7 +663,7 @@ static void _button_servo_minus_time_cb( void* arg )
   fastProcessStart( &ctx.data.kg_per_ha, 100, 0, FP_MINUS, _servo_fast_add_cb );
 }
 
-static void _button_servo_p_m_pull_cb( void* arg )
+static void _button_kg_per_ha_p_m_pull_cb( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -586,28 +708,33 @@ static bool menu_button_init_cb( void* arg )
     return false;
   }
 
+  // Register our modified callbacks
   menu->button.down.fall_callback = _button_down_callback;
-  menu->button.down.timer_callback = _menu_enter_parameters_callback;
-  menu->button.up.timer_callback = _menu_enter_parameters_callback;
+  menu->button.down.rise_callback = _button_down_release_callback;    // Add rise callback
+  menu->button.down.timer_callback = _button_down_timer_callback;    // Update timer callback
+
   menu->button.up.fall_callback = _button_up_callback;
+  menu->button.up.rise_callback = _button_up_release_callback;    // Add rise callback
+  menu->button.up.timer_callback = _button_up_timer_callback;    // Update timer callback
+
   menu->button.enter.fall_callback = _button_exit_callback;
-  menu->button.exit.fall_callback = _button_servo_callback;
+  menu->button.exit.fall_callback = _button_kg_per_ha_callback;
 
-  menu->button.up_minus.fall_callback = _button_velocity_minus_push_cb;
-  menu->button.up_minus.rise_callback = _button_velocity_p_m_pull_cb;
-  menu->button.up_minus.timer_callback = _button_velocity_minus_time_cb;
-  menu->button.up_plus.fall_callback = _button_velocity_plus_push_cb;
-  menu->button.up_plus.rise_callback = _button_velocity_p_m_pull_cb;
-  menu->button.up_plus.timer_callback = _button_velocity_plus_time_cb;
+  menu->button.up_minus.fall_callback = _button_motor_minus_push_cb;
+  menu->button.up_minus.rise_callback = _button_motor_p_m_pull_cb;
+  menu->button.up_minus.timer_callback = _button_motor_minus_time_cb;
+  menu->button.up_plus.fall_callback = _button_motor_plus_push_cb;
+  menu->button.up_plus.rise_callback = _button_motor_p_m_pull_cb;
+  menu->button.up_plus.timer_callback = _button_motor_plus_time_cb;
 
-  menu->button.down_minus.fall_callback = _button_servo_minus_push_cb;
-  menu->button.down_minus.rise_callback = _button_servo_p_m_pull_cb;
-  menu->button.down_minus.timer_callback = _button_servo_minus_time_cb;
-  menu->button.down_plus.fall_callback = _button_servo_plus_push_cb;
-  menu->button.down_plus.rise_callback = _button_servo_p_m_pull_cb;
-  menu->button.down_plus.timer_callback = _button_servo_plus_time_cb;
+  menu->button.down_minus.fall_callback = _button_kg_per_ha_minus_push_cb;
+  menu->button.down_minus.rise_callback = _button_kg_per_ha_p_m_pull_cb;
+  menu->button.down_minus.timer_callback = _button_kg_per_ha_minus_time_cb;
+  menu->button.down_plus.fall_callback = _button_kg_per_ha_plus_push_cb;
+  menu->button.down_plus.rise_callback = _button_kg_per_ha_p_m_pull_cb;
+  menu->button.down_plus.timer_callback = _button_kg_per_ha_plus_time_cb;
 
-  menu->button.is_working.fall_callback = _button_velocity_callback;
+  menu->button.motor_on.fall_callback = _button_motor_callback;
   menu->button.on_off.fall_callback = _button_on_off;
   return true;
 }
@@ -630,6 +757,7 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
 
   ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
+  ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
   ctx.data.is_working = parameters_getValue( PARAM_MOTOR_IS_ON );
   // ctx.data.servo_vibro_on = parameters_getValue( PARAM_GRAIN_PER_HECTARE_IS_ON );
@@ -643,7 +771,7 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
-  backendEnterMenuStart();
+  backendEnterMenuAuto();
 
   ctx.error_flag = 0;
   ctx.enter_parameters_menu = false;
@@ -658,7 +786,7 @@ static bool menu_exit_cb( void* arg )
     // ctx.data.servo_vibro_on = 0;
   }
 
-  backendExitMenuStart();
+  backendExitMenuAuto();
 
   menu_token_t* menu = arg;
 
@@ -669,9 +797,9 @@ static bool menu_exit_cb( void* arg )
   }
 
   MOTOR_LED_SET_GREEN( 0 );
-  SERVO_VIBRO_LED_SET_GREEN( 0 );
+  //  SERVO_VIBRO_LED_SET_GREEN( 0 );
   MOTOR_LED_SET_RED( 0 );
-  SERVO_VIBRO_LED_SET_RED( 0 );
+  //  SERVO_VIBRO_LED_SET_RED( 0 );
   return true;
 }
 
@@ -739,52 +867,12 @@ static void _state_idle( void )
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
-    _change_state( STATE_START );
+    _change_state( STATE_READY );    // Transition directly to STATE_READY
   }
   else
   {
     menuPrintfInfo( "   Target not connected.\n        Go to DEVICES\n         for connect" );
   }
-}
-
-static void _state_start( void )
-{
-  if ( !backendIsConnected() )
-  {
-    return;
-  }
-
-  _change_state( STATE_READY );
-}
-
-static void _state_ready( void )
-{
-  if ( !backendIsConnected() )
-  {
-    ctx.data.is_working = 0;
-    ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
-    ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
-    // ctx.data.servo_vibro_on = 0;
-    HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
-    HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
-    HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-    HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
-    _change_state( STATE_START );
-  }
-  else
-  {
-    menuPrintfInfo( "   Target not connected.\n        Go to DEVICES\n         for connect" );
-  }
-}
-
-static void _state_start( void )
-{
-  if ( !backendIsConnected() )
-  {
-    return;
-  }
-
-  _change_state( STATE_READY );
 }
 
 static void _state_ready( void )
@@ -795,7 +883,7 @@ static void _state_ready( void )
     return;
   }
 
-  backendEnterMenuStart();
+  backendEnterMenuAuto();
 
   if ( _check_low_silos_flag() )
   {
@@ -808,9 +896,38 @@ static void _state_ready( void )
     ctx.animation_timeout = xTaskGetTickCount() + MS2ST( 100 );
   }
 
-  char str[32];
-  sprintf( str, "%d km/h", ctx.data.velocity );
   oled_clearScreen();
+
+  if ( wifiMenu_GetDevType() != T_DEV_TYPE_SIEWNIK )
+  {
+    oled_printFixed( 2, 3 * LINE_HEIGHT, "Unsupported\ndevice type", OLED_FONT_SIZE_11 );
+    return;
+  }
+
+  char str[32] = { 0 };
+
+  ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+
+  if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
+  {
+    uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
+    sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
+    if ( silos_level > 99 )
+    {
+      oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( silos_level < 100 && silos_level > 9 )
+    {
+      oled_printFixed( 14, 10, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( silos_level < 10 )
+    {
+      oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
+    }
+  }
+
+  ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
+  sprintf( str, "%lu km/h", ctx.data.velocity );
   oled_printFixed( 70, 22, str, OLED_FONT_SIZE_11 );
   uint8_t cnt = 0;
 
@@ -821,33 +938,30 @@ static void _state_ready( void )
 
   drawMotorCircle( 5, 2, cnt );
 
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SIEWNIK )
-  {
-    ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+  sprintf( str, "%lu kg/ha", ctx.data.kg_per_ha );
+  oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
 
-    if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
+  sprintf( str, "%lu%%", ctx.data.motor_value );
+  oled_printFixed( 5, 52, str, OLED_FONT_SIZE_11 );
+
+  // Fix the velocity comparison - check if actual velocity deviates from set velocity by more than 5 km/h
+  if ( ctx.data.velocity < ctx.data.set_velocity - 5 || ctx.data.velocity > ctx.data.set_velocity + 5 )
+  {
+    if ( !ctx.velocity_warning_triggered )
     {
-      uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
-      sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
-      if ( silos_level > 99 )
-      {
-        oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
-      }
-      else if ( silos_level < 100 && silos_level > 9 )
-      {
-        oled_printFixed( 14, 10, str, OLED_FONT_SIZE_11 );
-      }
-      else if ( silos_level < 10 )
-      {
-        oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
-      }
+      ctx.velocity_warning_triggered = true;
+      ctx.velocity_warning_timeout = xTaskGetTickCount() + MS2ST( VELOCITY_WARNING_TIMEOUT_MS );
     }
-    sprintf( str, "%d%%", ctx.data.kg_per_ha );
-    oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
+    else if ( ctx.velocity_warning_timeout < xTaskGetTickCount() )
+    {
+      ctx.velocity_warning_msg_time = xTaskGetTickCount() + MS2ST( 1000 );
+      _change_state( STATE_VELOCITY_WARNING );
+      ctx.velocity_warning_triggered = false;
+    }
   }
   else
   {
-    oled_printFixed( 2, 3 * LINE_HEIGHT, "Unsupported\ndevice type", OLED_FONT_SIZE_11 );
+    ctx.velocity_warning_triggered = false;
   }
 }
 
@@ -875,10 +989,8 @@ static void _state_error( void )
   static uint32_t blink_counter;
   static bool blink_state;
   bool motor_led_blink = false;
-  bool servo_led_blink = false;
 
   MOTOR_LED_SET_GREEN( 0 );
-  SERVO_VIBRO_LED_SET_GREEN( 0 );
 
   if ( !backendIsConnected() )
   {
@@ -903,12 +1015,10 @@ static void _state_error( void )
 
     case ERROR_VIBRO_NOT_CONNECTED:
       oled_printFixed( 2, MENU_HEIGHT, dictionary_get_string( DICT_VIBRO_NOT_CONNECTED ), OLED_FONT_SIZE_16 );
-      servo_led_blink = true;
       break;
 
     case ERROR_VIBRO_OVER_CURRENT:
       oled_printFixed( 2, MENU_HEIGHT, dictionary_get_string( DICT_VIBRO_OVERCURRENT ), OLED_FONT_SIZE_16 );
-      servo_led_blink = true;
       break;
 
     case ERROR_MOTOR_OVER_CURRENT:
@@ -919,20 +1029,17 @@ static void _state_error( void )
     case ERROR_OVER_TEMPERATURE:
       menuPrintfInfo( dictionary_get_string( DICT_TEMPERATURE_IS_HIGH ) );
       motor_led_blink = true;
-      servo_led_blink = true;
       break;
 
     default:
       menuPrintfInfo( dictionary_get_string( DICT_UNKNOWN_ERROR ) );
       motor_led_blink = true;
-      servo_led_blink = true;
       break;
   }
 
   if ( ( blink_counter++ ) % 2 == 0 )
   {
     MOTOR_LED_SET_RED( motor_led_blink ? blink_state : 0 );
-    SERVO_VIBRO_LED_SET_RED( servo_led_blink ? blink_state : 0 );
     blink_state = blink_state ? false : true;
   }
 }
@@ -945,8 +1052,8 @@ static void _state_velocity_change( void )
     return;
   }
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
-  oled_printFixed( 0, 0, dictionary_get_string( DICT_SPEED ), OLED_FONT_SIZE_26 );
-  sprintf( ctx.buff, "%ld km/h", ctx.data.velocity );
+  oled_printFixed( 0, 0, dictionary_get_string( DICT_VELOCITY ), OLED_FONT_SIZE_26 );
+  sprintf( ctx.buff, "%ld km/h", ctx.data.set_velocity );
   oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );    // Font_16x26
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
@@ -955,7 +1062,7 @@ static void _state_velocity_change( void )
   }
 }
 
-static void _state_vibro_change( void )
+static void _state_kg_per_ha_change( void )
 {
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
 
@@ -965,19 +1072,28 @@ static void _state_vibro_change( void )
     return;
   }
 
-  if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA )
+  ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+  oled_printFixed( 0, 0, "[kg/ha]", OLED_FONT_SIZE_26 );
+  sprintf( ctx.buff, "%ld", ctx.data.kg_per_ha );
+  oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
+
+  if ( ctx.change_menu_timeout < xTaskGetTickCount() )
   {
-    oled_printFixed( 0, 0, dictionary_get_string( DICT_VIBRO_ON ), OLED_FONT_SIZE_26 );
-    sprintf( ctx.buff, "%ld%%", ctx.data.kg_per_ha );
-    oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
+    _change_state( STATE_READY );
   }
-  else
+}
+
+static void _state_motor_change( void )    // Add state handler for STATE_MOTOR_CHANGE
+{
+  if ( !backendIsConnected() )
   {
-    ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
-    oled_printFixed( 0, 0, dictionary_get_string( DICT_SERVO ), OLED_FONT_SIZE_26 );
-    sprintf( ctx.buff, "%ld%%", ctx.data.kg_per_ha );
-    oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
+    _menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
+    return;
   }
+  ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
+  oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
+  sprintf( ctx.buff, "%ld%%", ctx.data.motor_value );
+  oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
   {
@@ -1005,7 +1121,7 @@ static void _state_error_check( void )
 
 static void _state_reconnect( void )
 {
-  backendExitMenuStart();
+  backendExitMenuAuto();
 
   wifiDrvGetAPName( ctx.ap_name );
   if ( strlen( ctx.ap_name ) > 5 )
@@ -1059,6 +1175,25 @@ static void _state_wait_connect( void )
   _change_state( STATE_CHECK_WIFI );
 }
 
+static void _state_velocity_warning( void )
+{
+  if ( ctx.velocity_warning_msg_time < xTaskGetTickCount() )
+  {
+    _change_state( STATE_READY );
+    return;
+  }
+
+  oled_clearScreen();
+  if ( ctx.data.set_velocity < ctx.data.velocity )
+  {
+    oled_printFixed( 5, 6, "Slow down!", OLED_FONT_SIZE_26 );
+  }
+  else
+  {
+    oled_printFixed( 5, 6, "Speed up!", OLED_FONT_SIZE_26 );
+  }
+}
+
 static bool menu_process( void* arg )
 {
   menu_token_t* menu = arg;
@@ -1067,6 +1202,26 @@ static bool menu_process( void* arg )
   {
     NULL_ERROR_MSG();
     return false;
+  }
+
+  // Check if both buttons were pressed simultaneously
+  if ( ctx.both_buttons_pressed )
+  {
+    if ( xTaskGetTickCount() < ctx.simultaneous_press_time )
+    {
+      if ( ctx.button_up_pressed && ctx.button_down_pressed )    // Use stored states instead of Button_GetState
+      {
+        ctx.both_buttons_pressed = false;
+        fastProcessStop( &ctx.data.set_velocity );    // Make sure any fast process is stopped
+        fastProcessStop( &ctx.data.kg_per_ha );    // Stop kg_per_ha fast process if active
+        enterMenuParameters();
+        return true;
+      }
+    }
+    else
+    {
+      ctx.both_buttons_pressed = false;
+    }
   }
 
   switch ( ctx.state )
@@ -1083,10 +1238,6 @@ static bool menu_process( void* arg )
       _state_idle();
       break;
 
-    case STATE_START:
-      _state_start();
-      break;
-
     case STATE_READY:
       _state_ready();
       break;
@@ -1099,8 +1250,12 @@ static bool menu_process( void* arg )
       _state_velocity_change();
       break;
 
-    case STATE_SERVO_VIBRO_CHANGE:
-      _state_vibro_change();
+    case STATE_KG_PER_HA_CHANGE:
+      _state_kg_per_ha_change();
+      break;
+
+    case STATE_MOTOR_CHANGE:    // Add this case
+      _state_motor_change();
       break;
 
     case STATE_LOW_SILOS:
@@ -1123,6 +1278,10 @@ static bool menu_process( void* arg )
       _state_wait_connect();
       break;
 
+    case STATE_VELOCITY_WARNING:    // Add this case
+      _state_velocity_warning();
+      break;
+
     default:
       _change_state( STATE_STOP );
       break;
@@ -1131,39 +1290,41 @@ static bool menu_process( void* arg )
   if ( backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected() )
   {
     MOTOR_LED_SET_GREEN( 0 );
-    SERVO_VIBRO_LED_SET_GREEN( 0 );
+    //  SERVO_VIBRO_LED_SET_GREEN( 0 );
   }
   else
   {
     MOTOR_LED_SET_GREEN( ctx.data.is_working );
     // SERVO_VIBRO_LED_SET_GREEN( ctx.data.servo_vibro_on );
     MOTOR_LED_SET_RED( 0 );
-    SERVO_VIBRO_LED_SET_RED( 0 );
+    //  SERVO_VIBRO_LED_SET_RED( 0 );
   }
 
   return true;
 }
 
-void menuStartReset( void )
+void menuAutoReset( void )
 {
   ctx.data.is_working = false;
   // ctx.data.servo_vibro_on = false;
 }
 
-void menuInitStartMenu( menu_token_t* menu )
+void menuAutoInit( menu_token_t* menu )
 {
   memset( &ctx, 0, sizeof( ctx ) );
   menu->menu_cb.enter = menu_enter_cb;
   menu->menu_cb.button_init_cb = menu_button_init_cb;
   menu->menu_cb.exit = menu_exit_cb;
   menu->menu_cb.process = menu_process;
+  ctx.button_up_pressed = false;    // Initialize button states
+  ctx.button_down_pressed = false;
 }
 
-void menuStartSetError( error_type_t error )
+void menuAutoSetError( error_type_t error )
 {
   LOG( PRINT_DEBUG, "%s %d", __func__, error );
   ctx.error_dev = error;
-  if ( ctx.state == STATE_READY || ctx.state == STATE_VELOCITY_CHANGE || ctx.state == STATE_SERVO_VIBRO_CHANGE )
+  if ( ctx.state == STATE_READY || ctx.state == STATE_VELOCITY_CHANGE || ctx.state == STATE_KG_PER_HA_CHANGE )
   {
     _change_state( STATE_ERROR );
   }
@@ -1171,7 +1332,7 @@ void menuStartSetError( error_type_t error )
   // ctx.data.servo_vibro_on = false;
 }
 
-void menuStartResetError( void )
+void menuAutoResetError( void )
 {
   LOG( PRINT_DEBUG, "%s", __func__ );
   if ( ctx.state == STATE_ERROR )
@@ -1181,7 +1342,7 @@ void menuStartResetError( void )
   }
 }
 
-struct menu_data* menuStartGetData( void )
+struct auto_data* menuAutoGetData( void )    // Change return type
 {
   return &ctx.data;
 }

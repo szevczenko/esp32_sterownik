@@ -8,6 +8,9 @@ void backendExitMenuParameters( void );
 void backendToggleEmergencyDisable( void );
 void backendEnterMenuStart( void );
 void backendExitMenuStart( void );
+void backendEnterMenuAuto( void );
+void backendExitMenuAuto( void );
 bool backendIsConnected( void );
 bool backendIsEmergencyDisable( void );
+
 #endif

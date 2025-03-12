@@ -8,15 +8,17 @@
 
 struct auto_data
 {
-  uint32_t velocity;
+  uint32_t velocity;      // Read from machine
+  uint32_t set_velocity;  // Edited in menu_auto and sent to machine
   uint32_t kg_per_ha;
+  uint32_t motor_value;
   bool is_working;
 };
 
-void menuInitStartMenu( menu_token_t* menu );
-void menuStartReset( void );
-void menuStartSetError( error_type_t error );
-void menuStartResetError( void );
-struct menu_data* menuStartGetData( void );
+void menuAutoInit( menu_token_t* menu );
+void menuAutoReset( void );
+void menuAutoSetError( error_type_t error );
+void menuAutoResetError( void );
+struct auto_data* menuAutoGetData( void );
 
 #endif // MENU_AUTO_H
