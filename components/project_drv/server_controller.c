@@ -1,3 +1,6 @@
+#include "server_controller.h"
+
+#include <math.h>
 #include <stdbool.h>
 
 #include "cmd_server.h"
@@ -9,7 +12,6 @@
 #include "parameters.h"
 #include "parse_cmd.h"
 #include "pwm_drv.h"
-#include "server_controller.h"
 #include "servo.h"
 #include "vibro.h"
 #include "wifidrv.h"
@@ -24,12 +26,12 @@
 #define LOG( PRINT_INFO, ... )
 #endif
 
-#define SYSTEM_ON_PIN 15
-
+#define SYSTEM_ON_PIN  15
 #define MOTOR_PWM_PIN  27
 #define VIBRO_PWM_PIN  25
 #define SERVO_PWM_PIN  26
 #define MOTOR_PWM_PIN2 25
+#define max_rpm        3000.0
 
 typedef enum
 {
@@ -55,7 +57,6 @@ typedef struct
   uint8_t servo_set_value;
   uint32_t servo_set_timer;
   uint8_t motor_value;
-
   uint8_t motor_on;
   uint8_t servo_on;
   uint16_t servo_pwm;
@@ -64,18 +65,24 @@ typedef struct
   bool system_on;
   bool emergency_disable;
   bool errors;
-
   bool working_state_req;
   bool motor_calibration_req;
   bool servo_open_calibration_req;
   bool servo_close_calibration_req;
+
+  uint32_t kg_per_ha;
+  uint32_t velocity;
+  uint32_t velocity_set;
+  float machine_height;
+  uint32_t density;
+  bool auto_mode;
+
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
   pwm_drv_t servo_pwm_drv;
 } server_controller_ctx;
 
 static server_controller_ctx ctx;
-
 static bool test_last_motor_state;
 
 static char* state_name[] =
@@ -108,6 +115,7 @@ static void count_working_data( void )
 {
   ctx.motor_pwm = dcmotor_process( &ctx.motorD1, ctx.motor_value );
   ctx.motor_pwm2 = dcmotor_process( &ctx.motorD2, ctx.motor_value );
+
 #if CONFIG_DEVICE_SIEWNIK
   if ( ctx.servo_new_value != ctx.servo_value )
   {
@@ -139,16 +147,7 @@ static void count_working_data( void )
 
 static void set_working_data( void )
 {
-  // #if CONFIG_DEVICE_SIEWNIK
-
-  if ( ctx.system_on )
-  {
-    gpio_set_level( SYSTEM_ON_PIN, 1 );
-  }
-  else
-  {
-    gpio_set_level( SYSTEM_ON_PIN, 0 );
-  }
+  gpio_set_level( SYSTEM_ON_PIN, ctx.system_on ? 1 : 0 );
 
   LOG( PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value );
   if ( ctx.motor_on )
@@ -176,7 +175,6 @@ static void set_working_data( void )
 #if CONFIG_DEVICE_SOLARKA
   if ( vibro_is_on() && ctx.servo_on )
   {
-    // ToDo napiecie 2 progi
     PWMDrv_SetDuty( &ctx.servo_pwm_drv, parameters_getValue( PARAM_VIBRO_DUTY_PWM ) );
   }
   else
@@ -198,12 +196,12 @@ static void set_working_data( void )
 
 static void state_init( void )
 {
-  gpio_config_t io_conf;
-  io_conf.intr_type = GPIO_INTR_DISABLE;
-  io_conf.mode = GPIO_MODE_OUTPUT;
-  io_conf.pin_bit_mask = ( 1 << SYSTEM_ON_PIN ) | ( 1 << VIBRO_PWM_PIN );
-  io_conf.pull_down_en = 0;
-  io_conf.pull_up_en = 0;
+  gpio_config_t io_conf = {
+    .intr_type = GPIO_INTR_DISABLE,
+    .mode = GPIO_MODE_OUTPUT,
+    .pin_bit_mask = ( 1 << SYSTEM_ON_PIN ) | ( 1 << VIBRO_PWM_PIN ),
+    .pull_down_en = 0,
+    .pull_up_en = 0 };
   gpio_config( &io_conf );
 
 #if CONFIG_DEVICE_SOLARKA
@@ -270,18 +268,13 @@ static void state_idle( void )
   osDelay( 100 );
 }
 
-static void state_working( void )
+static void _manual_working( void )
 {
   ctx.system_on = (bool) parameters_getValue( PARAM_START_SYSTEM );
   ctx.servo_value = (uint8_t) parameters_getValue( PARAM_SERVO );
   ctx.motor_value = (uint8_t) parameters_getValue( PARAM_MOTOR );
   ctx.motor_on = (uint8_t) parameters_getValue( PARAM_MOTOR_IS_ON );
   ctx.servo_on = parameters_getValue( PARAM_SERVO_IS_ON ) > 0;
-
-  ctx.working_state_req = (bool) parameters_getValue( PARAM_START_SYSTEM );
-  ctx.emergency_disable = (bool) parameters_getValue( PARAM_EMERGENCY_DISABLE );
-  ctx.servo_open_calibration_req = (bool) parameters_getValue( PARAM_OPEN_SERVO_REGULATION_FLAG );
-  ctx.servo_close_calibration_req = (bool) parameters_getValue( PARAM_CLOSE_SERVO_REGULATION_FLAG );
 
 #if CONFIG_DEVICE_SOLARKA
   vibro_config( parameters_getValue( PARAM_PERIOD ) * 1000, parameters_getValue( PARAM_SERVO ) );
@@ -294,6 +287,69 @@ static void state_working( void )
     vibro_stop();
   }
 #endif
+}
+
+static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
+{
+  switch ( size_of_grain )
+  {
+    case 0:
+      return 1000;    // kg/m^3
+
+    case 1:
+      return 800;    // kg/m^3
+
+    case 2:
+      return 600;    // kg/m^3
+
+    default:
+      return 1000;    // kg/m^3
+  }
+}
+
+static void _auto_working( void )
+{
+  ctx.velocity = 45;    // Example value. Implement reading from sensor.
+  ctx.motor_on = parameters_getValue( PARAM_MOTOR_IS_ON );
+  ctx.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+  ctx.velocity_set = parameters_getValue( PARAM_SET_VELOCITY );
+  ctx.motor_value = (uint8_t) parameters_getValue( PARAM_MOTOR );
+  // Machine height convert from cm to m
+  ctx.machine_height = parameters_getValue( PARAM_HIGH_OF_MACHINE ) / 100;
+  ctx.servo_on = ctx.motor_on;
+  uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
+  LOG( PRINT_INFO, "Size of grain = %lu", size_of_grain );
+  LOG( PRINT_INFO, "Velocity = %lu, set_velocity %lu", ctx.velocity, ctx.velocity_set );
+  LOG( PRINT_INFO, "Motor value = %u", ctx.motor_value );
+  LOG( PRINT_INFO, "Machine height = %f", ctx.machine_height );
+  LOG( PRINT_INFO, "Grain per hectare = %lu", ctx.kg_per_ha );
+  LOG( PRINT_INFO, "Set velocity = %lu", ctx.velocity_set );
+
+  // Motor rpm = max_rpm / 100 % * motor_value %
+  double motor_rpm = max_rpm / 100 * ctx.motor_value;
+  // Grain throwing speed = motor_rpm * 2 * PI * R / 60
+  double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * ctx.machine_height / 60;
+  // Machine working width R= V0 * (2*h/g)^0.5
+  // V0 - grain throwing speed, h - height of machine, g - gravity
+  double working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
+  LOG( PRINT_INFO, "Working width = %f", working_width );
+
+  ctx.density = _size_of_grain_to_density( size_of_grain );
+  // servo = kg_per_ha * velocity * working_width / density
+  double servo = ctx.kg_per_ha * ctx.velocity * working_width / ctx.density;
+  // servo_value [%] = servo * wpspółczynnik litości
+  double wspolczynnik_litosci = 0.01;
+  double servo_value = servo * wspolczynnik_litosci;
+  ctx.servo_value = servo_value > 100 ? 100 : servo_value;
+}
+
+static void state_working( void )
+{
+  ctx.working_state_req = (bool) parameters_getValue( PARAM_START_SYSTEM );
+  ctx.emergency_disable = (bool) parameters_getValue( PARAM_EMERGENCY_DISABLE );
+  ctx.servo_open_calibration_req = (bool) parameters_getValue( PARAM_OPEN_SERVO_REGULATION_FLAG );
+  ctx.servo_close_calibration_req = (bool) parameters_getValue( PARAM_CLOSE_SERVO_REGULATION_FLAG );
+  ctx.auto_mode = (bool) parameters_getValue( PARAM_AUTO_MODE );
 
   if ( ctx.emergency_disable )
   {
@@ -321,6 +377,15 @@ static void state_working( void )
     vibro_stop();
     change_state( STATE_SERVO_CLOSE_REGULATION );
     return;
+  }
+
+  if ( ctx.auto_mode )
+  {
+    _auto_working();
+  }
+  else
+  {
+    _manual_working();
   }
 
   osDelay( 50 );
@@ -407,7 +472,6 @@ static void state_motor_regulation( void )
 
 static void state_emergency_disable( void )
 {
-  // Tą linijke usunąć jeżeli niepotrzebne wyłączenie przekaźnika w trybie STOP
   ctx.system_on = 0;
   ctx.emergency_disable = (bool) parameters_getValue( PARAM_EMERGENCY_DISABLE );
   ctx.servo_value = 0;
@@ -446,6 +510,19 @@ static void state_error( void )
   }
 
   osDelay( 100 );
+}
+
+static void state_low_voltage( void )
+{
+  ctx.servo_value = 0;
+  ctx.motor_value = 0;
+  ctx.motor_on = false;
+  ctx.servo_on = false;
+  float voltage = accum_get_voltage();
+  if ( 5 < voltage )
+  {
+    change_state( STATE_IDLE );
+  }
 }
 
 static void _task( void* arg )
@@ -489,16 +566,7 @@ static void _task( void* arg )
         break;
 
       case STATE_LOW_VOLTAGE:
-        ctx.servo_value = 0;
-        ctx.motor_value = 0;
-        ctx.motor_on = false;
-        ctx.servo_on = false;
-        float voltage = accum_get_voltage();
-        // printf("voltage: %f\n\r", voltage);
-        if ( 5 < voltage )
-        {
-          change_state( STATE_IDLE );
-        }
+        state_low_voltage();
         break;
 
       default:
@@ -506,7 +574,6 @@ static void _task( void* arg )
         break;
     }
     float voltage = accum_get_voltage();
-    // printf("voltage: %f\n\r", voltage);
     if ( 5 > voltage )
     {
       // change_state(STATE_LOW_VOLTAGE);
