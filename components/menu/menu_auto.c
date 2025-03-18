@@ -70,7 +70,7 @@ typedef struct
   char buff[128];
   char ap_name[64];
   uint32_t timeout_con;
-  uint32_t low_silos_ckeck_timeout;
+  uint32_t low_silos_check_timeout;
   error_type_t error_dev;
   struct auto_data data;
   TickType_t animation_timeout;
@@ -224,9 +224,9 @@ static bool _check_low_silos_flag( void )
   LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
   if ( flag > 0 )
   {
-    if ( ctx.low_silos_ckeck_timeout < xTaskGetTickCount() )
+    if ( ctx.low_silos_check_timeout < xTaskGetTickCount() )
     {
-      ctx.low_silos_ckeck_timeout = MS2ST( 30000 ) + xTaskGetTickCount();
+      ctx.low_silos_check_timeout = MS2ST( 30000 ) + xTaskGetTickCount();
       _change_state( STATE_LOW_SILOS );
       buzzer_click();
       ctx.low_silos_timeout = MS2ST( 5000 ) + xTaskGetTickCount();
@@ -235,7 +235,7 @@ static bool _check_low_silos_flag( void )
   }
   else
   {
-    ctx.low_silos_ckeck_timeout = MS2ST( 10000 ) + xTaskGetTickCount();
+    ctx.low_silos_check_timeout = MS2ST( 10000 ) + xTaskGetTickCount();
   }
 
   return false;
@@ -757,7 +757,7 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
 
   ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
-  ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY );
+  ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
   ctx.data.is_working = parameters_getValue( PARAM_MOTOR_IS_ON );
   // ctx.data.servo_vibro_on = parameters_getValue( PARAM_GRAIN_PER_HECTARE_IS_ON );
@@ -770,7 +770,9 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-  HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) );
+  
   backendEnterMenuAuto();
 
   ctx.error_flag = 0;
@@ -866,7 +868,8 @@ static void _state_idle( void )
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-    HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) );
     _change_state( STATE_READY );    // Transition directly to STATE_READY
   }
   else
