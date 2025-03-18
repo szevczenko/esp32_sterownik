@@ -230,11 +230,11 @@ static void backend_send_auto_data( void )
   if ( ctx.send_all_data )
   {
     bool result = HTTPParamClient_GetStrValue( PARAM_STR_CONTROLLER_SN, NULL, 0, 2000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY, auto_data->set_velocity, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY_KM_H, auto_data->set_velocity, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_GRAIN_PER_HECTARE, auto_data->kg_per_ha, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, auto_data->is_working, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR, auto_data->motor_value, 2000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE, parameters_getValue( PARAM_HIGH_OF_MACHINE ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SIZE_OF_GRAIN, parameters_getValue( PARAM_SIZE_OF_GRAIN ), 2000 ) == ERROR_CODE_OK;
 
     if ( result )
@@ -250,7 +250,7 @@ static void backend_send_auto_data( void )
 
   if ( auto_data->set_velocity != ctx.sended_auto_data.set_velocity )
   {
-    if ( HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY, auto_data->set_velocity, 1000 ) == ERROR_CODE_OK )
+    if ( HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY_KM_H, auto_data->set_velocity, 1000 ) == ERROR_CODE_OK )
     {
       ctx.sended_auto_data.set_velocity = auto_data->set_velocity;
     }

@@ -750,7 +750,7 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-  HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
   backendEnterMenuStart();
 
   ctx.error_flag = 0;
@@ -847,7 +847,7 @@ static void menu_start_idle( void )
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
-    HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT, parameters_getValue( PARAM_SILOS_HEIGHT ) );
+    HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
     change_state( STATE_START );
   }
   else
