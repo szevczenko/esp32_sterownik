@@ -180,26 +180,26 @@ static void get_auto_mode( uint32_t* value );
 static void set_auto_mode( uint32_t value );
 static void get_max_auto_mode( uint32_t* value );
 
-static void get_working_width(uint32_t* value);
-static void set_working_width(uint32_t value);
-static void get_max_working_width(uint32_t* value);
-static void get_min_working_width(uint32_t* value);
+static void get_working_width( uint32_t* value );
+static void set_working_width( uint32_t value );
+static void get_max_working_width( uint32_t* value );
+static void get_min_working_width( uint32_t* value );
 
-static void get_correction_factor(uint32_t* value);
-static void set_correction_factor(uint32_t value);
-static void get_max_correction_factor(uint32_t* value);
-static void get_min_correction_factor(uint32_t* value);
-static const char* get_correction_factor_str(void);
+static void get_correction_factor( uint32_t* value );
+static void set_correction_factor( uint32_t value );
+static void get_max_correction_factor( uint32_t* value );
+static void get_min_correction_factor( uint32_t* value );
+static const char* get_correction_factor_str( void );
 
-static void get_servo_open_delay(uint32_t* value);
-static void set_servo_open_delay(uint32_t value);
-static void get_max_servo_open_delay(uint32_t* value);
-static void get_min_servo_open_delay(uint32_t* value);
+static void get_servo_open_delay( uint32_t* value );
+static void set_servo_open_delay( uint32_t value );
+static void get_max_servo_open_delay( uint32_t* value );
+static void get_min_servo_open_delay( uint32_t* value );
 
-static void get_seeding_start_speed(uint32_t* value);
-static void set_seeding_start_speed(uint32_t value);
-static void get_max_seeding_start_speed(uint32_t* value);
-static void get_min_seeding_start_speed(uint32_t* value);
+static void get_seeding_start_speed( uint32_t* value );
+static void set_seeding_start_speed( uint32_t value );
+static void get_max_seeding_start_speed( uint32_t* value );
+static void get_min_seeding_start_speed( uint32_t* value );
 
 static parameters_t* parameters_list;
 static uint32_t parameters_size;
@@ -329,7 +329,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_value = get_auto_mode,
      .set_value = set_auto_mode,
      .get_max_value = get_max_auto_mode },
-     
+
     { .param_type = SETTINGS_WORKING_WIDTH,
      .name_dict = DICT_WORKING_WIDTH,
      .unit_type = UNIT_INT,
@@ -338,7 +338,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_working_width,
      .get_min_value = get_min_working_width,
      .unit_name = "[m]" },
-     
+
     { .param_type = SETTINGS_CORRECTION_FACTOR,
      .name_dict = DICT_CORRECTION_FACTOR,
      .unit_type = UNIT_STR,
@@ -348,7 +348,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_min_value = get_min_correction_factor,
      .get_str_value = get_correction_factor_str,
      .unit_name = "[%]" },
-     
+
     { .param_type = SETTINGS_SERVO_OPEN_DELAY,
      .name_dict = DICT_SERVO_OPEN_DELAY,
      .unit_type = UNIT_INT,
@@ -357,7 +357,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_servo_open_delay,
      .get_min_value = get_min_servo_open_delay,
      .unit_name = "[s]" },
-     
+
     { .param_type = SETTINGS_SEEDING_START_SPEED,
      .name_dict = DICT_SEEDING_START_SPEED,
      .unit_type = UNIT_INT,
@@ -849,92 +849,92 @@ static void get_max_auto_mode( uint32_t* value )
   *value = parameters_getMaxValue( PARAM_AUTO_MODE );
 }
 
-static void get_working_width(uint32_t* value)
+static void get_working_width( uint32_t* value )
 {
-  *value = parameters_getValue(PARAM_WORKING_WIDTH_M);
+  *value = parameters_getValue( PARAM_WORKING_WIDTH_СM );
 }
 
-static void set_working_width(uint32_t value)
+static void set_working_width( uint32_t value )
 {
-  parameters_setValue(PARAM_WORKING_WIDTH_M, value);
+  parameters_setValue( PARAM_WORKING_WIDTH_СM, value );
 }
 
-static void get_max_working_width(uint32_t* value)
+static void get_max_working_width( uint32_t* value )
 {
-  *value = parameters_getMaxValue(PARAM_WORKING_WIDTH_M);
+  *value = parameters_getMaxValue( PARAM_WORKING_WIDTH_СM );
 }
 
-static void get_min_working_width(uint32_t* value)
+static void get_min_working_width( uint32_t* value )
 {
-  *value = parameters_getMinValue(PARAM_WORKING_WIDTH_M);
+  *value = parameters_getMinValue( PARAM_WORKING_WIDTH_СM );
 }
 
-static void get_correction_factor(uint32_t* value)
+static void get_correction_factor( uint32_t* value )
 {
-  *value = parameters_getValue(PARAM_CORRECTION_FACTOR);
+  *value = parameters_getValue( PARAM_CORRECTION_FACTOR );
 }
 
-static void set_correction_factor(uint32_t value)
+static void set_correction_factor( uint32_t value )
 {
-  parameters_setValue(PARAM_CORRECTION_FACTOR, value);
+  parameters_setValue( PARAM_CORRECTION_FACTOR, value );
 }
 
-static void get_max_correction_factor(uint32_t* value)
+static void get_max_correction_factor( uint32_t* value )
 {
-  *value = parameters_getMaxValue(PARAM_CORRECTION_FACTOR);
+  *value = parameters_getMaxValue( PARAM_CORRECTION_FACTOR );
 }
 
-static void get_min_correction_factor(uint32_t* value)
+static void get_min_correction_factor( uint32_t* value )
 {
-  *value = parameters_getMinValue(PARAM_CORRECTION_FACTOR);
+  *value = parameters_getMinValue( PARAM_CORRECTION_FACTOR );
 }
 
-static const char* get_correction_factor_str(void)
+static const char* get_correction_factor_str( void )
 {
   static char buffer[10];
-  int32_t value = (int32_t)parameters_getValue(PARAM_CORRECTION_FACTOR);
-  sprintf(buffer, "%+d", value);
+  int32_t value = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR );
+  sprintf( buffer, "%+ld", value );
   return buffer;
 }
 
-static void get_servo_open_delay(uint32_t* value)
+static void get_servo_open_delay( uint32_t* value )
 {
-  *value = parameters_getValue(PARAM_SERVO_OPEN_DELAY_S) / 10;  // Convert to seconds
+  *value = parameters_getValue( PARAM_SERVO_OPEN_DELAY_S ) / 10;    // Convert to seconds
 }
 
-static void set_servo_open_delay(uint32_t value)
+static void set_servo_open_delay( uint32_t value )
 {
-  parameters_setValue(PARAM_SERVO_OPEN_DELAY_S, value * 10);  // Store as deciseconds
+  parameters_setValue( PARAM_SERVO_OPEN_DELAY_S, value * 10 );    // Store as deciseconds
 }
 
-static void get_max_servo_open_delay(uint32_t* value)
+static void get_max_servo_open_delay( uint32_t* value )
 {
-  *value = parameters_getMaxValue(PARAM_SERVO_OPEN_DELAY_S) / 10;
+  *value = parameters_getMaxValue( PARAM_SERVO_OPEN_DELAY_S ) / 10;
 }
 
-static void get_min_servo_open_delay(uint32_t* value)
+static void get_min_servo_open_delay( uint32_t* value )
 {
-  *value = parameters_getMinValue(PARAM_SERVO_OPEN_DELAY_S) / 10;
+  *value = parameters_getMinValue( PARAM_SERVO_OPEN_DELAY_S ) / 10;
 }
 
-static void get_seeding_start_speed(uint32_t* value)
+static void get_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getValue(PARAM_SEEDING_START_SPEED_KMH) / 10;  // Convert to km/h
+  *value = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH ) / 10;    // Convert to km/h
 }
 
-static void set_seeding_start_speed(uint32_t value)
+static void set_seeding_start_speed( uint32_t value )
 {
-  parameters_setValue(PARAM_SEEDING_START_SPEED_KMH, value * 10);  // Store as 0.1 km/h
+  parameters_setValue( PARAM_SEEDING_START_SPEED_KMH, value * 10 );    // Store as 0.1 km/h
 }
 
-static void get_max_seeding_start_speed(uint32_t* value)
+static void get_max_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getMaxValue(PARAM_SEEDING_START_SPEED_KMH) / 10;
+  *value = parameters_getMaxValue( PARAM_SEEDING_START_SPEED_KMH ) / 10;
 }
 
-static void get_min_seeding_start_speed(uint32_t* value)
+static void get_min_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getMinValue(PARAM_SEEDING_START_SPEED_KMH) / 10;
+  *value = parameters_getMinValue( PARAM_SEEDING_START_SPEED_KMH ) / 10;
 }
 
 static void _set_and_exit( menu_token_t* menu )

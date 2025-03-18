@@ -73,9 +73,18 @@ typedef struct
   uint32_t kg_per_ha;
   uint32_t velocity;
   uint32_t velocity_set;
+  uint32_t velocity_sensor_is_connected;
   float machine_height;
   uint32_t density;
   bool auto_mode;
+
+  // New fields for auto mode
+  float working_width_m;
+  int32_t correction_factor;
+  uint32_t servo_open_delay_s;
+  uint32_t seeding_start_speed_dmh;
+  bool seeding_active;
+  uint32_t seeding_start_time;
 
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
@@ -309,40 +318,121 @@ static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
 
 static void _auto_working( void )
 {
-  ctx.velocity = 45;    // Example value. Implement reading from sensor.
+  // Read basic parameters
   ctx.motor_on = parameters_getValue( PARAM_MOTOR_IS_ON );
   ctx.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
   ctx.velocity_set = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.motor_value = (uint8_t) parameters_getValue( PARAM_MOTOR );
-  // Machine height convert from cm to m
-  ctx.machine_height = (float) parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) / 100.0;
-  ctx.servo_on = ctx.motor_on;
-  uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
-  LOG( PRINT_INFO, "Size of grain = %lu", size_of_grain );
-  LOG( PRINT_INFO, "Velocity = %lu, set_velocity %lu", ctx.velocity, ctx.velocity_set );
-  LOG( PRINT_INFO, "Motor value = %u", ctx.motor_value );
-  LOG( PRINT_INFO, "Machine height = %f", ctx.machine_height );
+
+  // Read auto mode parameters
+  ctx.machine_height = (float) parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) / 100.0f;    // Convert cm to m
+  ctx.working_width_m = (float) parameters_getValue( PARAM_WORKING_WIDTH_СM ) / 100.0f;    // Convert сm to m
+  ctx.correction_factor = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR );
+  ctx.servo_open_delay_s = parameters_getValue( PARAM_SERVO_OPEN_DELAY_S );
+  ctx.seeding_start_speed_dmh = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );
+  ctx.velocity_sensor_is_connected = parameters_getValue( PARAM_VELOCITY_SENSOR_IS_CONNECTED );
+
+  //Implement velocity sensor
+  if ( ctx.velocity_sensor_is_connected )
+  {
+    ctx.velocity = 45;    // Example value. Implement reading from sensor.
+  }
+  else
+  {
+    ctx.velocity = ctx.velocity_set;    // Example value. Implement reading from sensor.
+  }
+
+  LOG( PRINT_INFO, "Auto mode parameters:" );
+  LOG( PRINT_INFO, "Velocity = %lu, Start speed = %lu", ctx.velocity, ctx.seeding_start_speed_dmh / 10 );
+  LOG( PRINT_INFO, "Working width = %.1f m", ctx.working_width_m );
+  LOG( PRINT_INFO, "Machine height = %.2f m", ctx.machine_height );
+  LOG( PRINT_INFO, "Correction factor = %ld%%", ctx.correction_factor );
+  LOG( PRINT_INFO, "Servo delay = %lu s", ctx.servo_open_delay_s );
   LOG( PRINT_INFO, "Grain per hectare = %lu", ctx.kg_per_ha );
-  LOG( PRINT_INFO, "Set velocity = %lu", ctx.velocity_set );
 
-  // Motor rpm = max_rpm / 100 % * motor_value %
-  double motor_rpm = max_rpm / 100.0 * ctx.motor_value;
-  // Grain throwing speed = motor_rpm * 2 * PI * R / 60
-  float _R = 0.3;    // Example value. 30 [cm]
-  double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * _R / 60.0;
-  // Machine working width R= V0 * (2*h/g)^0.5
-  // V0 - grain throwing speed, h - height of machine, g - gravity
-  double working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
-  LOG( PRINT_INFO, "Working width = %f", working_width );
+  // Determine if seeding should start based on speed
+  if ( ctx.velocity * 10 >= ctx.seeding_start_speed_dmh )
+  {
+    // Vehicle is moving faster than start speed
+    if ( !ctx.seeding_active )
+    {
+      // Start seeding with delay
+      ctx.seeding_active = true;
+      ctx.seeding_start_time = xTaskGetTickCount() + MS2ST( ctx.servo_open_delay_s * 100 );    // Convert deciseconds to ms
+      LOG( PRINT_INFO, "Seeding start initiated with delay %lu s", ctx.servo_open_delay_s );
+    }
+  }
+  else
+  {
+    // Vehicle is moving too slow, stop seeding
+    ctx.seeding_active = false;
+    ctx.servo_on = false;
+    ctx.servo_value = 0;
+    LOG( PRINT_INFO, "Speed too low, seeding stopped" );
+    return;
+  }
 
+  // Check if we're in the delay period
+  if ( ctx.seeding_active && xTaskGetTickCount() < ctx.seeding_start_time )
+  {
+    // Still in delay period, don't open servo yet
+    ctx.servo_on = false;
+    ctx.servo_value = 0;
+    LOG( PRINT_INFO, "In delay period, waiting to start seeding" );
+    return;
+  }
+
+  // Activate servo if seeding is active and delay period has passed
+  if ( ctx.seeding_active )
+  {
+    ctx.servo_on = ctx.motor_on;
+  }
+  else
+  {
+    ctx.servo_on = false;
+  }
+
+  // Calculate seeding parameters
+  uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
+
+  // Option 1: Use the configured working width
+  double working_width = ctx.working_width_m;
+
+  // Option 2: Calculate working width based on physics if sensor is connected
+  if ( ctx.velocity_sensor_is_connected )
+  {
+    double motor_rpm = max_rpm / 100.0 * ctx.motor_value;
+    float _R = 0.3;    // Example value. 30 [cm]
+    double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * _R / 60.0;
+    working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
+  }
+
+  LOG( PRINT_INFO, "working width = %.2f m", working_width );
+
+  // Get material density based on grain size
   ctx.density = _size_of_grain_to_density( size_of_grain );
-  // servo = kg_per_ha * velocity * working_width / density
+
+  // Calculate basic servo value
   double servo = (double) ctx.kg_per_ha * (double) ctx.velocity * working_width / (double) ctx.density;
-  // servo_value [%] = servo * wpspółczynnik litości
-  double wspolczynnik_litosci = 0.6;
-  double servo_value = servo * wspolczynnik_litosci;
-  ctx.servo_value = servo_value > 100 ? 100 : servo_value;
-  LOG( PRINT_INFO, "servo_value = %f, %d", servo_value, ctx.servo_value );
+
+  // Apply correction factor (-100% to +100%)
+  double correction_multiplier = 1.0 + ( (double) ctx.correction_factor / 100.0 );
+  double servo_value = servo * correction_multiplier;
+
+  // Ensure servo value is within range
+  if ( servo_value < 0 )
+  {
+    servo_value = 0;
+  }
+  if ( servo_value > 100 )
+  {
+    servo_value = 100;
+  }
+
+  ctx.servo_value = (uint8_t) servo_value;
+
+  LOG( PRINT_INFO, "Base servo = %.2f, After correction = %.2f, Final = %u",
+       servo, servo_value, ctx.servo_value );
 }
 
 static void state_working( void )
