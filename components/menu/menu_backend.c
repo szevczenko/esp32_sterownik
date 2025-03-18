@@ -236,6 +236,12 @@ static void backend_send_auto_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR, auto_data->motor_value, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SIZE_OF_GRAIN, parameters_getValue( PARAM_SIZE_OF_GRAIN ), 2000 ) == ERROR_CODE_OK;
+    
+    // Add new auto mode parameters
+    result &= HTTPParamClient_SetU32Value( PARAM_WORKING_WIDTH_СM, parameters_getValue( PARAM_WORKING_WIDTH_СM ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_CORRECTION_FACTOR, parameters_getValue( PARAM_CORRECTION_FACTOR ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SERVO_OPEN_DELAY_S, parameters_getValue( PARAM_SERVO_OPEN_DELAY_S ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SEEDING_START_SPEED_KMH, parameters_getValue( PARAM_SEEDING_START_SPEED_KMH ), 2000 ) == ERROR_CODE_OK;
 
     if ( result )
     {
@@ -362,7 +368,12 @@ static void backend_auto( void )
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_VELOCITY, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
+    
+    // Add velocity sensor connection status reading
+    HTTPParamClient_GetU32Value( PARAM_VELOCITY_SENSOR_IS_CONNECTED, NULL, 2000 );
+    
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
+    LOG( PRINT_DEBUG, "Velocity sensor connected: %d", parameters_getValue( PARAM_VELOCITY_SENSOR_IS_CONNECTED ) );
   }
 
   if ( ctx.get_data_cnt % 20 == 0 )
