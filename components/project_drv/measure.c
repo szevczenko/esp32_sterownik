@@ -24,7 +24,7 @@
 #endif
 
 static const adc_bitwidth_t width = ADC_BITWIDTH_12;
-static const adc_atten_t atten = ADC_ATTEN_DB_11;
+static const adc_atten_t atten = ADC_ATTEN_DB_12;
 
 #define ADC_IN_CH    ADC_CHANNEL_6
 #define ADC_MOTOR_CH ADC_CHANNEL_7
@@ -202,7 +202,7 @@ static void measure_process( void* arg )
 
     if ( tank_sensor_is_connected() )
     {
-      uint32_t silos_height_mm = parameters_getValue( PARAM_SILOS_HEIGHT ) * 10;
+      uint32_t silos_height_mm = parameters_getValue( PARAM_SILOS_HEIGHT_CM ) * 10;
       uint32_t silos_distance_mm = tank_sensor_get_distance() > SILOS_START_MEASURE ? tank_sensor_get_distance() : 0;
       if ( silos_distance_mm > silos_height_mm )
       {
