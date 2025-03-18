@@ -312,10 +312,10 @@ static void _auto_working( void )
   ctx.velocity = 45;    // Example value. Implement reading from sensor.
   ctx.motor_on = parameters_getValue( PARAM_MOTOR_IS_ON );
   ctx.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
-  ctx.velocity_set = parameters_getValue( PARAM_SET_VELOCITY );
+  ctx.velocity_set = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.motor_value = (uint8_t) parameters_getValue( PARAM_MOTOR );
   // Machine height convert from cm to m
-  ctx.machine_height = parameters_getValue( PARAM_HIGH_OF_MACHINE ) / 100;
+  ctx.machine_height = (float) parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) / 100.0;
   ctx.servo_on = ctx.motor_on;
   uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
   LOG( PRINT_INFO, "Size of grain = %lu", size_of_grain );
@@ -326,10 +326,10 @@ static void _auto_working( void )
   LOG( PRINT_INFO, "Set velocity = %lu", ctx.velocity_set );
 
   // Motor rpm = max_rpm / 100 % * motor_value %
-  double motor_rpm = max_rpm / 100 * ctx.motor_value;
+  double motor_rpm = max_rpm / 100.0 * ctx.motor_value;
   // Grain throwing speed = motor_rpm * 2 * PI * R / 60
   float _R = 0.3;    // Example value. 30 [cm]
-  double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * _R / 60;
+  double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * _R / 60.0;
   // Machine working width R= V0 * (2*h/g)^0.5
   // V0 - grain throwing speed, h - height of machine, g - gravity
   double working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
@@ -337,11 +337,12 @@ static void _auto_working( void )
 
   ctx.density = _size_of_grain_to_density( size_of_grain );
   // servo = kg_per_ha * velocity * working_width / density
-  double servo = ctx.kg_per_ha * ctx.velocity * working_width / ctx.density;
+  double servo = (double) ctx.kg_per_ha * (double) ctx.velocity * working_width / (double) ctx.density;
   // servo_value [%] = servo * wpspółczynnik litości
-  double wspolczynnik_litosci = 0.01;
+  double wspolczynnik_litosci = 0.6;
   double servo_value = servo * wspolczynnik_litosci;
   ctx.servo_value = servo_value > 100 ? 100 : servo_value;
+  LOG( PRINT_INFO, "servo_value = %f, %d", servo_value, ctx.servo_value );
 }
 
 static void state_working( void )

@@ -34,7 +34,7 @@
   PARAM( PARAM_VOLTAGE_ACCUM, 0, 0xFFFF, 0, "voltage_accum" )                        \
   PARAM( PARAM_TEMPERATURE, 0, 0xFFFF, 0, "temperature" )                            \
   PARAM( PARAM_SILOS_LEVEL, 0, 100, 0, "silos_level" )                               \
-  PARAM( PARAM_SILOS_HEIGHT, 0, 300, 60, "silos_height" )                            \
+  PARAM( PARAM_SILOS_HEIGHT_CM, 0, 300, 60, "silos_height" )                            \
   PARAM( PARAM_START_SYSTEM, 0, 1, 0, "start_system" )                               \
   PARAM( PARAM_LOW_LEVEL_SILOS, 0, 1, 0, "low_level_silos" )                         \
   PARAM( PARAM_SILOS_SENSOR_IS_CONNECTED, 0, 1, 0, "silos_server_is_connected" )     \
@@ -56,11 +56,15 @@
   PARAM( PARAM_TRY_OPEN_CALIBRATION, 0, 10, 8, "try_open_calibration" )              \
                                                                                      \
   PARAM( PARAM_SIZE_OF_GRAIN, 0, 2, 1, "size_of_grain" )                             \
-  PARAM( PARAM_HIGH_OF_MACHINE, 0, 1000, 50, "hight_of_machine" )                    \
-  PARAM( PARAM_SET_VELOCITY, 0, 200, 45, "set_velocity" )                            \
+  PARAM( PARAM_HIGH_OF_MACHINE_CM, 0, 1000, 50, "hight_of_machine" )                    \
+  PARAM( PARAM_SET_VELOCITY_KM_H, 0, 200, 45, "set_velocity" )                            \
   PARAM( PARAM_VELOCITY, 0, 200, 45, "velocity" )                                    \
   PARAM( PARAM_WORK_AREA, 0, 100, 50, "work_area" )                                  \
   PARAM( PARAM_GRAIN_PER_HECTARE, 0, 1000, 50, "grain_per_hectare" )                 \
-  PARAM( PARAM_AUTO_MODE, 0, 1, 1, "auto_mode" )
+  PARAM( PARAM_AUTO_MODE, 0, 1, 1, "auto_mode" )                                     \
+  PARAM( PARAM_WORKING_WIDTH_M, 0, 80, 40, "working_width" )                         \
+  PARAM( PARAM_CORRECTION_FACTOR, -100, 100, 0, "correction_factor" )                \
+  PARAM( PARAM_SERVO_OPEN_DELAY_S, 0, 50, 20, "servo_open_delay" )                   \
+  PARAM( PARAM_SEEDING_START_SPEED_KMH, 5, 105, 20, "seeding_start_speed" )
 
 #endif

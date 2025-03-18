@@ -507,6 +507,30 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Скорость",
                              "Prędkość",
                              "Geschwindigkeit" },
+  [DICT_WORKING_WIDTH] =
+    {
+                             "Working width",
+                             "Рабочая ширина",
+                             "Szerokość robocza",
+                             "Arbeitsbreite" },
+  [DICT_CORRECTION_FACTOR] =
+    {
+                             "Correction factor",
+                             "Коэффициент коррекции",
+                             "Współczynnik korekty",
+                             "Korrekturfaktor" },
+  [DICT_SERVO_OPEN_DELAY] =
+    {
+                             "Servo open delay",
+                             "Задержка серво",
+                             "Czas opóźnienia otw.",
+                             "Servoöffnungsverzögerung" },
+  [DICT_SEEDING_START_SPEED] =
+    {
+                             "Seeding start speed",
+                             "Скорость начала сева",
+                             "Prędkość rozpoczęcia",
+                             "Sästart-Geschwindigkeit" },
 };
 
 void dictionary_init( void )
