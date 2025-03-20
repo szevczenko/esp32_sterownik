@@ -209,7 +209,7 @@ static bool _check_low_silos_flag( void )
 {
   uint32_t flag = parameters_getValue( PARAM_LOW_LEVEL_SILOS );
 
-  LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
+  // LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
   if ( flag > 0 )
   {
     if ( ctx.low_silos_ckeck_timeout < xTaskGetTickCount() )

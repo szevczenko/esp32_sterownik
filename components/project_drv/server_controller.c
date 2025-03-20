@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "cmd_server.h"
+#include "e108_position_driver.h"
 #include "error_siewnik.h"
 #include "error_solarka.h"
 #include "http_server.h"
@@ -82,7 +83,7 @@ typedef struct
   float working_width_m;
   int32_t correction_factor;
   uint32_t servo_open_delay_s;
-  uint32_t seeding_start_speed_dmh;
+  uint32_t seeding_start_speed_kmh;
   bool seeding_active;
   uint32_t seeding_start_time;
 
@@ -318,6 +319,14 @@ static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
 
 static void _auto_working( void )
 {
+  // Read position sensor data
+  ctx.velocity_sensor_is_connected = e108_is_active();
+  parameters_setValue( PARAM_VELOCITY_SENSOR_IS_CONNECTED, ctx.velocity_sensor_is_connected );
+  e108_position_info_t position = { 0 };
+  e108_get_position( &position );
+  ctx.velocity = ceil( position.speed_kmh );
+  parameters_setValue( PARAM_VELOCITY, ctx.velocity );
+
   // Read basic parameters
   ctx.motor_on = parameters_getValue( PARAM_MOTOR_IS_ON );
   ctx.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
@@ -327,31 +336,26 @@ static void _auto_working( void )
   // Read auto mode parameters
   ctx.machine_height = (float) parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) / 100.0f;    // Convert cm to m
   ctx.working_width_m = (float) parameters_getValue( PARAM_WORKING_WIDTH_СM ) / 100.0f;    // Convert сm to m
-  ctx.correction_factor = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR );
+  ctx.correction_factor = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR ) - 100;
   ctx.servo_open_delay_s = parameters_getValue( PARAM_SERVO_OPEN_DELAY_S );
-  ctx.seeding_start_speed_dmh = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );
-  ctx.velocity_sensor_is_connected = parameters_getValue( PARAM_VELOCITY_SENSOR_IS_CONNECTED );
+  ctx.seeding_start_speed_kmh = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );
 
   //Implement velocity sensor
-  if ( ctx.velocity_sensor_is_connected )
+  if ( !ctx.velocity_sensor_is_connected )
   {
-    ctx.velocity = 45;    // Example value. Implement reading from sensor.
-  }
-  else
-  {
-    ctx.velocity = ctx.velocity_set;    // Example value. Implement reading from sensor.
+    ctx.velocity = ctx.velocity_set;
   }
 
-  LOG( PRINT_INFO, "Auto mode parameters:" );
-  LOG( PRINT_INFO, "Velocity = %lu, Start speed = %lu", ctx.velocity, ctx.seeding_start_speed_dmh / 10 );
-  LOG( PRINT_INFO, "Working width = %.1f m", ctx.working_width_m );
-  LOG( PRINT_INFO, "Machine height = %.2f m", ctx.machine_height );
-  LOG( PRINT_INFO, "Correction factor = %ld%%", ctx.correction_factor );
-  LOG( PRINT_INFO, "Servo delay = %lu s", ctx.servo_open_delay_s );
-  LOG( PRINT_INFO, "Grain per hectare = %lu", ctx.kg_per_ha );
+  // LOG( PRINT_INFO, "Auto mode parameters:" );
+  // LOG( PRINT_INFO, "Velocity = %lu, Start speed = %lu", ctx.velocity, ctx.seeding_start_speed_kmh / 10 );
+  // LOG( PRINT_INFO, "Working width = %.1f m", ctx.working_width_m );
+  // LOG( PRINT_INFO, "Machine height = %.2f m", ctx.machine_height );
+  // LOG( PRINT_INFO, "Correction factor = %ld%%", ctx.correction_factor );
+  // LOG( PRINT_INFO, "Servo delay = %lu s", ctx.servo_open_delay_s );
+  // LOG( PRINT_INFO, "Grain per hectare = %lu", ctx.kg_per_ha );
 
   // Determine if seeding should start based on speed
-  if ( ctx.velocity * 10 >= ctx.seeding_start_speed_dmh )
+  if ( ctx.velocity >= ctx.seeding_start_speed_kmh )
   {
     // Vehicle is moving faster than start speed
     if ( !ctx.seeding_active )

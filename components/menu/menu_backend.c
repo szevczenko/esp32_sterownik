@@ -327,7 +327,7 @@ static void backend_start( void )
 
   if ( !ctx.menu_start_is_active )
   {
-    change_state( STATE_EXIT_AUTO );
+    change_state( STATE_EXIT_START );
     return;
   }
 

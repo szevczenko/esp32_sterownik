@@ -10,6 +10,7 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/uart.h"
+#include "e108_position_driver.h"
 #include "error_siewnik.h"
 #include "error_solarka.h"
 #include "esp_attr.h"
@@ -132,6 +133,7 @@ static void _init_server( void )
   srvrControllStart();
   // ultrasonar_start();
   xkc_init( 1, 9600, 17, 16 );
+  e108_continuous_start( 2, 19, 18 );
 
 #if CONFIG_DEVICE_SIEWNIK
   errorSiewnikStart();
@@ -221,9 +223,9 @@ void app_main()
   if ( wifi_type == T_WIFI_TYPE_SERVER )
   {
     _init_server();
-  }
-  else
-  {
+    }
+    else
+    {
     _init_client();
   }
 

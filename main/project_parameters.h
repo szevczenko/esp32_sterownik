@@ -64,8 +64,8 @@
   PARAM( PARAM_GRAIN_PER_HECTARE, 0, 1000, 50, "grain_per_hectare" )                   \
   PARAM( PARAM_AUTO_MODE, 0, 1, 1, "auto_mode" )                                       \
   PARAM( PARAM_WORKING_WIDTH_СM, 0, 800, 400, "working_width" )                        \
-  PARAM( PARAM_CORRECTION_FACTOR, -100, 100, 0, "correction_factor" )                  \
-  PARAM( PARAM_SERVO_OPEN_DELAY_S, 0, 50, 20, "servo_open_delay" )                     \
-  PARAM( PARAM_SEEDING_START_SPEED_KMH, 5, 105, 20, "seeding_start_speed" )
+  PARAM( PARAM_CORRECTION_FACTOR, 0, 200, 100, "correction_factor" )                  \
+  PARAM( PARAM_SERVO_OPEN_DELAY_S, 0, 50, 5, "servo_open_delay" )                     \
+  PARAM( PARAM_SEEDING_START_SPEED_KMH, 1, 100, 2, "seeding_start_speed" )
 
 #endif
