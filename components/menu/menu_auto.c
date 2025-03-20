@@ -221,7 +221,7 @@ static bool _check_low_silos_flag( void )
 {
   uint32_t flag = parameters_getValue( PARAM_LOW_LEVEL_SILOS );
 
-  LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
+  // LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
   if ( flag > 0 )
   {
     if ( ctx.low_silos_check_timeout < xTaskGetTickCount() )
@@ -759,6 +759,7 @@ static bool menu_enter_cb( void* arg )
   ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
   ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+  LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = parameters_getValue( PARAM_MOTOR_IS_ON );
   // ctx.data.servo_vibro_on = parameters_getValue( PARAM_GRAIN_PER_HECTARE_IS_ON );
   if ( !ctx.enter_parameters_menu )
@@ -772,7 +773,7 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) );
-  
+
   backendEnterMenuAuto();
 
   ctx.error_flag = 0;
@@ -830,6 +831,7 @@ static void _state_check_connection( void )
 
   ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+  LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = 0;
   // ctx.data.servo_vibro_on = 0;
   for ( uint8_t i = 0; i < 3; i++ )
@@ -864,6 +866,7 @@ static void _state_idle( void )
     ctx.data.is_working = 0;
     ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
     ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+    LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
     // ctx.data.servo_vibro_on = 0;
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );

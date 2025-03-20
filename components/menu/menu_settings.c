@@ -190,6 +190,7 @@ static void set_correction_factor( uint32_t value );
 static void get_max_correction_factor( uint32_t* value );
 static void get_min_correction_factor( uint32_t* value );
 static const char* get_correction_factor_str( void );
+static void fast_add_correction_factor( uint32_t value );
 
 static void get_servo_open_delay( uint32_t* value );
 static void set_servo_open_delay( uint32_t value );
@@ -337,7 +338,7 @@ static parameters_t parameters_list_siewnik[] =
      .set_value = set_working_width,
      .get_max_value = get_max_working_width,
      .get_min_value = get_min_working_width,
-     .unit_name = "[m]" },
+     .unit_name = "[cm]" },
 
     { .param_type = SETTINGS_CORRECTION_FACTOR,
      .name_dict = DICT_CORRECTION_FACTOR,
@@ -347,6 +348,7 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_correction_factor,
      .get_min_value = get_min_correction_factor,
      .get_str_value = get_correction_factor_str,
+     .fast_add = fast_add_correction_factor,
      .unit_name = "[%]" },
 
     { .param_type = SETTINGS_SERVO_OPEN_DELAY,
@@ -872,27 +874,49 @@ static void get_min_working_width( uint32_t* value )
 static void get_correction_factor( uint32_t* value )
 {
   *value = parameters_getValue( PARAM_CORRECTION_FACTOR );
+  LOG( PRINT_INFO, "%s %d", __func__, *value );
 }
 
 static void set_correction_factor( uint32_t value )
 {
   parameters_setValue( PARAM_CORRECTION_FACTOR, value );
+  LOG( PRINT_INFO, "%s %d", __func__, value );
 }
 
 static void get_max_correction_factor( uint32_t* value )
 {
   *value = parameters_getMaxValue( PARAM_CORRECTION_FACTOR );
+  LOG( PRINT_INFO, "%s %d", __func__, *value );
 }
 
 static void get_min_correction_factor( uint32_t* value )
 {
   *value = parameters_getMinValue( PARAM_CORRECTION_FACTOR );
+  LOG( PRINT_INFO, "%s %d", __func__, *value );
+}
+
+static void fast_add_correction_factor( uint32_t value )
+{
+  parameters_setValue( PARAM_CORRECTION_FACTOR, value );
+  for ( uint32_t i = 0; i < parameters_size; i++ )
+  {
+    if ( parameters_list[i].param_type == SETTINGS_CORRECTION_FACTOR )
+    {
+      parameters_list[i].value = value;
+      if ( parameters_list[i].get_str_value != NULL )
+      {
+        parameters_list[i].str_value = parameters_list[i].get_str_value();
+      }
+      break;
+    }
+  }
+  LOG( PRINT_INFO, "%s %d", __func__, value );
 }
 
 static const char* get_correction_factor_str( void )
 {
-  static char buffer[10];
-  int32_t value = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR );
+  static char buffer[13];
+  int32_t value = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR ) - 100;
   sprintf( buffer, "%+ld", value );
   return buffer;
 }
@@ -919,22 +943,22 @@ static void get_min_servo_open_delay( uint32_t* value )
 
 static void get_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH ) / 10;    // Convert to km/h
+  *value = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );    // Convert to km/h
 }
 
 static void set_seeding_start_speed( uint32_t value )
 {
-  parameters_setValue( PARAM_SEEDING_START_SPEED_KMH, value * 10 );    // Store as 0.1 km/h
+  parameters_setValue( PARAM_SEEDING_START_SPEED_KMH, value );    // Store as 0.1 km/h
 }
 
 static void get_max_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getMaxValue( PARAM_SEEDING_START_SPEED_KMH ) / 10;
+  *value = parameters_getMaxValue( PARAM_SEEDING_START_SPEED_KMH );
 }
 
 static void get_min_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getMinValue( PARAM_SEEDING_START_SPEED_KMH ) / 10;
+  *value = parameters_getMinValue( PARAM_SEEDING_START_SPEED_KMH );
 }
 
 static void _set_and_exit( menu_token_t* menu )
