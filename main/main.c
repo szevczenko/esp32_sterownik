@@ -38,6 +38,7 @@
 #include "server_controller.h"
 #include "sleep_e.h"
 #include "ssd1306.h"
+#include "tank_sensor.h"
 #include "vibro.h"
 #include "wifi_menu.h"
 #include "wifidrv.h"
@@ -133,6 +134,7 @@ static void _init_server( void )
   srvrControllStart();
   // ultrasonar_start();
   xkc_init( 1, 9600, 17, 16 );
+  tank_sensor_init();
   e108_continuous_start( 2, 19, 18 );
 
 #if CONFIG_DEVICE_SIEWNIK
@@ -223,9 +225,9 @@ void app_main()
   if ( wifi_type == T_WIFI_TYPE_SERVER )
   {
     _init_server();
-    }
-    else
-    {
+  }
+  else
+  {
     _init_client();
   }
 
