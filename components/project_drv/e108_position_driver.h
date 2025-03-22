@@ -27,6 +27,16 @@ typedef enum
 } e108_gnss_err_t;
 
 /**
+ * @brief Status codes for the E108 GNSS module
+ */
+typedef enum
+{
+  E108_DISCONNECTED = 0, /* No communication with GNSS module */
+  E108_WAIT_VALID_MEASUREMENT, /* Data received but no valid fix yet */
+  E108_READY /* Valid position data available */
+} e108_gnss_status_t;
+
+/**
  * @brief Structure to hold latest position data
  */
 typedef struct
@@ -35,6 +45,7 @@ typedef struct
   double longitude; /* Longitude in decimal degrees */
   float altitude; /* Altitude in meters */
   float speed_kmh; /* Speed in kilometers per hour */
+  float filtered_speed_kmh; /* Filtered speed in kilometers per hour */
   float course; /* Course over ground in degrees */
   uint8_t satellites; /* Number of satellites used for fix */
   uint8_t fix_quality; /* Fix quality indicator */
@@ -42,6 +53,7 @@ typedef struct
   char datestamp[8]; /* Date in ddmmyy format */
   bool valid; /* True if the position is valid */
   uint32_t time_since_last_ms;    // Time since last valid measurement in ms
+  float distance_km;              /* Total distance traveled in kilometers */
 } e108_position_info_t;
 
 /**
@@ -73,14 +85,28 @@ e108_gnss_err_t e108_continuous_stop( void );
 bool e108_get_position( e108_position_info_t* position );
 
 /**
- * @brief Check if the GNSS module is currently active
+ * @brief Get the current status of the GNSS module
  * 
- * The module is considered active if it has provided a valid
- * measurement within the last 3 seconds.
- * 
- * @return bool True if the module is active, false otherwise
+ * @return e108_gnss_status_t Current status of the GNSS module
  */
-bool e108_is_active( void );
+e108_gnss_status_t e108_get_status( void );
+
+/**
+ * @brief Reset the total distance traveled to zero
+ * 
+ * @return e108_gnss_err_t E108_GNSS_OK on success, or error code on failure
+ */
+e108_gnss_err_t e108_reset_distance( void );
+
+/**
+ * @brief Set the total distance traveled to a specific value
+ * 
+ * This can be used to restore a previously saved distance value
+ * 
+ * @param initial_distance_km Initial distance in kilometers
+ * @return e108_gnss_err_t E108_GNSS_OK on success, or error code on failure
+ */
+e108_gnss_err_t e108_set_distance( float initial_distance_km );
 
 #ifdef __cplusplus
 }

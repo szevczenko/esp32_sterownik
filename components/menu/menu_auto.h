@@ -8,10 +8,9 @@
 
 struct auto_data
 {
-  uint32_t velocity;      // Read from machine
   uint32_t set_velocity;  // Edited in menu_auto and sent to machine
   uint32_t kg_per_ha;
-  uint32_t motor_value;
+  uint32_t motor_rpm;     // Changed from motor_value to motor_rpm
   bool is_working;
 };
 
