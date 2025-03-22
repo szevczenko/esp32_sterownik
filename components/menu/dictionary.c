@@ -531,6 +531,48 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Скорость начала сева",
                              "Prędkość rozpoczęcia",
                              "Sästart-Geschwindigkeit" },
+  [DICT_SET_SPEED] =
+    {
+                             "Set speed",
+                             "Установить скорость",
+                             "Ustaw prędkość",
+                             "Geschwindigkeit einstellen" },
+  [DICT_SEARCHING_FOR_GPS] =
+    {
+                             "Searching for GPS",
+                             "Поиск GPS",
+                             "Szukam GPS",
+                             "GPS-Suche" },
+  [DICT_READY] =
+    {
+                             "Ready",
+                             "Готово",
+                             "Gotowy",
+                             "Bereit" },
+  [DICT_SPEED_UP] =
+    {
+                             "Speed up!",
+                             "Ускорение!",
+                             "Przyspiesz!",
+                             "Beschleunigen!" },
+  [DICT_SPEED_DOWN] =
+    {
+                             "Slow down!",
+                             "Замедление!",
+                             "Zwolnij!",
+                             "Verlangsamen!" },
+  [DICT_SEEDING_IN_PROGRESS] =
+    {
+                             "Seeding in progress",
+                             "Посев в процессе",
+                             "Wysiew trwa",
+                             "Aussaat läuft" },
+  [DICT_SEEDING_STOPPED] =
+    {
+                             "Seeding stopped",
+                             "Посев остановлен",
+                             "Wysiew zatrzymany",
+                             "Aussaat gestoppt" },
 };
 
 void dictionary_init( void )

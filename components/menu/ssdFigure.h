@@ -30,5 +30,7 @@ void drawBattery( uint8_t x, uint8_t y, float accum_voltage, bool is_charging );
 void drawSignal( uint8_t x, uint8_t y, uint8_t signal_lvl );
 void drawQR( uint8_t x, uint8_t y );
 void ssdFigure_DrawLowAccu( uint8_t x, uint8_t y, float acc_voltage, float acc_current );
+void drawGps( uint8_t x, uint8_t y );
+void drawTank( uint8_t x, uint8_t y, uint8_t level );
 
 #endif
