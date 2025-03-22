@@ -159,6 +159,7 @@ static bool _check_error( void )
       if ( errors & ( 1 << i ) )
       {
         menuStartSetError( i );
+        menuAutoSetError( i );
       }
     }
 
@@ -233,10 +234,10 @@ static void backend_send_auto_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_SET_VELOCITY_KM_H, auto_data->set_velocity, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_GRAIN_PER_HECTARE, auto_data->kg_per_ha, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, auto_data->is_working, 2000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_MOTOR, auto_data->motor_value, 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_RPM_PER_100, auto_data->motor_rpm, 2000 ) == ERROR_CODE_OK;    // Changed PARAM_MOTOR to PARAM_MOTOR_RPM_PER_100 and motor_value to motor_rpm
     result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SIZE_OF_GRAIN, parameters_getValue( PARAM_SIZE_OF_GRAIN ), 2000 ) == ERROR_CODE_OK;
-    
+
     // Add new auto mode parameters
     result &= HTTPParamClient_SetU32Value( PARAM_WORKING_WIDTH_СM, parameters_getValue( PARAM_WORKING_WIDTH_СM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_CORRECTION_FACTOR, parameters_getValue( PARAM_CORRECTION_FACTOR ), 2000 ) == ERROR_CODE_OK;
@@ -249,7 +250,7 @@ static void backend_send_auto_data( void )
       ctx.sended_auto_data.set_velocity = auto_data->set_velocity;
       ctx.sended_auto_data.kg_per_ha = auto_data->kg_per_ha;
       ctx.sended_auto_data.is_working = auto_data->is_working;
-      ctx.sended_auto_data.motor_value = auto_data->motor_value;
+      ctx.sended_auto_data.motor_rpm = auto_data->motor_rpm;    // Changed from motor_value to motor_rpm
     }
     return;
   }
@@ -278,11 +279,11 @@ static void backend_send_auto_data( void )
     }
   }
 
-  if ( auto_data->motor_value != ctx.sended_auto_data.motor_value )
+  if ( auto_data->motor_rpm != ctx.sended_auto_data.motor_rpm )    // Changed from motor_value to motor_rpm
   {
-    if ( HTTPParamClient_SetU32Value( PARAM_MOTOR, auto_data->motor_value, 1000 ) == ERROR_CODE_OK )
+    if ( HTTPParamClient_SetU32Value( PARAM_MOTOR_RPM_PER_100, auto_data->motor_rpm, 1000 ) == ERROR_CODE_OK )    // Changed PARAM_MOTOR to PARAM_MOTOR_RPM_PER_100
     {
-      ctx.sended_auto_data.motor_value = auto_data->motor_value;
+      ctx.sended_auto_data.motor_rpm = auto_data->motor_rpm;    // Changed from motor_value to motor_rpm
     }
   }
 }
@@ -299,6 +300,7 @@ static void backend_start( void )
     else
     {
       menuStartResetError();
+      menuAutoResetError();
       LOG( PRINT_DEBUG, "No error" );
     }
 
@@ -307,7 +309,7 @@ static void backend_start( void )
     HTTPParamClient_GetU32Value( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_LEVEL, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
-    HTTPParamClient_GetU32Value( PARAM_VELOCITY, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_VELOCITY_HMS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
   }
@@ -358,6 +360,7 @@ static void backend_auto( void )
     else
     {
       menuStartResetError();
+      menuAutoResetError();
       LOG( PRINT_DEBUG, "No error" );
     }
 
@@ -366,14 +369,16 @@ static void backend_auto( void )
     HTTPParamClient_GetU32Value( PARAM_LOW_LEVEL_SILOS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_LEVEL, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SILOS_SENSOR_IS_CONNECTED, NULL, 2000 );
-    HTTPParamClient_GetU32Value( PARAM_VELOCITY, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_VELOCITY_HMS, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
-    
+    HTTPParamClient_GetU32Value( PARAM_SEEDING_IS_ACTIVE, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_DISTANCE_HM, NULL, 2000 );
+
     // Add velocity sensor connection status reading
-    HTTPParamClient_GetU32Value( PARAM_VELOCITY_SENSOR_IS_CONNECTED, NULL, 2000 );
-    
+    HTTPParamClient_GetU32Value( PARAM_VELOCITY_SENSOR_STATUS, NULL, 2000 );
+
     LOG( PRINT_DEBUG, "Get silos %d ", parameters_getValue( PARAM_LOW_LEVEL_SILOS ) );
-    LOG( PRINT_DEBUG, "Velocity sensor connected: %d", parameters_getValue( PARAM_VELOCITY_SENSOR_IS_CONNECTED ) );
+    LOG( PRINT_DEBUG, "Velocity sensor connected: %d", parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS ) );
   }
 
   if ( ctx.get_data_cnt % 20 == 0 )

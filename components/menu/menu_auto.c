@@ -5,6 +5,7 @@
 #include "buzzer.h"
 #include "cmd_client.h"
 #include "dictionary.h"
+#include "e108_position_driver.h"
 #include "fast_add.h"
 #include "freertos/timers.h"
 #include "http_parameters_client.h"
@@ -84,6 +85,9 @@ typedef struct
   bool button_up_pressed;    // Add this line
   bool button_down_pressed;    // Add this line
   bool both_buttons_pressed;
+  float velocity;
+  float distance_km;
+  e108_gnss_status_t velocity_sensor_status;
 } menu_start_context_t;
 
 static menu_start_context_t ctx;
@@ -118,7 +122,7 @@ static void _button_down_callback( void* arg );
 static void _button_down_release_callback( void* arg );    // Add this line
 static void _button_down_timer_callback( void* arg );    // Add this line
 static void _button_exit_callback( void* arg );
-static void _button_kg_per_ha_callback( void* arg );
+static void _button_reset_distance_callback( void* arg );
 static void _button_motor_callback( void* arg );
 static void _button_motor_plus_push_cb( void* arg );
 static void _button_motor_plus_time_cb( void* arg );
@@ -287,7 +291,7 @@ static void _button_up_callback( void* arg )
   }
 
   // Otherwise increment set_velocity
-  if ( ctx.data.set_velocity < 200 )    // Assume 200 is the maximum value
+  if ( ctx.data.set_velocity < parameters_getMaxValue( PARAM_SET_VELOCITY_KM_H ) )
   {
     ctx.data.set_velocity++;
     _set_change_menu( EDIT_VELOCITY );
@@ -325,7 +329,7 @@ static void _button_up_timer_callback( void* arg )    // Add this function
     return;
   }
 
-  fastProcessStart( &ctx.data.set_velocity, 200, 1, FP_PLUS, _velocity_fast_add_cb );
+  fastProcessStart( &ctx.data.set_velocity, parameters_getMaxValue( PARAM_SET_VELOCITY_KM_H ), 1, FP_PLUS, _velocity_fast_add_cb );
 }
 
 static void _button_down_callback( void* arg )
@@ -394,7 +398,7 @@ static void _button_down_timer_callback( void* arg )    // Add this function
     return;
   }
 
-  fastProcessStart( &ctx.data.set_velocity, 200, 1, FP_MINUS, _velocity_fast_add_cb );
+  fastProcessStart( &ctx.data.set_velocity, parameters_getMaxValue( PARAM_SET_VELOCITY_KM_H ), 1, FP_MINUS, _velocity_fast_add_cb );
 }
 
 static void _button_exit_callback( void* arg )
@@ -411,7 +415,7 @@ static void _button_exit_callback( void* arg )
   ctx.exit_wait_flag = true;
 }
 
-static void _button_kg_per_ha_callback( void* arg )
+static void _button_reset_distance_callback( void* arg )
 {
   menu_token_t* menu = arg;
 
@@ -428,7 +432,7 @@ static void _button_kg_per_ha_callback( void* arg )
     return;
   }
 
-  // ctx.data.servo_vibro_on = ctx.data.servo_vibro_on ? false : true;
+  HTTPParamClient_SetU32ValueDontWait( PARAM_RESET_DISTANCE, 1 );
 }
 
 static void _button_motor_callback( void* arg )
@@ -476,9 +480,9 @@ static void _button_motor_plus_push_cb( void* arg )
     return;
   }
 
-  if ( ctx.data.motor_value < 100 )    // Changed to motor_value and limit to 100
+  if ( ctx.data.motor_rpm < parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) / 100 )    // Changed to motor_rpm
   {
-    ctx.data.motor_value++;
+    ctx.data.motor_rpm++;
   }
 
   _set_change_menu( EDIT_MOTOR );    // Change to EDIT_MOTOR
@@ -501,7 +505,7 @@ static void _button_motor_plus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.motor_value, 100, 1, FP_PLUS, _motor_fast_add_cb );    // Use _motor_fast_add_cb
+  fastProcessStart( &ctx.data.motor_rpm, parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) / 100, 1, FP_PLUS, _motor_fast_add_cb );    // Changed to motor_rpm
 }
 
 static void _button_motor_minus_push_cb( void* arg )
@@ -521,12 +525,12 @@ static void _button_motor_minus_push_cb( void* arg )
     return;
   }
 
-  if ( ctx.data.motor_value > 0 )    // Changed to motor_value and min limit to 0
+  if ( ctx.data.motor_rpm > 0 )    // Changed to motor_rpm
   {
-    ctx.data.motor_value--;
+    ctx.data.motor_rpm--;
   }
 
-  _set_change_menu( EDIT_MOTOR );    // Change to EDIT_MOTOR
+  _set_change_menu( EDIT_MOTOR );
 }
 
 static void _button_motor_minus_time_cb( void* arg )
@@ -546,7 +550,7 @@ static void _button_motor_minus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.motor_value, 100, 0, FP_MINUS, _motor_fast_add_cb );    // Use _motor_fast_add_cb
+  fastProcessStart( &ctx.data.motor_rpm, parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) / 100, 0, FP_MINUS, _motor_fast_add_cb );    // Changed to motor_rpm
 }
 
 static void _button_motor_p_m_pull_cb( void* arg )
@@ -559,7 +563,7 @@ static void _button_motor_p_m_pull_cb( void* arg )
     return;
   }
 
-  fastProcessStop( &ctx.data.motor_value );    // Changed to motor_value
+  fastProcessStop( &ctx.data.motor_rpm );    // Changed to motor_rpm
 
   reset_error_and_power_save_timer();
 
@@ -718,7 +722,7 @@ static bool menu_button_init_cb( void* arg )
   menu->button.up.timer_callback = _button_up_timer_callback;    // Update timer callback
 
   menu->button.enter.fall_callback = _button_exit_callback;
-  menu->button.exit.fall_callback = _button_kg_per_ha_callback;
+  menu->button.exit.fall_callback = _button_reset_distance_callback;
 
   menu->button.up_minus.fall_callback = _button_motor_minus_push_cb;
   menu->button.up_minus.rise_callback = _button_motor_p_m_pull_cb;
@@ -756,7 +760,6 @@ static bool menu_enter_cb( void* arg )
 
   HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
 
-  ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
   ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
   LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
@@ -829,7 +832,6 @@ static void _state_check_connection( void )
 
   bool ret = false;
 
-  ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
   LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = 0;
@@ -864,7 +866,6 @@ static void _state_idle( void )
   {
     HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
     ctx.data.is_working = 0;
-    ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
     ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
     LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
     // ctx.data.servo_vibro_on = 0;
@@ -932,9 +933,14 @@ static void _state_ready( void )
     }
   }
 
-  ctx.data.velocity = parameters_getValue( PARAM_VELOCITY );
-  sprintf( str, "%lu km/h", ctx.data.velocity );
-  oled_printFixed( 70, 22, str, OLED_FONT_SIZE_11 );
+  ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0;
+  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0;
+  sprintf( str, "%.1f km/h", ctx.velocity );
+  oled_printFixed( 70, 16, str, OLED_FONT_SIZE_11 );
+
+  sprintf( str, "%.1f km", ctx.distance_km );
+  oled_printFixed( 70, 30, str, OLED_FONT_SIZE_11 );
+
   uint8_t cnt = 0;
 
   if ( ctx.data.is_working )
@@ -945,13 +951,13 @@ static void _state_ready( void )
   drawMotorCircle( 5, 2, cnt );
 
   sprintf( str, "%lu kg/ha", ctx.data.kg_per_ha );
-  oled_printFixed( 70, 52, str, OLED_FONT_SIZE_11 );
+  oled_printFixed( 70, 45, str, OLED_FONT_SIZE_11 );
 
-  sprintf( str, "%lu%%", ctx.data.motor_value );
-  oled_printFixed( 5, 52, str, OLED_FONT_SIZE_11 );
+  sprintf( str, "%lu rpm", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
+  oled_printFixed( 5, 45, str, OLED_FONT_SIZE_11 );
 
   // Fix the velocity comparison - check if actual velocity deviates from set velocity by more than 5 km/h
-  if ( ctx.data.velocity < ctx.data.set_velocity - 5 || ctx.data.velocity > ctx.data.set_velocity + 5 )
+  if ( ctx.velocity < (float) ctx.data.set_velocity - 5 || ctx.velocity > (float) ctx.data.set_velocity + 5 )
   {
     if ( !ctx.velocity_warning_triggered )
     {
@@ -1098,7 +1104,7 @@ static void _state_motor_change( void )    // Add state handler for STATE_MOTOR_
   }
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
-  sprintf( ctx.buff, "%ld%%", ctx.data.motor_value );
+  sprintf( ctx.buff, "%ld%%", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
   oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
@@ -1190,7 +1196,7 @@ static void _state_velocity_warning( void )
   }
 
   oled_clearScreen();
-  if ( ctx.data.set_velocity < ctx.data.velocity )
+  if ( (float) ctx.data.set_velocity < ctx.velocity )
   {
     oled_printFixed( 5, 6, "Slow down!", OLED_FONT_SIZE_26 );
   }
@@ -1296,14 +1302,14 @@ static bool menu_process( void* arg )
   if ( backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected() )
   {
     MOTOR_LED_SET_GREEN( 0 );
-    //  SERVO_VIBRO_LED_SET_GREEN( 0 );
+    SERVO_VIBRO_LED_SET_GREEN( 0 );
   }
   else
   {
     MOTOR_LED_SET_GREEN( ctx.data.is_working );
-    // SERVO_VIBRO_LED_SET_GREEN( ctx.data.servo_vibro_on );
+    SERVO_VIBRO_LED_SET_GREEN( parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) );
     MOTOR_LED_SET_RED( 0 );
-    //  SERVO_VIBRO_LED_SET_RED( 0 );
+    SERVO_VIBRO_LED_SET_RED( 0 );
   }
 
   return true;

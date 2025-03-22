@@ -58,6 +58,7 @@ typedef struct
   uint8_t servo_set_value;
   uint32_t servo_set_timer;
   uint8_t motor_value;
+  uint32_t motor_rpm;
   uint8_t motor_on;
   uint8_t servo_on;
   uint16_t servo_pwm;
@@ -72,9 +73,9 @@ typedef struct
   bool servo_close_calibration_req;
 
   uint32_t kg_per_ha;
-  uint32_t velocity;
+  float velocity;
   uint32_t velocity_set;
-  uint32_t velocity_sensor_is_connected;
+  e108_gnss_status_t velocity_sensor_status;
   float machine_height;
   uint32_t density;
   bool auto_mode;
@@ -90,6 +91,10 @@ typedef struct
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
   pwm_drv_t servo_pwm_drv;
+
+  // New fields for system shutdown delay
+  bool system_shutdown_pending;
+  uint32_t system_shutdown_time;
 } server_controller_ctx;
 
 static server_controller_ctx ctx;
@@ -157,7 +162,40 @@ static void count_working_data( void )
 
 static void set_working_data( void )
 {
-  gpio_set_level( SYSTEM_ON_PIN, ctx.system_on ? 1 : 0 );
+  static bool prev_system_on = false;
+
+  // Check for transition from ON to OFF
+  if ( prev_system_on && !ctx.system_on )
+  {
+    // System is being turned off, start the shutdown delay
+    ctx.system_shutdown_pending = true;
+    ctx.system_shutdown_time = xTaskGetTickCount() + MS2ST( 1500 );    // 1.5 second delay
+    LOG( PRINT_INFO, "System shutdown initiated with 1.5s delay" );
+  }
+
+  // Update previous state for next call
+  prev_system_on = ctx.system_on;
+
+  // Determine actual GPIO state based on shutdown timer
+  bool actual_system_state = ctx.system_on;
+  if ( ctx.system_shutdown_pending )
+  {
+    if ( xTaskGetTickCount() >= ctx.system_shutdown_time )
+    {
+      // Delay expired, complete the shutdown
+      ctx.system_shutdown_pending = false;
+      actual_system_state = false;
+      LOG( PRINT_INFO, "System shutdown completed after delay" );
+    }
+    else
+    {
+      // Still in delay period, keep system on
+      actual_system_state = true;
+    }
+  }
+
+  // Set the actual GPIO pin state
+  gpio_set_level( SYSTEM_ON_PIN, actual_system_state ? 1 : 0 );
 
   LOG( PRINT_DEBUG, "motor %d %f %d", ctx.motor_on, ctx.motor_pwm, ctx.motor_value );
   if ( ctx.motor_on )
@@ -320,18 +358,24 @@ static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
 static void _auto_working( void )
 {
   // Read position sensor data
-  ctx.velocity_sensor_is_connected = e108_is_active();
-  parameters_setValue( PARAM_VELOCITY_SENSOR_IS_CONNECTED, ctx.velocity_sensor_is_connected );
+  ctx.velocity_sensor_status = e108_get_status();
+  parameters_setValue( PARAM_VELOCITY_SENSOR_STATUS, ctx.velocity_sensor_status );
   e108_position_info_t position = { 0 };
   e108_get_position( &position );
-  ctx.velocity = ceil( position.speed_kmh );
-  parameters_setValue( PARAM_VELOCITY, ctx.velocity );
+  ctx.velocity = position.filtered_speed_kmh;
+  parameters_setValue( PARAM_VELOCITY_HMS, (uint32_t) ( ctx.velocity * 10.0f ) );
+  if ( parameters_getValue( PARAM_RESET_DISTANCE ) == 1 )
+  {
+    e108_reset_distance();
+    parameters_setValue( PARAM_RESET_DISTANCE, 0 );
+  }
+  parameters_setValue( PARAM_DISTANCE_HM, position.distance_km * 10 );
 
   // Read basic parameters
   ctx.motor_on = parameters_getValue( PARAM_MOTOR_IS_ON );
   ctx.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
   ctx.velocity_set = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
-  ctx.motor_value = (uint8_t) parameters_getValue( PARAM_MOTOR );
+  ctx.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) * 100;
 
   // Read auto mode parameters
   ctx.machine_height = (float) parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) / 100.0f;    // Convert cm to m
@@ -341,7 +385,7 @@ static void _auto_working( void )
   ctx.seeding_start_speed_kmh = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );
 
   //Implement velocity sensor
-  if ( !ctx.velocity_sensor_is_connected )
+  if ( ctx.velocity_sensor_status != E108_READY )
   {
     ctx.velocity = ctx.velocity_set;
   }
@@ -396,6 +440,8 @@ static void _auto_working( void )
     ctx.servo_on = false;
   }
 
+  parameters_setValue( PARAM_SEEDING_IS_ACTIVE, ctx.servo_on );
+
   // Calculate seeding parameters
   uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
 
@@ -403,11 +449,11 @@ static void _auto_working( void )
   double working_width = ctx.working_width_m;
 
   // Option 2: Calculate working width based on physics if sensor is connected
-  if ( ctx.velocity_sensor_is_connected )
+  if ( ctx.velocity_sensor_status == E108_READY )
   {
-    double motor_rpm = max_rpm / 100.0 * ctx.motor_value;
-    float _R = 0.3;    // Example value. 30 [cm]
-    double grain_throwing_speed = motor_rpm * 2 * 3.14159265359 * _R / 60.0;
+    // double motor_rpm = max_rpm / 100.0 * ctx.motor_value;
+    double _R = 0.3;    // Example value. 30 [cm]
+    double grain_throwing_speed = (double) ctx.motor_rpm * 2 * 3.14159265359 * _R / 60.0;
     working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
   }
 
@@ -433,8 +479,12 @@ static void _auto_working( void )
     servo_value = 100;
   }
 
-  ctx.servo_value = (uint8_t) servo_value;
+  // Conver motor RPM to PWM duty cycle
+  float motor_rpm_to_percent = 0.02;
 
+  ctx.servo_value = (uint8_t) servo_value;
+  ctx.motor_value = ctx.motor_rpm * motor_rpm_to_percent;
+  LOG( PRINT_INFO, "DISTANCE %f", position.distance_km );
   LOG( PRINT_INFO, "Base servo = %.2f, After correction = %.2f, Final = %u",
        servo, servo_value, ctx.servo_value );
 }
