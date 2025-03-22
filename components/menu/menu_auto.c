@@ -594,7 +594,7 @@ static void _button_kg_per_ha_plus_push_cb( void* arg )
     return;
   }
 
-  if ( ctx.data.kg_per_ha < 100 )
+  if ( ctx.data.kg_per_ha < parameters_getMaxValue( PARAM_GRAIN_PER_HECTARE ) )
   {
     ctx.data.kg_per_ha++;
   }
@@ -619,7 +619,7 @@ static void _button_kg_per_ha_plus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.kg_per_ha, 100, 0, FP_PLUS, _servo_fast_add_cb );
+  fastProcessStart( &ctx.data.kg_per_ha, parameters_getMaxValue( PARAM_GRAIN_PER_HECTARE ), 0, FP_PLUS, _servo_fast_add_cb );
 }
 
 static void _button_kg_per_ha_minus_push_cb( void* arg )
@@ -664,7 +664,7 @@ static void _button_kg_per_ha_minus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.kg_per_ha, 100, 0, FP_MINUS, _servo_fast_add_cb );
+  fastProcessStart( &ctx.data.kg_per_ha, parameters_getMaxValue( PARAM_GRAIN_PER_HECTARE ), 0, FP_MINUS, _servo_fast_add_cb );
 }
 
 static void _button_kg_per_ha_p_m_pull_cb( void* arg )
@@ -931,33 +931,80 @@ static void _state_ready( void )
     {
       oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
     }
+    drawTank( 1, 25, silos_level );
   }
+
+  // Get the GPS status and display icon accordingly
+  ctx.velocity_sensor_status = (e108_gnss_status_t) parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS );
+
+  if ( ctx.velocity_sensor_status == E108_READY )
+  {
+    // Module is working with valid fix - display constantly
+    drawGps( 1, 1 );
+  }
+  else if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
+  {
+    // Searching for satellites - blink the icon
+    if ( ctx.animation_cnt % 2 == 0 )
+    {
+      drawGps( 1, 1 );
+    }
+  }
+
+  // Display the center message based on motor status and seeding status
+  const char* status_message;
+
+  // If motor is running, show seeding status messages
+  if ( ctx.data.is_working )
+  {
+    if ( parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) )
+    {
+      status_message = dictionary_get_string( DICT_SEEDING_IN_PROGRESS );    // "Wysiew trwa"
+    }
+    else
+    {
+      status_message = dictionary_get_string( DICT_SEEDING_STOPPED );    // "Wysiew zatrzymany"
+    }
+  }
+  else
+  {
+    // If motor is not running, show GPS status as before
+    switch ( ctx.velocity_sensor_status )
+    {
+      case E108_READY:
+        status_message = dictionary_get_string( DICT_READY );    // "Gotowy"
+        break;
+      case E108_WAIT_VALID_MEASUREMENT:
+        status_message = dictionary_get_string( DICT_SEARCHING_FOR_GPS );    // "Szukam GPS"
+        break;
+      default:    // E108_DISCONNECTED or any other state
+        status_message = dictionary_get_string( DICT_SET_SPEED );    // "Ustaw prędkość"
+        break;
+    }
+  }
+
+  // Display the status message in the center of the screen
+  int text_width = strlen( status_message ) * 6;    // Approximate width based on font size
+  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+  oled_printFixed( center_x, 11, status_message, OLED_FONT_SIZE_16 );
 
   ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0;
   ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0;
   sprintf( str, "%.1f km/h", ctx.velocity );
-  oled_printFixed( 70, 16, str, OLED_FONT_SIZE_11 );
-
-  sprintf( str, "%.1f km", ctx.distance_km );
-  oled_printFixed( 70, 30, str, OLED_FONT_SIZE_11 );
-
-  uint8_t cnt = 0;
-
-  if ( ctx.data.is_working )
-  {
-    cnt = ctx.animation_cnt % 6;
-  }
-
-  drawMotorCircle( 5, 2, cnt );
+  oled_printFixed( 20, 32, str, OLED_FONT_SIZE_11 );
 
   sprintf( str, "%lu kg/ha", ctx.data.kg_per_ha );
-  oled_printFixed( 70, 45, str, OLED_FONT_SIZE_11 );
+  oled_printFixed( 20, 45, str, OLED_FONT_SIZE_11 );
 
-  sprintf( str, "%lu rpm", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
-  oled_printFixed( 5, 45, str, OLED_FONT_SIZE_11 );
+  sprintf( str, "%lu rpm", ctx.data.motor_rpm * 100 );
+  oled_printFixed( 75, 32, str, OLED_FONT_SIZE_11 );
+
+  sprintf( str, "%.1f km", ctx.distance_km );
+  oled_printFixed( 75, 45, str, OLED_FONT_SIZE_11 );
 
   // Fix the velocity comparison - check if actual velocity deviates from set velocity by more than 5 km/h
-  if ( ctx.velocity < (float) ctx.data.set_velocity - 5 || ctx.velocity > (float) ctx.data.set_velocity + 5 )
+  // Only trigger velocity warnings if GPS has a valid fix
+  if ( ( ctx.velocity_sensor_status == E108_READY ) && ( ctx.velocity < (float) ctx.data.set_velocity - 5 || ctx.velocity > (float) ctx.data.set_velocity + 5 ) )
   {
     if ( !ctx.velocity_warning_triggered )
     {
@@ -1104,7 +1151,7 @@ static void _state_motor_change( void )    // Add state handler for STATE_MOTOR_
   }
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
-  sprintf( ctx.buff, "%ld%%", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
+  sprintf( ctx.buff, "%ld rpm", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
   oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
@@ -1198,11 +1245,11 @@ static void _state_velocity_warning( void )
   oled_clearScreen();
   if ( (float) ctx.data.set_velocity < ctx.velocity )
   {
-    oled_printFixed( 5, 6, "Slow down!", OLED_FONT_SIZE_26 );
+    oled_printFixed( 5, 6, dictionary_get_string( DICT_SPEED_DOWN ), OLED_FONT_SIZE_26 );
   }
   else
   {
-    oled_printFixed( 5, 6, "Speed up!", OLED_FONT_SIZE_26 );
+    oled_printFixed( 5, 6, dictionary_get_string( DICT_SPEED_UP ), OLED_FONT_SIZE_26 );
   }
 }
 
