@@ -62,8 +62,8 @@ typedef struct
   uint32_t last_valid_time_ms;    // Timestamp of last valid measurement in ms
   uint32_t time_since_last_ms;    // Time since last valid measurement in ms
   e108_gnss_status_t status;    // Current status of the GNSS module
-  float distance_km;             // Total distance traveled in kilometers
-  uint32_t last_speed_update_ms; // Timestamp of the last speed update for distance calculation
+  float distance_km;    // Total distance traveled in kilometers
+  uint32_t last_speed_update_ms;    // Timestamp of the last speed update for distance calculation
 } e108_position_t;
 
 static e108_position_t g_position = { 0 };
@@ -577,7 +577,7 @@ e108_gnss_err_t e108_continuous_start( uint8_t uart_port, uint32_t uart_tx_pin, 
   {
     g_position.distance_km = 0.0f;
   }
-  g_position.last_speed_update_ms = 0; // Reset timestamp for distance calculation
+  g_position.last_speed_update_ms = 0;    // Reset timestamp for distance calculation
   xSemaphoreGive( g_position.mutex );
 
   // Start the continuous reader task
@@ -674,7 +674,7 @@ bool e108_get_position( e108_position_info_t* position )
   strncpy( position->datestamp, g_position.datestamp, sizeof( position->datestamp ) );
   position->valid = g_position.valid;
   position->time_since_last_ms = g_position.time_since_last_ms;
-  position->distance_km = g_position.distance_km;  // Copy distance traveled
+  position->distance_km = g_position.distance_km;    // Copy distance traveled
 
   xSemaphoreGive( g_position.mutex );
 

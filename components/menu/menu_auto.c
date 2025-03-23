@@ -988,8 +988,8 @@ static void _state_ready( void )
   int center_x = ( SSD1306_WIDTH - text_width ) / 2;
   oled_printFixed( center_x, 11, status_message, OLED_FONT_SIZE_16 );
 
-  ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0;
-  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0;
+  ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
+  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
   sprintf( str, "%.1f km/h", ctx.velocity );
   oled_printFixed( 20, 32, str, OLED_FONT_SIZE_11 );
 

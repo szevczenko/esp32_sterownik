@@ -23,7 +23,7 @@
 #define PARAMETERS_U32_LIST                                                          \
   PARAM( PARAM_MOTOR, 0, 100, 0, "motor" )                                           \
   PARAM( PARAM_MOTOR2, 0, 100, 0, "motor_2" )                                        \
-  PARAM( PARAM_MOTOR_RPM_PER_100, 0, 5000, 0, "motor_rpm" )                                  \
+  PARAM( PARAM_MOTOR_RPM_PER_100, 0, 5000, 0, "motor_rpm" )                          \
   PARAM( PARAM_SERVO, 0, 100, 0, "servo" )                                           \
   PARAM( PARAM_VIBRO_ON_S, 0, 100, 0, "vibro_on_s" )                                 \
   PARAM( PARAM_VIBRO_OFF_S, 0, 100, 0, "vibro_off_s" )                               \
@@ -59,12 +59,12 @@
   PARAM( PARAM_SIZE_OF_GRAIN, 0, 2, 1, "size_of_grain" )                             \
   PARAM( PARAM_HIGH_OF_MACHINE_CM, 0, 1000, 50, "hight_of_machine" )                 \
   PARAM( PARAM_SET_VELOCITY_KM_H, 0, 200, 45, "set_velocity" )                       \
-  PARAM( PARAM_VELOCITY_HMS, 0, 200, 45, "velocity" )                                \
+  PARAM( PARAM_VELOCITY_HMS, 0, 2000, 450, "velocity" )                              \
   PARAM( PARAM_VELOCITY_SENSOR_STATUS, 0, 10, 0, "velocity_sensor_is_connected" )    \
   PARAM( PARAM_DISTANCE_HM, 0, 0xffffffff, 0, "distance_hm" )                        \
   PARAM( PARAM_RESET_DISTANCE, 0, 1, 0, "reset_distance" )                           \
   PARAM( PARAM_WORK_AREA, 0, 100, 50, "work_area" )                                  \
-  PARAM( PARAM_GRAIN_PER_HECTARE, 0, 250, 50, "grain_per_hectare" )                 \
+  PARAM( PARAM_GRAIN_PER_HECTARE, 0, 250, 50, "grain_per_hectare" )                  \
   PARAM( PARAM_AUTO_MODE, 0, 1, 1, "auto_mode" )                                     \
   PARAM( PARAM_WORKING_WIDTH_СM, 0, 800, 400, "working_width" )                      \
   PARAM( PARAM_CORRECTION_FACTOR, 0, 200, 100, "correction_factor" )                 \
