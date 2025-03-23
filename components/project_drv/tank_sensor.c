@@ -6,7 +6,7 @@
 #include "xkc-kl200-uart.h"
 
 #define MODULE_NAME "[TANK] "
-#define DEBUG_LVL   PRINT_DEBUG
+#define DEBUG_LVL   PRINT_INFO
 
 #if CONFIG_DEBUG_TANK
 #define LOG( _lvl, ... ) \
@@ -27,9 +27,9 @@ static uint8_t bad_read_data_count;
 static void _task( void* arg )
 {
   xkc_error_code_t res = xkc_configure_upload_mode( UPLOAD_MODE_MANUAL );
-  LOG( PRINT_DEBUG, "Upload mode: %d\n", res );
+  LOG( PRINT_INFO, "Upload mode: %d\n", res );
   res = xkc_configure_line_mode( LINE_MODE_UART );
-  LOG( PRINT_DEBUG, "Configure line mode: %d\n", res );
+  LOG( PRINT_INFO, "Configure line mode: %d\n", res );
   while ( 1 )
   {
     res = xkc_read_distance( &read_data );

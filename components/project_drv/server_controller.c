@@ -407,7 +407,7 @@ static void _auto_working( void )
       // Start seeding with delay
       ctx.seeding_active = true;
       ctx.seeding_start_time = xTaskGetTickCount() + MS2ST( ctx.servo_open_delay_s * 100 );    // Convert deciseconds to ms
-      LOG( PRINT_INFO, "Seeding start initiated with delay %lu s", ctx.servo_open_delay_s );
+      LOG( PRINT_DEBUG, "Seeding start initiated with delay %lu s", ctx.servo_open_delay_s );
     }
   }
   else
@@ -416,7 +416,7 @@ static void _auto_working( void )
     ctx.seeding_active = false;
     ctx.servo_on = false;
     ctx.servo_value = 0;
-    LOG( PRINT_INFO, "Speed too low, seeding stopped" );
+    LOG( PRINT_DEBUG, "Speed too low, seeding stopped" );
     return;
   }
 
@@ -426,7 +426,7 @@ static void _auto_working( void )
     // Still in delay period, don't open servo yet
     ctx.servo_on = false;
     ctx.servo_value = 0;
-    LOG( PRINT_INFO, "In delay period, waiting to start seeding" );
+    LOG( PRINT_DEBUG, "In delay period, waiting to start seeding" );
     return;
   }
 
@@ -457,7 +457,7 @@ static void _auto_working( void )
     working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
   }
 
-  LOG( PRINT_INFO, "working width = %.2f m", working_width );
+  LOG( PRINT_DEBUG, "working width = %.2f m", working_width );
 
   // Get material density based on grain size
   ctx.density = _size_of_grain_to_density( size_of_grain );
@@ -484,8 +484,8 @@ static void _auto_working( void )
 
   ctx.servo_value = (uint8_t) servo_value;
   ctx.motor_value = ctx.motor_rpm * motor_rpm_to_percent;
-  LOG( PRINT_INFO, "DISTANCE %f", position.distance_km );
-  LOG( PRINT_INFO, "Base servo = %.2f, After correction = %.2f, Final = %u",
+  LOG( PRINT_DEBUG, "DISTANCE %f", position.distance_km );
+  LOG( PRINT_DEBUG, "Base servo = %.2f, After correction = %.2f, Final = %u",
        servo, servo_value, ctx.servo_value );
 }
 
