@@ -440,7 +440,7 @@ static void _auto_working( void )
     ctx.servo_on = false;
   }
 
-  parameters_setValue( PARAM_SEEDING_IS_ACTIVE, ctx.servo_on );
+  parameters_setValue( PARAM_SEEDING_IS_ACTIVE, ctx.seeding_active );
 
   // Calculate seeding parameters
   uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
