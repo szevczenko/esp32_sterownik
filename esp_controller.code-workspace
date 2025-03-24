@@ -4,10 +4,7 @@
             "path": "."
         },
         {
-            "path": "../esp_idf"
-        },
-        {
-            "path": "../../Espressif/frameworks/esp-idf-v5.1"
+            "path": "../esp-idf"
         }
     ],
     "settings": {
@@ -167,7 +164,11 @@
             "esp_heap_trace.h": "c",
             "esp_debug_helpers.h": "c",
             "ssd1306_i2c.h": "c",
-            "ssd1306.h": "c"
+            "ssd1306.h": "c",
+            "cstdint": "c",
+            "server_controller.h": "c",
+            "xkc-kl200-uart.h": "c",
+            "e108_position_driver.h": "c"
         },
         "cSpell.words": [
             "Dmytro",
