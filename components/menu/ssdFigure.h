@@ -32,5 +32,9 @@ void drawQR( uint8_t x, uint8_t y );
 void ssdFigure_DrawLowAccu( uint8_t x, uint8_t y, float acc_voltage, float acc_current );
 void drawGps( uint8_t x, uint8_t y );
 void drawTank( uint8_t x, uint8_t y, uint8_t level );
+void drawkm_h( uint8_t x, uint8_t y );
+void drawkg_ha( uint8_t x, uint8_t y );
+void drawrpm( uint8_t x, uint8_t y );
+void drawkm( uint8_t x, uint8_t y );
 
 #endif
