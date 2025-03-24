@@ -133,9 +133,9 @@ static void _init_server( void )
   measure_start();
   srvrControllStart();
   // ultrasonar_start();
-  xkc_init( 1, 9600, 17, 16 );
+  xkc_init( 1, 9600, 14, 12 );
   tank_sensor_init();
-  e108_continuous_start( 2, 19, 18 );
+  e108_continuous_start( 2, 16, 17 );
 
 #if CONFIG_DEVICE_SIEWNIK
   errorSiewnikStart();

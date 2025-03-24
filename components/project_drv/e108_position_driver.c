@@ -34,7 +34,7 @@ static gpio_num_t e108_gnss_uart_rx_pin = 18;
 #define E108_TIMEOUT_MS      3000    // Timeout for considering the sensor disconnected
 
 // Kalman filter parameters for speed
-#define KALMAN_PROCESS_NOISE     0.01f    // Process noise (Q) - higher values = faster response, more noise
+#define KALMAN_PROCESS_NOISE     1.0f    // Process noise (Q) - higher values = faster response, more noise
 #define KALMAN_MEASUREMENT_NOISE 1.0f    // Measurement noise (R) - higher values = more smoothing
 #define KALMAN_ERROR_INIT        1.0f    // Initial error covariance
 

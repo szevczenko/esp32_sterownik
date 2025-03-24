@@ -224,22 +224,44 @@ static bool _is_working_state( void )
 static bool _check_low_silos_flag( void )
 {
   uint32_t flag = parameters_getValue( PARAM_LOW_LEVEL_SILOS );
+  uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
+  static uint8_t low_silos_counter = 0;
+  static uint32_t cycle_counter = 0;
+  static bool has_entered = false;
 
-  // LOG( PRINT_DEBUG, "------SILOS FLAG %d---------", flag );
+  cycle_counter++;
+
+  if ( !has_entered && cycle_counter < 20 )
+  {
+    return false;    // Nie wykonuj funkcji, jeśli cykle < 20 za pierwszym razem
+  }
+
   if ( flag > 0 )
   {
     if ( ctx.low_silos_check_timeout < xTaskGetTickCount() )
     {
+      if ( low_silos_counter >= 3 && silos_level <= 10 )
+      {
+        return false;
+      }
+
       ctx.low_silos_check_timeout = MS2ST( 30000 ) + xTaskGetTickCount();
       _change_state( STATE_LOW_SILOS );
       buzzer_click();
-      ctx.low_silos_timeout = MS2ST( 5000 ) + xTaskGetTickCount();
+      vTaskDelay( MS2ST( 150 ) );
+      buzzer_click();
+      ctx.low_silos_timeout = MS2ST( 1500 ) + xTaskGetTickCount();
+      low_silos_counter++;
+      has_entered = true;
+      cycle_counter = 0;
       return true;
     }
   }
   else
   {
     ctx.low_silos_check_timeout = MS2ST( 10000 ) + xTaskGetTickCount();
+    low_silos_counter = 0;    // Reset counter when flag is not set
+    has_entered = false;
   }
 
   return false;
@@ -921,17 +943,17 @@ static void _state_ready( void )
     sprintf( str, "%ld", parameters_getValue( PARAM_SILOS_LEVEL ) );
     if ( silos_level > 99 )
     {
-      oled_printFixed( 10, 10, str, OLED_FONT_SIZE_11 );
+      oled_printFixed( 1, 28, str, OLED_FONT_SIZE_11 );
     }
     else if ( silos_level < 100 && silos_level > 9 )
     {
-      oled_printFixed( 14, 10, str, OLED_FONT_SIZE_11 );
+      oled_printFixed( 3, 28, str, OLED_FONT_SIZE_11 );
     }
     else if ( silos_level < 10 )
     {
-      oled_printFixed( 18, 10, str, OLED_FONT_SIZE_11 );
+      oled_printFixed( 8, 28, str, OLED_FONT_SIZE_11 );
     }
-    drawTank( 1, 25, silos_level );
+    drawTank( 3, 43, silos_level );
   }
 
   // Get the GPS status and display icon accordingly
@@ -940,14 +962,14 @@ static void _state_ready( void )
   if ( ctx.velocity_sensor_status == E108_READY )
   {
     // Module is working with valid fix - display constantly
-    drawGps( 1, 1 );
+    drawGps( 2, 1 );
   }
   else if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
   {
     // Searching for satellites - blink the icon
     if ( ctx.animation_cnt % 2 == 0 )
     {
-      drawGps( 1, 1 );
+      drawGps( 2, 1 );
     }
   }
 
@@ -983,28 +1005,142 @@ static void _state_ready( void )
     }
   }
 
-  // Display the status message in the center of the screen
-  int text_width = strlen( status_message ) * 6;    // Approximate width based on font size
-  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-  oled_printFixed( center_x, 11, status_message, OLED_FONT_SIZE_16 );
+  bool LargeText = true;    //change large values
 
-  ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
-  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
-  sprintf( str, "%.1f km/h", ctx.velocity );
-  oled_printFixed( 20, 32, str, OLED_FONT_SIZE_11 );
+  if ( LargeText )
+  {
+    // Display the status message in the center of the screen
+    int text_width = strlen( status_message ) * 6;    // Approximate width based on font size
+    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+    oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
 
-  sprintf( str, "%lu kg/ha", ctx.data.kg_per_ha );
-  oled_printFixed( 20, 45, str, OLED_FONT_SIZE_11 );
+    ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
+    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
 
-  sprintf( str, "%lu rpm", ctx.data.motor_rpm * 100 );
-  oled_printFixed( 75, 32, str, OLED_FONT_SIZE_11 );
+    sprintf( str, "%.1f ", ctx.velocity );
+    if ( ctx.velocity < 10 )
+    {
+      oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.velocity < 100 )
+    {
+      oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else
+    {
+      oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
+    }
+    drawkm_h( 50, 40 );
 
-  sprintf( str, "%.1f km", ctx.distance_km );
-  oled_printFixed( 75, 45, str, OLED_FONT_SIZE_11 );
+    sprintf( str, "%lu ", ctx.data.kg_per_ha );
+    if ( ctx.data.kg_per_ha < 10 )
+    {
+      oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.data.kg_per_ha < 100 )
+    {
+      oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
+    }
+    else
+    {
+      oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
+    }
+    drawkg_ha( 50, 56 );
+
+    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+
+    if ( ctx.data.motor_rpm < 1 )
+    {
+      oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.data.motor_rpm < 10 )
+    {
+      oled_printFixed( 82, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.data.motor_rpm < 100 )
+    {
+      oled_printFixed( 78, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else
+    {
+      oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
+    }
+
+    drawrpm( 111, 40 );
+    sprintf( str, "%.1f ", ctx.distance_km );
+    oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
+    drawkm( 111, 57 );
+  }
+  else
+  {
+    // Display the status message in the center of the screen
+    int text_width = strlen( status_message ) * 7;    // Approximate width based on font size
+    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+    oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
+
+    ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
+    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+    sprintf( str, "%.1f ", ctx.velocity );
+    if ( ctx.velocity < 10 )
+    {
+      oled_printFixed( 28, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.velocity < 100 )
+    {
+      oled_printFixed( 25, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else
+    {
+      oled_printFixed( 24, 36, str, OLED_FONT_SIZE_11 );
+    }
+    drawkm_h( 50, 40 );
+
+    sprintf( str, "%lu ", ctx.data.kg_per_ha );
+    if ( ctx.data.kg_per_ha < 10 )
+    {
+      oled_printFixed( 32, 52, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.data.kg_per_ha < 100 )
+    {
+      oled_printFixed( 29, 52, str, OLED_FONT_SIZE_11 );
+    }
+    else
+    {
+      oled_printFixed( 26, 52, str, OLED_FONT_SIZE_11 );
+    }
+    drawkg_ha( 50, 56 );
+
+    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+
+    if ( ctx.data.motor_rpm < 1 )
+    {
+      oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.data.motor_rpm < 10 )
+    {
+      oled_printFixed( 82, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.data.motor_rpm < 100 )
+    {
+      oled_printFixed( 78, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else
+    {
+      oled_printFixed( 76, 36, str, OLED_FONT_SIZE_11 );
+    }
+
+    drawrpm( 109, 40 );
+    sprintf( str, "%.1f ", ctx.distance_km );
+    oled_printFixed( 84, 52, str, OLED_FONT_SIZE_11 );
+    drawkm( 109, 57 );
+  }
+
+  //FIX Mariusz  docelowo tutaj bedzie trzeba usunoąć "&& ( ctx.data.is_working == true " jak sie poprawi funkcje wysiewu.
+  // Centrala nie widzi ze nie ma modułu."
 
   // Fix the velocity comparison - check if actual velocity deviates from set velocity by more than 5 km/h
   // Only trigger velocity warnings if GPS has a valid fix
-  if ( ( ctx.velocity_sensor_status == E108_READY ) && ( ctx.velocity < (float) ctx.data.set_velocity - 5 || ctx.velocity > (float) ctx.data.set_velocity + 5 ) )
+  if ( ( ctx.velocity_sensor_status == E108_READY ) && parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) && ( ctx.velocity < (float) ctx.data.set_velocity - 5 || ctx.velocity > (float) ctx.data.set_velocity + 5 ) )
   {
     if ( !ctx.velocity_warning_triggered )
     {
@@ -1111,9 +1247,9 @@ static void _state_velocity_change( void )
     return;
   }
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
-  oled_printFixed( 0, 0, dictionary_get_string( DICT_VELOCITY ), OLED_FONT_SIZE_26 );
-  sprintf( ctx.buff, "%ld km/h", ctx.data.set_velocity );
-  oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );    // Font_16x26
+  oled_printFixed( 20, 8, dictionary_get_string( DICT_VELOCITY ), OLED_FONT_SIZE_26 );
+  sprintf( ctx.buff, "%ld  km/h", ctx.data.set_velocity );
+  oled_printFixed( CHANGE_VALUE_DISP_OFFSET - 12, MENU_HEIGHT + LINE_HEIGHT + 10, ctx.buff, OLED_FONT_SIZE_26 );    // Font_16x26
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
   {
@@ -1134,7 +1270,7 @@ static void _state_kg_per_ha_change( void )
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, "[kg/ha]", OLED_FONT_SIZE_26 );
   sprintf( ctx.buff, "%ld", ctx.data.kg_per_ha );
-  oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
+  oled_printFixed( CHANGE_VALUE_DISP_OFFSET + 5, MENU_HEIGHT + LINE_HEIGHT + 10, ctx.buff, OLED_FONT_SIZE_26 );
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
   {
@@ -1151,8 +1287,8 @@ static void _state_motor_change( void )    // Add state handler for STATE_MOTOR_
   }
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
-  sprintf( ctx.buff, "%ld rpm", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
-  oled_printFixed( CHANGE_VALUE_DISP_OFFSET, MENU_HEIGHT + LINE_HEIGHT, ctx.buff, OLED_FONT_SIZE_26 );
+  sprintf( ctx.buff, "%ld  rpm", ctx.data.motor_rpm * 100 );    // Changed to motor_rpm
+  oled_printFixed( CHANGE_VALUE_DISP_OFFSET - 14, MENU_HEIGHT + LINE_HEIGHT + 5, ctx.buff, OLED_FONT_SIZE_26 );
 
   if ( ctx.change_menu_timeout < xTaskGetTickCount() )
   {
@@ -1243,13 +1379,14 @@ static void _state_velocity_warning( void )
   }
 
   oled_clearScreen();
+
   if ( (float) ctx.data.set_velocity < ctx.velocity )
   {
-    oled_printFixed( 5, 6, dictionary_get_string( DICT_SPEED_DOWN ), OLED_FONT_SIZE_26 );
+    oled_printFixed( 10, 20, dictionary_get_string( DICT_SPEED_DOWN ), OLED_FONT_SIZE_26 );
   }
-  else
+  else if ( (float) ctx.data.set_velocity > ctx.velocity )
   {
-    oled_printFixed( 5, 6, dictionary_get_string( DICT_SPEED_UP ), OLED_FONT_SIZE_26 );
+    oled_printFixed( 5, 20, dictionary_get_string( DICT_SPEED_UP ), OLED_FONT_SIZE_26 );
   }
 }
 
