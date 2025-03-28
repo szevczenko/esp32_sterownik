@@ -21,6 +21,7 @@
 typedef enum
 {
   TASK_STATE_INIT, /* Initializing the sensor */
+  TASK_STATE_WAIT_ANY_DATA, /* Waiting for initial data from sensor */
   TASK_STATE_WORKING, /* Normal operation - reading data */
   TASK_STATE_DISCONNECT /* Disconnecting/reinitializing due to error */
 } e108_task_state_t;
@@ -74,6 +75,7 @@ static TaskHandle_t g_continuous_task_handle = NULL;
 static void e108_continuous_reader_task( void* pvParameters );
 static void process_continuous_sentence( const char* sentence );
 static bool handle_init_state( void );
+static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size );
 static bool handle_working_state( char* rx_buffer, size_t buffer_size, char* nmea_buffer, int* nmea_index, bool* in_sentence );
 static void handle_disconnect_state( void );
 static void reset_position_data( void );
@@ -201,12 +203,44 @@ static bool handle_init_state( void )
   // Reset position data and set initial status
   reset_position_data();
 
-  xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-  g_position.status = E108_WAIT_VALID_MEASUREMENT;
-  xSemaphoreGive( g_position.mutex );
-
   ESP_LOGI( TAG, "GNSS module initialized successfully" );
   return true;
+}
+
+/**
+ * @brief Handle the wait-for-data state - wait for any sentence from the sensor
+ * 
+ * @param rx_buffer Buffer to store raw UART data
+ * @param buffer_size Size of the buffer
+ * @return true to transition to working state, false to transition to disconnect state
+ */
+static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
+{
+  // Set timeout for 3 seconds
+  uint32_t start_time = ST2MS( xTaskGetTickCount() );
+  uint32_t timeout = 3000;    // 3 seconds
+
+  ESP_LOGI( TAG, "Waiting for initial data from GNSS module" );
+
+  while ( ST2MS( xTaskGetTickCount() ) - start_time < timeout )
+  {
+    // Read data from UART with a short timeout
+    int len = uart_read_bytes( e108_gnss_uart_port, (uint8_t*) rx_buffer,
+                               buffer_size - 1, MS2ST( 100 ) );
+
+    if ( len > 0 )
+    {
+      rx_buffer[len] = 0;    // Null-terminate
+      ESP_LOGI( TAG, "Received initial data from GNSS module" );
+      return true;    // Received data, transition to working state
+    }
+
+    // Small delay to prevent CPU hogging
+    vTaskDelay( MS2ST( 10 ) );
+  }
+
+  ESP_LOGW( TAG, "No data received from GNSS module within timeout" );
+  return false;    // No data received, transition to disconnect state
 }
 
 /**
@@ -364,13 +398,29 @@ static void e108_continuous_reader_task( void* pvParameters )
       case TASK_STATE_INIT:
         if ( handle_init_state() )
         {
-          ESP_LOGI( TAG, "Transitioning to WORKING state" );
-          state = TASK_STATE_WORKING;
+          ESP_LOGI( TAG, "Transitioning to WAIT_ANY_DATA state" );
+          state = TASK_STATE_WAIT_ANY_DATA;
         }
         else
         {
           ESP_LOGW( TAG, "Initialization failed, retrying in 1 second" );
           vTaskDelay( MS2ST( 1000 ) );
+        }
+        break;
+
+      case TASK_STATE_WAIT_ANY_DATA:
+        if ( handle_wait_any_data_state( rx_buffer, sizeof( rx_buffer ) ) )
+        {
+          ESP_LOGI( TAG, "Transitioning to WORKING state" );
+          xSemaphoreTake( g_position.mutex, portMAX_DELAY );
+          g_position.status = E108_WAIT_VALID_MEASUREMENT;
+          xSemaphoreGive( g_position.mutex );
+          state = TASK_STATE_WORKING;
+        }
+        else
+        {
+          ESP_LOGW( TAG, "No initial data received, transitioning to DISCONNECT state" );
+          state = TASK_STATE_DISCONNECT;
         }
         break;
 
@@ -568,9 +618,9 @@ e108_gnss_err_t e108_continuous_start( uint8_t uart_port, uint32_t uart_tx_pin, 
     }
   }
 
-  // Set initial status
+  // Initialize other fields, but let the state machine handle the status
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-  g_position.status = E108_DISCONNECTED;
+  // The status will be set to E108_DISCONNECTED by the state machine
   g_position.running = true;
   // Initialize distance only if this is the first start (don't reset on reconnect)
   if ( g_position.last_speed_update_ms == 0 )
@@ -612,10 +662,9 @@ e108_gnss_err_t e108_continuous_stop( void )
     return E108_GNSS_ERR_INVALID_STATE;
   }
 
-  // Signal the task to stop
+  // Signal the task to stop, but don't modify status - the state machine will do that
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
   g_position.running = false;
-  g_position.status = E108_DISCONNECTED;    // Update status to disconnected
   xSemaphoreGive( g_position.mutex );
 
   // Wait for task to finish (with timeout)
@@ -645,23 +694,14 @@ bool e108_get_position( e108_position_info_t* position )
 
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
 
-  // Update time since last valid measurement and status
+  // Just update the time since last measurement without modifying status
   uint32_t current_time = ST2MS( xTaskGetTickCount() );
   if ( g_position.last_valid_time_ms > 0 )
   {
     g_position.time_since_last_ms = current_time - g_position.last_valid_time_ms;
-
-    // Update status based on time since last valid measurement
-    if ( g_position.time_since_last_ms > 3000 )
-    {
-      if ( g_position.status == E108_READY )
-      {
-        g_position.status = E108_WAIT_VALID_MEASUREMENT;
-      }
-    }
   }
 
-  // Copy only the data fields
+  // Copy the data fields without changing status
   position->latitude = g_position.latitude;
   position->longitude = g_position.longitude;
   position->altitude = g_position.altitude;
@@ -695,22 +735,14 @@ e108_gnss_status_t e108_get_status( void )
 
   e108_gnss_status_t status;
 
-  // Update status before returning
+  // Just read the current status without modifying it
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-
+  
+  // Update time since last valid measurement, but don't modify status
   uint32_t current_time = ST2MS( xTaskGetTickCount() );
   if ( g_position.last_valid_time_ms > 0 )
   {
     g_position.time_since_last_ms = current_time - g_position.last_valid_time_ms;
-
-    // Update status based on time since last valid measurement
-    if ( g_position.time_since_last_ms > 3000 )
-    {
-      if ( g_position.status == E108_READY )
-      {
-        g_position.status = E108_WAIT_VALID_MEASUREMENT;
-      }
-    }
   }
 
   status = g_position.status;

@@ -6,6 +6,7 @@
 #include "menu_low_battery.h"
 #include "menu_settings.h"
 #include "menu_state.h"
+#include "parameters.h"
 #include "start_menu.h"
 #include "wifi_menu.h"
 
@@ -56,7 +57,7 @@ static menu_token_t low_battery_menu =
     .name_dict = DICT_LOW_BATTERY,
 };
 
-menu_token_t* main_menu_tokens[] = { &start_menu, &auto_menu, &setings, &wifi_menu, &parameters_menu, NULL };
+menu_token_t* main_menu_tokens[] = { &auto_menu, &start_menu, &setings, &wifi_menu, &parameters_menu, NULL };
 
 menu_token_t main_menu =
   {
@@ -85,7 +86,14 @@ void mainMenuInit( menu_drv_init_t init_type )
 
 void enterMenuStart( void )
 {
-  menuEnter( &start_menu );
+  if ( parameters_getValue( PARAM_AUTO_MODE ) == 0 )
+  {
+    menuEnter( &start_menu );
+  }
+  else
+  {
+    menuEnter( &auto_menu );
+  }
 }
 
 void enterMenuParameters( void )

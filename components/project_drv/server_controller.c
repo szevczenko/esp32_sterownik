@@ -54,6 +54,7 @@ typedef struct
   mDriver motorD1;
   mDriver motorD2;
   uint8_t servo_value;
+  uint8_t servo_value_after_correction;
   uint8_t servo_new_value;
   uint8_t servo_set_value;
   uint32_t servo_set_timer;
@@ -433,14 +434,14 @@ static void _auto_working( void )
   // Activate servo if seeding is active and delay period has passed
   if ( ctx.seeding_active )
   {
-    ctx.servo_on = ctx.motor_on;
+    ctx.servo_on = ctx.motor_rpm > 0 ? ctx.motor_on : false;
   }
   else
   {
     ctx.servo_on = false;
   }
 
-  parameters_setValue( PARAM_SEEDING_IS_ACTIVE, ctx.seeding_active );
+  parameters_setValue( PARAM_SEEDING_IS_ACTIVE, ctx.servo_on );
 
   // Calculate seeding parameters
   uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
@@ -479,14 +480,23 @@ static void _auto_working( void )
     servo_value = 100;
   }
 
-  // Conver motor RPM to PWM duty cycle
+  // Convert motor RPM to PWM duty cycle
   float motor_rpm_to_percent = 0.02;
 
   ctx.servo_value = (uint8_t) servo_value;
+  uint32_t minimal_servo_open = (uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );
+  ctx.servo_value_after_correction = ctx.servo_value < minimal_servo_open ? minimal_servo_open : ctx.servo_value;
   ctx.motor_value = ctx.motor_rpm * motor_rpm_to_percent;
+  LOG( PRINT_DEBUG, "Speed = %f, RPM = %f, Servo = %f, Motor = %f",
+       ctx.velocity, ctx.motor_rpm, ctx.servo_value_after_correction, ctx.motor_value );
   LOG( PRINT_DEBUG, "DISTANCE %f", position.distance_km );
   LOG( PRINT_DEBUG, "Base servo = %.2f, After correction = %.2f, Final = %u",
        servo, servo_value, ctx.servo_value );
+
+  // Set value after correction
+  parameters_setValue( PARAM_SERVO, ctx.servo_value );
+  ctx.servo_value = ctx.servo_value_after_correction;
+  LOG( PRINT_DEBUG, "Servo value = %u", ctx.servo_value_after_correction );
 }
 
 static void state_working( void )

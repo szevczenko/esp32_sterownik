@@ -573,6 +573,18 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Посев остановлен",
                              "Zatrzymany",
                              "Aussaat gestoppt" },
+  [DICT_SERVO_MINIMAL_OPEN] =
+    {
+                             "Servo minimal open",
+                             "Минимальное открытие серво",
+                             "Minimalne otwarcie serwa",
+                             "Servo minimal öffnen" },
+  [DICT_SERVO_MINIMAL_OPEN_CORRECTION] =
+    {
+                             "Servo min correction",
+                             "Коррекция мин. открытия",
+                             "Korekta min. otwarcia",
+                             "Servo min. Korrektur" },
 };
 
 void dictionary_init( void )

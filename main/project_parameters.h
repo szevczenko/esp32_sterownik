@@ -70,6 +70,8 @@
   PARAM( PARAM_CORRECTION_FACTOR, 0, 200, 100, "correction_factor" )                 \
   PARAM( PARAM_SERVO_OPEN_DELAY_S, 0, 50, 5, "servo_open_delay" )                    \
   PARAM( PARAM_SEEDING_IS_ACTIVE, 0, 1, 0, "seeding_is_active" )                     \
-  PARAM( PARAM_SEEDING_START_SPEED_KMH, 1, 100, 2, "seeding_start_speed" )
+  PARAM( PARAM_SEEDING_START_SPEED_KMH, 1, 100, 2, "seeding_start_speed" )           \
+  PARAM( PARAM_SERVO_MINIMAL_OPEN, 0, 99, 5, "servo_minimal_open" )                 \
+  PARAM( PARAM_SERVO_MINIMAL_OPEN_CORRECTION, 0, 100, 5, "servo_minimal_open_correction" )
 
 #endif
