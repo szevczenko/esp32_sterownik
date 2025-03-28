@@ -56,6 +56,8 @@ typedef enum
   SETTINGS_CORRECTION_FACTOR,
   SETTINGS_SERVO_OPEN_DELAY,
   SETTINGS_SEEDING_START_SPEED,
+  SETTINGS_SERVO_MINIMAL_OPEN,
+  SETTINGS_SERVO_MINIMAL_OPEN_CORRECTION,
   SETTINGS_TOP,
 } parameters_type_t;
 
@@ -201,6 +203,16 @@ static void get_seeding_start_speed( uint32_t* value );
 static void set_seeding_start_speed( uint32_t value );
 static void get_max_seeding_start_speed( uint32_t* value );
 static void get_min_seeding_start_speed( uint32_t* value );
+
+static void get_servo_minimal_open( uint32_t* value );
+static void set_servo_minimal_open( uint32_t value );
+static void get_max_servo_minimal_open( uint32_t* value );
+static void get_min_servo_minimal_open( uint32_t* value );
+
+static void get_servo_minimal_open_correction( uint32_t* value );
+static void set_servo_minimal_open_correction( uint32_t value );
+static void get_max_servo_minimal_open_correction( uint32_t* value );
+static void get_min_servo_minimal_open_correction( uint32_t* value );
 
 static parameters_t* parameters_list;
 static uint32_t parameters_size;
@@ -368,6 +380,24 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_seeding_start_speed,
      .get_min_value = get_min_seeding_start_speed,
      .unit_name = "[km/h]" },
+
+    { .param_type = SETTINGS_SERVO_MINIMAL_OPEN,
+     .name_dict = DICT_SERVO_MINIMAL_OPEN,
+     .unit_type = UNIT_INT,
+     .get_value = get_servo_minimal_open,
+     .set_value = set_servo_minimal_open,
+     .get_max_value = get_max_servo_minimal_open,
+     .get_min_value = get_min_servo_minimal_open,
+     .unit_name = "[%]" },
+
+    { .param_type = SETTINGS_SERVO_MINIMAL_OPEN_CORRECTION,
+     .name_dict = DICT_SERVO_MINIMAL_OPEN_CORRECTION,
+     .unit_type = UNIT_INT,
+     .get_value = get_servo_minimal_open_correction,
+     .set_value = set_servo_minimal_open_correction,
+     .get_max_value = get_max_servo_minimal_open_correction,
+     .get_min_value = get_min_servo_minimal_open_correction,
+     .unit_name = "[%]" },
 };
 
 static parameters_t parameters_list_solarka[] =
@@ -959,6 +989,46 @@ static void get_max_seeding_start_speed( uint32_t* value )
 static void get_min_seeding_start_speed( uint32_t* value )
 {
   *value = parameters_getMinValue( PARAM_SEEDING_START_SPEED_KMH );
+}
+
+static void get_servo_minimal_open( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_SERVO_MINIMAL_OPEN );
+}
+
+static void set_servo_minimal_open( uint32_t value )
+{
+  parameters_setValue( PARAM_SERVO_MINIMAL_OPEN, value );
+}
+
+static void get_max_servo_minimal_open( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_SERVO_MINIMAL_OPEN );
+}
+
+static void get_min_servo_minimal_open( uint32_t* value )
+{
+  *value = parameters_getMinValue( PARAM_SERVO_MINIMAL_OPEN );
+}
+
+static void get_servo_minimal_open_correction( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION );
+}
+
+static void set_servo_minimal_open_correction( uint32_t value )
+{
+  parameters_setValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION, value );
+}
+
+static void get_max_servo_minimal_open_correction( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION );
+}
+
+static void get_min_servo_minimal_open_correction( uint32_t* value )
+{
+  *value = parameters_getMinValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION );
 }
 
 static void _set_and_exit( menu_token_t* menu )

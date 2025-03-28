@@ -145,12 +145,15 @@ static void _state_low_silos( void );
 static void _state_error( void );
 static void _state_velocity_change( void );
 static void _state_kg_per_ha_change( void );
+static void _state_motor_change( void );    // Add this line
 static void _state_stop( void );
 static void _state_error_check( void );
 static void _state_reconnect( void );
 static void _state_wait_connect( void );
 static void _state_velocity_warning( void );    // Add this line
-static void _state_motor_change( void );    // Add this line
+static void _state_ready_common( void );
+static void _state_ready_gps_on( const char* status_message );
+static void _state_ready_gps_off( const char* status_message );
 
 // Helper functions
 static void _change_state( state_t new_state );
@@ -351,7 +354,7 @@ static void _button_up_timer_callback( void* arg )    // Add this function
     return;
   }
 
-  fastProcessStart( &ctx.data.set_velocity, parameters_getMaxValue( PARAM_SET_VELOCITY_KM_H ), 1, FP_PLUS, _velocity_fast_add_cb );
+  fastProcessStart( &ctx.data.set_velocity, parameters_getMaxValue( PARAM_SET_VELOCITY_KM_H ), 0, FP_PLUS, _velocity_fast_add_cb );
 }
 
 static void _button_down_callback( void* arg )
@@ -382,7 +385,7 @@ static void _button_down_callback( void* arg )
   }
 
   // Otherwise decrement set_velocity
-  if ( ctx.data.set_velocity > 1 )    // Assume 1 is the minimum value
+  if ( ctx.data.set_velocity > 0 )    // Assume 1 is the minimum value
   {
     ctx.data.set_velocity--;
     _set_change_menu( EDIT_VELOCITY );
@@ -919,6 +922,73 @@ static void _state_ready( void )
     return;
   }
 
+  // Common initialization and screen setup
+  _state_ready_common();
+
+  // Determine the main status message based on motor and GPS status
+  const char* status_message;
+
+  if ( ctx.data.is_working )
+  {
+    // If motor is running, show appropriate seeding status
+    if ( parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) )
+    {
+      status_message = dictionary_get_string( DICT_SEEDING_IN_PROGRESS );
+    }
+    else
+    {
+      status_message = dictionary_get_string( DICT_SEEDING_STOPPED );
+    }
+  }
+  else
+  {
+    // Status message when motor is not running depends on GPS status and if speed is set
+    if ( ctx.velocity_sensor_status == E108_DISCONNECTED )
+    {
+      // GPS-less mode - show "Set speed" initially, "Ready" when speed is set
+      if ( ctx.data.set_velocity > 0 )
+      {
+        status_message = dictionary_get_string( DICT_READY );
+      }
+      else
+      {
+        status_message = dictionary_get_string( DICT_SET_SPEED );
+      }
+    }
+    else
+    {
+      // GPS is detected
+      switch ( ctx.velocity_sensor_status )
+      {
+        case E108_READY:
+          // If GPS has a fix, show ready
+          status_message = dictionary_get_string( DICT_READY );
+          break;
+        case E108_WAIT_VALID_MEASUREMENT:
+          // If searching for satellites
+          status_message = dictionary_get_string( DICT_SEARCHING_FOR_GPS );
+          break;
+        default:
+          // Default message for manual speed setting
+          status_message = dictionary_get_string( DICT_SET_SPEED );
+          break;
+      }
+    }
+  }
+
+  // Call the appropriate function based on GPS status
+  if ( ctx.velocity_sensor_status == E108_DISCONNECTED )
+  {
+    _state_ready_gps_off( status_message );
+  }
+  else
+  {
+    _state_ready_gps_on( status_message );
+  }
+}
+
+static void _state_ready_common( void )
+{
   if ( ctx.animation_timeout < xTaskGetTickCount() )
   {
     ctx.animation_cnt++;
@@ -935,8 +1005,10 @@ static void _state_ready( void )
 
   char str[32] = { 0 };
 
+  // Draw battery indicator
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
 
+  // Draw silos level indicator if connected
   if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
   {
     uint32_t silos_level = parameters_getValue( PARAM_SILOS_LEVEL );
@@ -956,9 +1028,15 @@ static void _state_ready( void )
     drawTank( 3, 43, silos_level );
   }
 
-  // Get the GPS status and display icon accordingly
+  // Get the GPS status
   ctx.velocity_sensor_status = (e108_gnss_status_t) parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS );
+}
 
+static void _state_ready_gps_on( const char* status_message )
+{
+  char str[32] = { 0 };
+
+  // Draw GPS icon based on GPS status
   if ( ctx.velocity_sensor_status == E108_READY )
   {
     // Module is working with valid fix - display constantly
@@ -973,39 +1051,7 @@ static void _state_ready( void )
     }
   }
 
-  // Display the center message based on motor status and seeding status
-  const char* status_message;
-
-  // If motor is running, show seeding status messages
-  if ( ctx.data.is_working )
-  {
-    if ( parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) )
-    {
-      status_message = dictionary_get_string( DICT_SEEDING_IN_PROGRESS );    // "Wysiew trwa"
-    }
-    else
-    {
-      status_message = dictionary_get_string( DICT_SEEDING_STOPPED );    // "Wysiew zatrzymany"
-    }
-  }
-  else
-  {
-    // If motor is not running, show GPS status as before
-    switch ( ctx.velocity_sensor_status )
-    {
-      case E108_READY:
-        status_message = dictionary_get_string( DICT_READY );    // "Gotowy"
-        break;
-      case E108_WAIT_VALID_MEASUREMENT:
-        status_message = dictionary_get_string( DICT_SEARCHING_FOR_GPS );    // "Szukam GPS"
-        break;
-      default:    // E108_DISCONNECTED or any other state
-        status_message = dictionary_get_string( DICT_SET_SPEED );    // "Ustaw prędkość"
-        break;
-    }
-  }
-
-  bool LargeText = true;    //change large values
+  bool LargeText = true;    // Change to use large values display
 
   if ( LargeText )
   {
@@ -1014,6 +1060,7 @@ static void _state_ready( void )
     int center_x = ( SSD1306_WIDTH - text_width ) / 2;
     oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
 
+    // When GPS is active, use the value from GPS
     ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
     ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
 
@@ -1048,7 +1095,6 @@ static void _state_ready( void )
     drawkg_ha( 50, 56 );
 
     sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
-
     if ( ctx.data.motor_rpm < 1 )
     {
       oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
@@ -1073,13 +1119,16 @@ static void _state_ready( void )
   }
   else
   {
-    // Display the status message in the center of the screen
-    int text_width = strlen( status_message ) * 7;    // Approximate width based on font size
+    // Similar display but with different font size
+    int text_width = strlen( status_message ) * 7;
     int center_x = ( SSD1306_WIDTH - text_width ) / 2;
     oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
 
+    // Use GPS velocity
     ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
     ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+    // Display velocity
     sprintf( str, "%.1f ", ctx.velocity );
     if ( ctx.velocity < 10 )
     {
@@ -1095,6 +1144,7 @@ static void _state_ready( void )
     }
     drawkm_h( 50, 40 );
 
+    // Display kg_per_ha
     sprintf( str, "%lu ", ctx.data.kg_per_ha );
     if ( ctx.data.kg_per_ha < 10 )
     {
@@ -1110,8 +1160,169 @@ static void _state_ready( void )
     }
     drawkg_ha( 50, 56 );
 
+    // Display motor_rpm
     sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+    if ( ctx.data.motor_rpm < 1 )
+    {
+      oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.data.motor_rpm < 10 )
+    {
+      oled_printFixed( 82, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.data.motor_rpm < 100 )
+    {
+      oled_printFixed( 78, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else
+    {
+      oled_printFixed( 76, 36, str, OLED_FONT_SIZE_11 );
+    }
 
+    drawrpm( 109, 40 );
+    sprintf( str, "%.1f ", ctx.distance_km );
+    oled_printFixed( 84, 52, str, OLED_FONT_SIZE_11 );
+    drawkm( 109, 57 );
+  }
+  uint32_t servo = parameters_getValue( PARAM_SERVO );
+  // Only trigger velocity warnings if GPS has a valid fix AND a set velocity exists
+  if ( ( ctx.velocity_sensor_status == E108_READY ) && parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) && ( servo <= parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) || servo > 95 ) )
+  {
+    if ( !ctx.velocity_warning_triggered )
+    {
+      ctx.velocity_warning_triggered = true;
+      ctx.velocity_warning_timeout = xTaskGetTickCount() + MS2ST( VELOCITY_WARNING_TIMEOUT_MS );
+    }
+    else if ( ctx.velocity_warning_timeout < xTaskGetTickCount() )
+    {
+      ctx.velocity_warning_msg_time = xTaskGetTickCount() + MS2ST( 1000 );
+      _change_state( STATE_VELOCITY_WARNING );
+      ctx.velocity_warning_triggered = false;
+    }
+  }
+  else
+  {
+    ctx.velocity_warning_triggered = false;
+  }
+}
+
+static void _state_ready_gps_off( const char* status_message )
+{
+  char str[32] = { 0 };
+
+  // No GPS icon is drawn in GPS-less mode
+
+  bool LargeText = true;
+
+  if ( LargeText )
+  {
+    // Display the status message in the center of the screen
+    int text_width = strlen( status_message ) * 6;
+    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+    oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
+
+    // In GPS-less mode, use the manually set velocity
+    ctx.velocity = (float) ctx.data.set_velocity;
+    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+    sprintf( str, "%.1f ", ctx.velocity );
+    if ( ctx.velocity < 10 )
+    {
+      oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.velocity < 100 )
+    {
+      oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else
+    {
+      oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
+    }
+    drawkm_h( 50, 40 );
+
+    sprintf( str, "%lu ", ctx.data.kg_per_ha );
+    if ( ctx.data.kg_per_ha < 10 )
+    {
+      oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.data.kg_per_ha < 100 )
+    {
+      oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
+    }
+    else
+    {
+      oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
+    }
+    drawkg_ha( 50, 56 );
+
+    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+    if ( ctx.data.motor_rpm < 1 )
+    {
+      oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.data.motor_rpm < 10 )
+    {
+      oled_printFixed( 82, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else if ( ctx.data.motor_rpm < 100 )
+    {
+      oled_printFixed( 78, 32, str, OLED_FONT_SIZE_16 );
+    }
+    else
+    {
+      oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
+    }
+
+    drawrpm( 111, 40 );
+    sprintf( str, "%.1f ", ctx.distance_km );
+    oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
+    drawkm( 111, 57 );
+  }
+  else
+  {
+    // Similar display but with different font size
+    int text_width = strlen( status_message ) * 7;
+    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+    oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
+
+    // In GPS-less mode, use the manually set velocity
+    ctx.velocity = (float) ctx.data.set_velocity;
+    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+    // Display velocity
+    sprintf( str, "%.1f ", ctx.velocity );
+    if ( ctx.velocity < 10 )
+    {
+      oled_printFixed( 28, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.velocity < 100 )
+    {
+      oled_printFixed( 25, 36, str, OLED_FONT_SIZE_11 );
+    }
+    else
+    {
+      oled_printFixed( 24, 36, str, OLED_FONT_SIZE_11 );
+    }
+    drawkm_h( 50, 40 );
+
+    // Display kg_per_ha
+    sprintf( str, "%lu ", ctx.data.kg_per_ha );
+    if ( ctx.data.kg_per_ha < 10 )
+    {
+      oled_printFixed( 32, 52, str, OLED_FONT_SIZE_11 );
+    }
+    else if ( ctx.data.kg_per_ha < 100 )
+    {
+      oled_printFixed( 29, 52, str, OLED_FONT_SIZE_11 );
+    }
+    else
+    {
+      oled_printFixed( 26, 52, str, OLED_FONT_SIZE_11 );
+    }
+    drawkg_ha( 50, 56 );
+
+    // Display motor_rpm
+    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
     if ( ctx.data.motor_rpm < 1 )
     {
       oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
@@ -1135,29 +1346,8 @@ static void _state_ready( void )
     drawkm( 109, 57 );
   }
 
-  //FIX Mariusz  docelowo tutaj bedzie trzeba usunoąć "&& ( ctx.data.is_working == true " jak sie poprawi funkcje wysiewu.
-  // Centrala nie widzi ze nie ma modułu."
-
-  // Fix the velocity comparison - check if actual velocity deviates from set velocity by more than 5 km/h
-  // Only trigger velocity warnings if GPS has a valid fix
-  if ( ( ctx.velocity_sensor_status == E108_READY ) && parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) && ( ctx.velocity < (float) ctx.data.set_velocity - 5 || ctx.velocity > (float) ctx.data.set_velocity + 5 ) )
-  {
-    if ( !ctx.velocity_warning_triggered )
-    {
-      ctx.velocity_warning_triggered = true;
-      ctx.velocity_warning_timeout = xTaskGetTickCount() + MS2ST( VELOCITY_WARNING_TIMEOUT_MS );
-    }
-    else if ( ctx.velocity_warning_timeout < xTaskGetTickCount() )
-    {
-      ctx.velocity_warning_msg_time = xTaskGetTickCount() + MS2ST( 1000 );
-      _change_state( STATE_VELOCITY_WARNING );
-      ctx.velocity_warning_triggered = false;
-    }
-  }
-  else
-  {
-    ctx.velocity_warning_triggered = false;
-  }
+  // No velocity warnings in GPS-less mode - disable the mechanism completely
+  ctx.velocity_warning_triggered = false;
 }
 
 static void _state_low_silos( void )
@@ -1379,12 +1569,12 @@ static void _state_velocity_warning( void )
   }
 
   oled_clearScreen();
-
-  if ( (float) ctx.data.set_velocity < ctx.velocity )
+  uint32_t servo = parameters_getValue( PARAM_SERVO );
+  if ( servo > 95 )
   {
     oled_printFixed( 10, 20, dictionary_get_string( DICT_SPEED_DOWN ), OLED_FONT_SIZE_26 );
   }
-  else if ( (float) ctx.data.set_velocity > ctx.velocity )
+  else if ( servo < parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) )
   {
     oled_printFixed( 5, 20, dictionary_get_string( DICT_SPEED_UP ), OLED_FONT_SIZE_26 );
   }

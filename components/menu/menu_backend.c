@@ -243,6 +243,8 @@ static void backend_send_auto_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_CORRECTION_FACTOR, parameters_getValue( PARAM_CORRECTION_FACTOR ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SERVO_OPEN_DELAY_S, parameters_getValue( PARAM_SERVO_OPEN_DELAY_S ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SEEDING_START_SPEED_KMH, parameters_getValue( PARAM_SEEDING_START_SPEED_KMH ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SERVO_MINIMAL_OPEN, parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SERVO_MINIMAL_OPEN_CORRECTION, parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ), 2000 ) == ERROR_CODE_OK;
 
     if ( result )
     {
@@ -373,6 +375,7 @@ static void backend_auto( void )
     HTTPParamClient_GetU32Value( PARAM_WORK_AREA, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SEEDING_IS_ACTIVE, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_DISTANCE_HM, NULL, 2000 );
+    HTTPParamClient_GetU32Value( PARAM_SERVO, NULL, 2000 );
 
     // Add velocity sensor connection status reading
     HTTPParamClient_GetU32Value( PARAM_VELOCITY_SENSOR_STATUS, NULL, 2000 );
