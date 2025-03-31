@@ -1,0 +1,14 @@
+# Requirements for ESP32 Controller Monitor tools
+
+# HTTP requests for device communication
+requests>=2.25.0
+
+# UI framework
+PyQt5>=5.15.0
+
+# Plotting and data visualization
+matplotlib>=3.4.0
+numpy>=1.20.0
+
+# Type annotations
+typing-extensions>=3.10.0
