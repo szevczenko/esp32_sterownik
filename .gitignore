@@ -1,2 +1,4 @@
 /build
 /test/build
+/tools/__pycache__
+/tools/venv
