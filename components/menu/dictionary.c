@@ -203,6 +203,24 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Высота",
                              "Wysokość zbiornika",
                              "Silos height" },
+  [DICT_CUBOID_HEIGHT] =
+    {
+                             "Cuboid height",
+                             "Высота кубоид",
+                             "Wysokość prostopadłościanu",
+                             "Quaderform Höhe" },
+  [DICT_BASE_LENGTH] =
+    {
+                             "Base length",
+                             "Длина основания",
+                             "Długość podstawy",
+                             "Basislänge" },
+  [DICT_BASE_WIDTH] =
+    {
+                             "Base width",
+                             "Ширина основания",
+                             "Szerokość podstawy",
+                             "Basisbreite" },
   [DICT_ON] =
     {
                              "ON",

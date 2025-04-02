@@ -238,6 +238,11 @@ static void backend_send_auto_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SIZE_OF_GRAIN, parameters_getValue( PARAM_SIZE_OF_GRAIN ), 2000 ) == ERROR_CODE_OK;
 
+    // Add tank geometry parameters
+    result &= HTTPParamClient_SetU32Value( PARAM_CUBOID_HEIGHT_CM, parameters_getValue( PARAM_CUBOID_HEIGHT_CM ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_BASE_LENGTH_CM, parameters_getValue( PARAM_BASE_LENGTH_CM ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_BASE_WIDTH_CM, parameters_getValue( PARAM_BASE_WIDTH_CM ), 2000 ) == ERROR_CODE_OK;
+
     // Add new auto mode parameters
     result &= HTTPParamClient_SetU32Value( PARAM_WORKING_WIDTH_СM, parameters_getValue( PARAM_WORKING_WIDTH_СM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_CORRECTION_FACTOR, parameters_getValue( PARAM_CORRECTION_FACTOR ), 2000 ) == ERROR_CODE_OK;
@@ -376,7 +381,7 @@ static void backend_auto( void )
     HTTPParamClient_GetU32Value( PARAM_SEEDING_IS_ACTIVE, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_DISTANCE_HM, NULL, 2000 );
     HTTPParamClient_GetU32Value( PARAM_SERVO, NULL, 2000 );
-
+    
     // Add velocity sensor connection status reading
     HTTPParamClient_GetU32Value( PARAM_VELOCITY_SENSOR_STATUS, NULL, 2000 );
 

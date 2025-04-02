@@ -48,6 +48,9 @@ typedef enum
   SETTINGS_SERVO_CLOSE_CALIBRATION,
   SETTINGS_SERVO_OPEN_CALIBRATION,
   SETTINGS_SILOS_HEIGHT,
+  SETTINGS_CUBOID_HEIGHT,
+  SETTINGS_BASE_LENGTH,
+  SETTINGS_BASE_WIDTH,
   SETTINGS_VIBRO_PWM_DUTY,
   SETTINGS_SIZE_OF_GRAIN,
   SETTINGS_HIGH_OF_MACHINE,
@@ -107,6 +110,21 @@ static void get_silos_height( uint32_t* value );
 static void set_silos_height( uint32_t value );
 static void get_max_silos_height( uint32_t* value );
 static void get_min_silos_height( uint32_t* value );
+
+static void get_cuboid_height( uint32_t* value );
+static void set_cuboid_height( uint32_t value );
+static void get_max_cuboid_height( uint32_t* value );
+static void get_min_cuboid_height( uint32_t* value );
+
+static void get_base_length( uint32_t* value );
+static void set_base_length( uint32_t value );
+static void get_max_base_length( uint32_t* value );
+static void get_min_base_length( uint32_t* value );
+
+static void get_base_width( uint32_t* value );
+static void set_base_width( uint32_t value );
+static void get_max_base_width( uint32_t* value );
+static void get_min_base_width( uint32_t* value );
 
 static void get_bootup( uint32_t* value );
 static void get_buzzer( uint32_t* value );
@@ -316,6 +334,33 @@ static parameters_t parameters_list_siewnik[] =
      .get_max_value = get_max_silos_height,
      .get_min_value = get_min_silos_height,
      .unit_name = "[cm]" },
+     
+    { .param_type = SETTINGS_CUBOID_HEIGHT,
+     .name_dict = DICT_CUBOID_HEIGHT,
+     .unit_type = UNIT_INT,
+     .get_value = get_cuboid_height,
+     .set_value = set_cuboid_height,
+     .get_max_value = get_max_cuboid_height,
+     .get_min_value = get_min_cuboid_height,
+     .unit_name = "[cm]" },
+     
+    { .param_type = SETTINGS_BASE_LENGTH,
+     .name_dict = DICT_BASE_LENGTH,
+     .unit_type = UNIT_INT,
+     .get_value = get_base_length,
+     .set_value = set_base_length,
+     .get_max_value = get_max_base_length,
+     .get_min_value = get_min_base_length,
+     .unit_name = "[cm]" },
+     
+    { .param_type = SETTINGS_BASE_WIDTH,
+     .name_dict = DICT_BASE_WIDTH,
+     .unit_type = UNIT_INT,
+     .get_value = get_base_width,
+     .set_value = set_base_width,
+     .get_max_value = get_max_base_width,
+     .get_min_value = get_min_base_width,
+     .unit_name = "[cm]" },
 
     { .param_type = SETTINGS_SIZE_OF_GRAIN,
      .name_dict = DICT_SIZE_OF_GRAIN,
@@ -497,6 +542,33 @@ static parameters_t parameters_list_solarka[] =
      .get_max_value = get_max_silos_height,
      .get_min_value = get_min_silos_height,
      .unit_name = "[cm]" },
+     
+    { .param_type = SETTINGS_CUBOID_HEIGHT,
+     .name_dict = DICT_CUBOID_HEIGHT,
+     .unit_type = UNIT_INT,
+     .get_value = get_cuboid_height,
+     .set_value = set_cuboid_height,
+     .get_max_value = get_max_cuboid_height,
+     .get_min_value = get_min_cuboid_height,
+     .unit_name = "[cm]" },
+     
+    { .param_type = SETTINGS_BASE_LENGTH,
+     .name_dict = DICT_BASE_LENGTH,
+     .unit_type = UNIT_INT,
+     .get_value = get_base_length,
+     .set_value = set_base_length,
+     .get_max_value = get_max_base_length,
+     .get_min_value = get_min_base_length,
+     .unit_name = "[cm]" },
+     
+    { .param_type = SETTINGS_BASE_WIDTH,
+     .name_dict = DICT_BASE_WIDTH,
+     .unit_type = UNIT_INT,
+     .get_value = get_base_width,
+     .set_value = set_base_width,
+     .get_max_value = get_max_base_width,
+     .get_min_value = get_min_base_width,
+     .unit_name = "[cm]" },
 };
 
 static scrollBar_t scrollBar =
@@ -567,6 +639,69 @@ static void get_max_silos_height( uint32_t* value )
 }
 
 static void get_min_silos_height( uint32_t* value )
+{
+  *value = 10;
+}
+
+static void get_cuboid_height( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_CUBOID_HEIGHT_CM );
+}
+
+static void set_cuboid_height( uint32_t value )
+{
+  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_CUBOID_HEIGHT_CM, value );
+}
+
+static void get_max_cuboid_height( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_CUBOID_HEIGHT_CM );
+}
+
+static void get_min_cuboid_height( uint32_t* value )
+{
+  *value = 10;
+}
+
+static void get_base_length( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_BASE_LENGTH_CM );
+}
+
+static void set_base_length( uint32_t value )
+{
+  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_BASE_LENGTH_CM, value );
+}
+
+static void get_max_base_length( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_BASE_LENGTH_CM );
+}
+
+static void get_min_base_length( uint32_t* value )
+{
+  *value = 10;
+}
+
+static void get_base_width( uint32_t* value )
+{
+  *value = parameters_getValue( PARAM_BASE_WIDTH_CM );
+}
+
+static void set_base_width( uint32_t value )
+{
+  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
+  HTTPParamClient_SetU32ValueDontWait( PARAM_BASE_WIDTH_CM, value );
+}
+
+static void get_max_base_width( uint32_t* value )
+{
+  *value = parameters_getMaxValue( PARAM_BASE_WIDTH_CM );
+}
+
+static void get_min_base_width( uint32_t* value )
 {
   *value = 10;
 }
