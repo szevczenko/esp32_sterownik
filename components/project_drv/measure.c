@@ -40,7 +40,6 @@ static const adc_atten_t atten = ADC_ATTEN_DB_12;
 #define NO_OF_SAMPLES 64    // Multisampling
 
 #define DEFAULT_MOTOR_CALIBRATION_VALUE 1830
-#define SILOS_START_MEASURE             100
 
 typedef struct
 {
@@ -202,20 +201,8 @@ static void measure_process( void* arg )
 
     if ( tank_sensor_is_connected() )
     {
-      uint32_t silos_height_mm = parameters_getValue( PARAM_SILOS_HEIGHT_CM ) * 10;
-      uint32_t silos_distance_mm = tank_sensor_get_distance() > SILOS_START_MEASURE ? tank_sensor_get_distance() : 0;
-      if ( silos_distance_mm > silos_height_mm )
-      {
-        silos_distance_mm = silos_height_mm;
-      }
-
-      int silos_percent = ( silos_height_mm - silos_distance_mm ) * 100 / silos_height_mm;
-      if ( ( silos_percent < 0 ) || ( silos_percent > 100 ) )
-      {
-        silos_percent = 0;
-      }
+      int silos_percent = tank_sensor_get_percent();
       uint32_t silos_is_low = silos_percent < 10;
-      LOG( PRINT_INFO, "Silos height %lu, dist %lu, %d% %s", silos_height_mm, silos_distance_mm, silos_percent, silos_is_low ? "low" : "normal" );
       parameters_setValue( PARAM_LOW_LEVEL_SILOS, silos_is_low );
       parameters_setValue( PARAM_SILOS_LEVEL, (uint32_t) silos_percent );
       parameters_setValue( PARAM_SILOS_SENSOR_IS_CONNECTED, 1 );

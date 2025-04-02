@@ -36,6 +36,9 @@
   PARAM( PARAM_TEMPERATURE, 0, 0xFFFF, 0, "temperature" )                            \
   PARAM( PARAM_SILOS_LEVEL, 0, 100, 0, "silos_level" )                               \
   PARAM( PARAM_SILOS_HEIGHT_CM, 0, 300, 60, "silos_height" )                         \
+  PARAM( PARAM_CUBOID_HEIGHT_CM, 0, 300, 40, "cuboid_height" )                       \
+  PARAM( PARAM_BASE_LENGTH_CM, 0, 300, 50, "base_length" )                           \
+  PARAM( PARAM_BASE_WIDTH_CM, 0, 300, 50, "base_width" )                             \
   PARAM( PARAM_START_SYSTEM, 0, 1, 0, "start_system" )                               \
   PARAM( PARAM_LOW_LEVEL_SILOS, 0, 1, 0, "low_level_silos" )                         \
   PARAM( PARAM_SILOS_SENSOR_IS_CONNECTED, 0, 1, 0, "silos_server_is_connected" )     \
