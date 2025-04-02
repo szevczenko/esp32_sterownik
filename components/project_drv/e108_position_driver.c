@@ -39,6 +39,16 @@ static gpio_num_t e108_gnss_uart_rx_pin = 18;
 #define KALMAN_MEASUREMENT_NOISE 1.0f    // Measurement noise (R) - higher values = more smoothing
 #define KALMAN_ERROR_INIT        1.0f    // Initial error covariance
 
+#define E108_MOVING_AVG_SAMPLES 16    // Size of moving average window
+#define E108_MEDIAN_SAMPLES     7    // Size of median filter buffer (odd number recommended)
+
+// EMA filter parameters
+#define EMA_ALPHA 0.3f    // Smoothing factor (0-1): higher = more responsive but less smooth
+
+// Alpha-Beta filter parameters
+#define ALPHA_PARAM 0.5f    // Position correction factor
+#define BETA_PARAM  0.1f    // Velocity correction factor
+
 static const char* TAG = "e108-gnss";
 
 // Global data structure to hold latest position info
@@ -48,10 +58,31 @@ typedef struct
   double longitude;
   float altitude;
   float speed_kmh;
-  float filtered_speed_kmh;    // Filtered speed using Kalman filter
+  float filtered_speed_kmh;    // Filtered speed using selected filter
+
   // Kalman filter state variables for speed
   float kalman_gain;    // Kalman gain
   float kalman_estimate_error;    // Estimate error (P)
+
+  // Moving average filter variables
+  float speed_history[E108_MOVING_AVG_SAMPLES];    // Array to store speed history
+  int speed_history_idx;    // Current index in the circular buffer
+  int speed_history_count;    // Number of samples collected (up to E108_MOVING_AVG_SAMPLES)
+
+  // EMA filter variables
+  float ema_prev_value;    // Previous EMA filtered value
+
+  // Median filter variables
+  float median_buffer[E108_MEDIAN_SAMPLES];    // Buffer for recent speed values
+  int median_buffer_idx;    // Current index in circular buffer
+  int median_buffer_count;    // Number of samples collected
+
+  // Alpha-Beta filter variables
+  float ab_position;    // Current position estimate (speed in km/h)
+  float ab_velocity;    // Current velocity estimate (acceleration in km/h/s)
+  float ab_last_time_s;    // Time of last update in seconds
+  bool ab_initialized;    // Whether the filter has been initialized
+
   float course;
   uint8_t satellites;
   uint8_t fix_quality;
@@ -65,6 +96,7 @@ typedef struct
   e108_gnss_status_t status;    // Current status of the GNSS module
   float distance_km;    // Total distance traveled in kilometers
   uint32_t last_speed_update_ms;    // Timestamp of the last speed update for distance calculation
+  e108_filter_t current_filter;    // Currently active filter type
 } e108_position_t;
 
 static e108_position_t g_position = { 0 };
@@ -79,6 +111,7 @@ static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size );
 static bool handle_working_state( char* rx_buffer, size_t buffer_size, char* nmea_buffer, int* nmea_index, bool* in_sentence );
 static void handle_disconnect_state( void );
 static void reset_position_data( void );
+static float apply_speed_filter( float new_speed );
 
 /**
  * @brief Convert error code to string for logging
@@ -361,6 +394,25 @@ static void reset_position_data( void )
   g_position.kalman_gain = 0.0f;
   g_position.kalman_estimate_error = KALMAN_ERROR_INIT;
 
+  // Initialize moving average filter
+  memset( g_position.speed_history, 0, sizeof( g_position.speed_history ) );
+  g_position.speed_history_idx = 0;
+  g_position.speed_history_count = 0;
+
+  // Initialize EMA filter
+  g_position.ema_prev_value = 0.0f;
+
+  // Initialize median filter
+  memset( g_position.median_buffer, 0, sizeof( g_position.median_buffer ) );
+  g_position.median_buffer_idx = 0;
+  g_position.median_buffer_count = 0;
+
+  // Initialize alpha-beta filter
+  g_position.ab_position = 0.0f;
+  g_position.ab_velocity = 0.0f;
+  g_position.ab_last_time_s = 0.0f;
+  g_position.ab_initialized = false;
+
   g_position.course = 0;
   g_position.satellites = 0;
   g_position.fix_quality = 0;
@@ -372,7 +424,189 @@ static void reset_position_data( void )
   // Don't reset distance here - we keep total distance across reconnects
   g_position.last_speed_update_ms = 0;
 
+  // Don't reset filter type - it persists across reconnects
+
   xSemaphoreGive( g_position.mutex );
+}
+
+/**
+ * @brief Helper function to sort an array of floats for median filter
+ */
+static void sort_float_array( float arr[], int n )
+{
+  // Simple bubble sort (adequate for small arrays)
+  for ( int i = 0; i < n - 1; i++ )
+  {
+    for ( int j = 0; j < n - i - 1; j++ )
+    {
+      if ( arr[j] > arr[j + 1] )
+      {
+        // Swap elements
+        float temp = arr[j];
+        arr[j] = arr[j + 1];
+        arr[j + 1] = temp;
+      }
+    }
+  }
+}
+
+/**
+ * @brief Apply the currently selected filter to the speed measurement
+ * 
+ * @param new_speed New speed measurement in km/h
+ * @return Filtered speed value in km/h
+ */
+static float apply_speed_filter( float new_speed )
+{
+  float filtered_speed = new_speed;    // Default if no filtering applied
+  uint32_t current_time_ms = ST2MS( xTaskGetTickCount() );
+
+  switch ( g_position.current_filter )
+  {
+    case E108_FILTER_NONE:
+      // No filtering, just use raw value
+      filtered_speed = new_speed;
+      break;
+
+    case E108_FILTER_KALMAN:
+      // Apply Kalman filter
+      if ( g_position.valid )
+      {
+        // Prediction update - no state update since we assume constant speed between measurements
+        // Update error covariance: P = P + Q
+        g_position.kalman_estimate_error += KALMAN_PROCESS_NOISE;
+
+        // Measurement update
+        // Calculate Kalman gain: K = P / (P + R)
+        g_position.kalman_gain = g_position.kalman_estimate_error / ( g_position.kalman_estimate_error + KALMAN_MEASUREMENT_NOISE );
+
+        // Update estimate with measurement: x = x + K * (z - x)
+        filtered_speed = g_position.filtered_speed_kmh + g_position.kalman_gain * ( new_speed - g_position.filtered_speed_kmh );
+
+        // Update error covariance: P = (1 - K) * P
+        g_position.kalman_estimate_error = ( 1.0f - g_position.kalman_gain ) * g_position.kalman_estimate_error;
+      }
+      else
+      {
+        // First valid reading, initialize the filter
+        filtered_speed = new_speed;
+        g_position.kalman_estimate_error = KALMAN_ERROR_INIT;
+        g_position.kalman_gain = 0.0f;
+      }
+      break;
+
+    case E108_FILTER_MOVING_AVG:
+      // Apply moving average filter
+      // Store the new value in the circular buffer
+      g_position.speed_history[g_position.speed_history_idx] = new_speed;
+
+      // Update index and count
+      g_position.speed_history_idx = ( g_position.speed_history_idx + 1 ) % E108_MOVING_AVG_SAMPLES;
+      if ( g_position.speed_history_count < E108_MOVING_AVG_SAMPLES )
+      {
+        g_position.speed_history_count++;
+      }
+
+      // Calculate the average of all stored values
+      if ( g_position.speed_history_count > 0 )
+      {
+        float sum = 0.0f;
+        for ( int i = 0; i < g_position.speed_history_count; i++ )
+        {
+          sum += g_position.speed_history[i];
+        }
+        filtered_speed = sum / g_position.speed_history_count;
+      }
+      break;
+
+    case E108_FILTER_EMA:
+      // Apply Exponential Moving Average filter
+      if ( g_position.valid )
+      {
+        // Apply EMA formula: y(t) = α * x(t) + (1-α) * y(t-1)
+        filtered_speed = EMA_ALPHA * new_speed + ( 1.0f - EMA_ALPHA ) * g_position.ema_prev_value;
+      }
+      else
+      {
+        // First valid reading, initialize with raw value
+        filtered_speed = new_speed;
+      }
+      // Store current value for next iteration
+      g_position.ema_prev_value = filtered_speed;
+      break;
+
+    case E108_FILTER_MEDIAN:
+      // Apply median filter (excellent for outlier rejection)
+      // Add new value to buffer
+      g_position.median_buffer[g_position.median_buffer_idx] = new_speed;
+      g_position.median_buffer_idx = ( g_position.median_buffer_idx + 1 ) % E108_MEDIAN_SAMPLES;
+
+      // Update count of values in buffer
+      if ( g_position.median_buffer_count < E108_MEDIAN_SAMPLES )
+      {
+        g_position.median_buffer_count++;
+      }
+
+      if ( g_position.median_buffer_count > 0 )
+      {
+        // Create a copy of the buffer for sorting
+        float temp_buffer[E108_MEDIAN_SAMPLES];
+        memcpy( temp_buffer, g_position.median_buffer,
+                g_position.median_buffer_count * sizeof( float ) );
+
+        // Sort the copy
+        sort_float_array( temp_buffer, g_position.median_buffer_count );
+
+        // Select middle value as median
+        filtered_speed = temp_buffer[g_position.median_buffer_count / 2];
+      }
+      break;
+
+    case E108_FILTER_ALPHA_BETA:
+      // Apply Alpha-Beta filter (simplified tracking filter)
+      if ( !g_position.ab_initialized )
+      {
+        // Initialize filter with current measurement
+        g_position.ab_position = new_speed;
+        g_position.ab_velocity = 0.0f;
+        g_position.ab_last_time_s = current_time_ms / 1000.0f;
+        g_position.ab_initialized = true;
+        filtered_speed = new_speed;
+      }
+      else
+      {
+        // Calculate time delta in seconds
+        float current_time_s = current_time_ms / 1000.0f;
+        float dt = current_time_s - g_position.ab_last_time_s;
+
+        // Limit dt to reasonable values to prevent instability
+        if ( dt > 0.0f && dt < 5.0f )
+        {
+          // Prediction step
+          float predicted_position = g_position.ab_position + g_position.ab_velocity * dt;
+
+          // Calculate residuals (measurement - prediction)
+          float residual = new_speed - predicted_position;
+
+          // Correction step
+          g_position.ab_position = predicted_position + ALPHA_PARAM * residual;
+          g_position.ab_velocity = g_position.ab_velocity + ( BETA_PARAM * residual ) / dt;
+
+          // Update time for next iteration
+          g_position.ab_last_time_s = current_time_s;
+        }
+
+        filtered_speed = g_position.ab_position;
+      }
+      break;
+
+    default:
+      ESP_LOGW( TAG, "Unknown filter type %d, using raw speed", g_position.current_filter );
+      filtered_speed = new_speed;
+      break;
+  }
+
+  return filtered_speed;
 }
 
 /**
@@ -477,6 +711,9 @@ static void process_continuous_sentence( const char* sentence )
       g_position.longitude = rmc_data.longitude;
       g_position.speed_kmh = rmc_data.speed * 1.852f;    // Convert knots to km/h
 
+      // Apply the selected filter
+      g_position.filtered_speed_kmh = apply_speed_filter( g_position.speed_kmh );
+
       // Calculate distance based on speed
       if ( g_position.last_speed_update_ms > 0 && g_position.valid && g_position.speed_kmh > 0.5f )
       {
@@ -497,31 +734,6 @@ static void process_continuous_sentence( const char* sentence )
         }
       }
       g_position.last_speed_update_ms = current_time;
-
-      // Apply Kalman filter to speed
-      if ( g_position.valid )
-      {
-        // Prediction update - no state update since we assume constant speed between measurements
-        // Update error covariance: P = P + Q
-        g_position.kalman_estimate_error += KALMAN_PROCESS_NOISE;
-
-        // Measurement update
-        // Calculate Kalman gain: K = P / (P + R)
-        g_position.kalman_gain = g_position.kalman_estimate_error / ( g_position.kalman_estimate_error + KALMAN_MEASUREMENT_NOISE );
-
-        // Update estimate with measurement: x = x + K * (z - x)
-        g_position.filtered_speed_kmh += g_position.kalman_gain * ( g_position.speed_kmh - g_position.filtered_speed_kmh );
-
-        // Update error covariance: P = (1 - K) * P
-        g_position.kalman_estimate_error = ( 1.0f - g_position.kalman_gain ) * g_position.kalman_estimate_error;
-      }
-      else
-      {
-        // First valid reading, initialize the filter
-        g_position.filtered_speed_kmh = g_position.speed_kmh;
-        g_position.kalman_estimate_error = KALMAN_ERROR_INIT;
-        g_position.kalman_gain = 0.0f;
-      }
 
       g_position.course = rmc_data.track_angle;
       strncpy( g_position.timestamp, rmc_data.utc_time, sizeof( g_position.timestamp ) - 1 );
@@ -626,6 +838,11 @@ e108_gnss_err_t e108_continuous_start( uint8_t uart_port, uint32_t uart_tx_pin, 
   if ( g_position.last_speed_update_ms == 0 )
   {
     g_position.distance_km = 0.0f;
+  }
+  // Initialize filter type if this is the first start
+  if ( g_position.last_speed_update_ms == 0 )
+  {
+    g_position.current_filter = E108_FILTER_KALMAN;    // Default filter
   }
   g_position.last_speed_update_ms = 0;    // Reset timestamp for distance calculation
   xSemaphoreGive( g_position.mutex );
@@ -737,7 +954,7 @@ e108_gnss_status_t e108_get_status( void )
 
   // Just read the current status without modifying it
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-  
+
   // Update time since last valid measurement, but don't modify status
   uint32_t current_time = ST2MS( xTaskGetTickCount() );
   if ( g_position.last_valid_time_ms > 0 )
@@ -794,6 +1011,79 @@ e108_gnss_err_t e108_set_distance( float initial_distance_km )
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
   g_position.distance_km = initial_distance_km;
   ESP_LOGI( TAG, "Distance set to %.3f km", initial_distance_km );
+  xSemaphoreGive( g_position.mutex );
+
+  return E108_GNSS_OK;
+}
+
+/**
+ * @brief Set the filter type for speed data processing
+ * 
+ * @param filter_type Type of filter to use
+ * @return e108_gnss_err_t E108_GNSS_OK on success, or error code on failure
+ */
+e108_gnss_err_t e108_set_filter( e108_filter_t filter_type )
+{
+  if ( g_position.mutex == NULL )
+  {
+    return E108_GNSS_ERR_INVALID_STATE;
+  }
+
+  if ( filter_type >= E108_FILTER_MAX )
+  {
+    ESP_LOGE( TAG, "Invalid filter type: %d", filter_type );
+    return E108_GNSS_ERR_INVALID_ARG;
+  }
+
+  xSemaphoreTake( g_position.mutex, portMAX_DELAY );
+
+  // If changing filter type, reset filter state variables
+  if ( g_position.current_filter != filter_type )
+  {
+    // Reset filter-specific state
+    switch ( filter_type )
+    {
+      case E108_FILTER_KALMAN:
+        g_position.kalman_estimate_error = KALMAN_ERROR_INIT;
+        g_position.kalman_gain = 0.0f;
+        break;
+
+      case E108_FILTER_MOVING_AVG:
+        memset( g_position.speed_history, 0, sizeof( g_position.speed_history ) );
+        g_position.speed_history_idx = 0;
+        g_position.speed_history_count = 0;
+        break;
+
+      case E108_FILTER_EMA:
+        g_position.ema_prev_value = g_position.speed_kmh;
+        break;
+
+      case E108_FILTER_MEDIAN:
+        memset( g_position.median_buffer, 0, sizeof( g_position.median_buffer ) );
+        g_position.median_buffer_idx = 0;
+        g_position.median_buffer_count = 0;
+        break;
+
+      case E108_FILTER_ALPHA_BETA:
+        g_position.ab_position = g_position.speed_kmh;
+        g_position.ab_velocity = 0.0f;
+        g_position.ab_last_time_s = ST2MS( xTaskGetTickCount() ) / 1000.0f;
+        g_position.ab_initialized = true;
+        break;
+
+      case E108_FILTER_NONE:
+      default:
+        // Nothing to initialize for raw data
+        break;
+    }
+
+    // Set current filter and update filtered speed to match current raw speed
+    g_position.current_filter = filter_type;
+    g_position.filtered_speed_kmh = g_position.speed_kmh;
+
+    ESP_LOGI( TAG, "Filter changed to %d", filter_type );
+  }
+
   xSemaphoreGive( g_position.mutex );
 
   return E108_GNSS_OK;
