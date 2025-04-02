@@ -14,6 +14,7 @@
 #include "parse_cmd.h"
 #include "pwm_drv.h"
 #include "servo.h"
+#include "tank_sensor.h"
 #include "vibro.h"
 #include "wifidrv.h"
 
@@ -88,6 +89,17 @@ typedef struct
   uint32_t seeding_start_speed_kmh;
   bool seeding_active;
   uint32_t seeding_start_time;
+
+  // PID controller variables
+  float pid_kp;    // Proportional gain
+  float pid_ki;    // Integral gain
+  float pid_kd;    // Derivative gain
+  float pid_error_sum;    // Integral term accumulator
+  float pid_last_error;    // Last error for derivative term
+  float pid_target_flow_rate;    // Target flow rate in L/min
+  float pid_last_output;    // Last PID output
+  uint32_t pid_last_time;    // Last time PID was calculated
+  bool pid_enabled;    // Enable/disable PID controller
 
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
@@ -243,6 +255,70 @@ static void set_working_data( void )
 #endif
 }
 
+// PID controller implementation
+static float calculate_pid( float target, float actual, uint32_t current_time_ms )
+{
+  float error = target - actual;
+  float dt = ( current_time_ms - ctx.pid_last_time ) / 1000.0f;    // Convert to seconds
+
+  if ( dt <= 0.0f || dt > 1.0f )
+  {
+    // Time interval too small or too large (e.g., first run)
+    ctx.pid_last_time = current_time_ms;
+    ctx.pid_last_error = error;
+    ctx.pid_error_sum = 0;
+    return ctx.pid_last_output;
+  }
+
+  // Calculate proportional term
+  float p_term = ctx.pid_kp * error;
+
+  // Calculate integral term with anti-windup
+  ctx.pid_error_sum += error * dt;
+  // Limit integral term to prevent windup
+  if ( ctx.pid_error_sum > 100.0f )
+    ctx.pid_error_sum = 100.0f;
+  if ( ctx.pid_error_sum < -100.0f )
+    ctx.pid_error_sum = -100.0f;
+  float i_term = ctx.pid_ki * ctx.pid_error_sum;
+
+  // Calculate derivative term
+  float d_term = ctx.pid_kd * ( error - ctx.pid_last_error ) / dt;
+  ctx.pid_last_error = error;
+
+  // Calculate PID output
+  float output = p_term + i_term + d_term;
+
+  // Limit output to 0-100 range for servo value
+  if ( output > 100.0f )
+    output = 100.0f;
+  if ( output < 0.0f )
+    output = 0.0f;
+
+  ctx.pid_last_output = output;
+  ctx.pid_last_time = current_time_ms;
+
+  LOG( PRINT_DEBUG, "PID: target=%.2f actual=%.2f error=%.2f p=%.2f i=%.2f d=%.2f out=%.2f",
+       target, actual, error, p_term, i_term, d_term, output );
+
+  return output;
+}
+
+// Calculate target flow rate based on kg_per_ha, velocity and working width
+static float calculate_target_flow_rate( uint32_t kg_per_ha, float velocity_kmh, float working_width_m, uint32_t density_kgm3 )
+{
+  // Formula: flow_rate(L/min) = kg_per_ha * velocity_kmh * working_width_m * (10/60) / density_kgm3
+  // 10/60 factor:
+  // - 10 converts ha (10000 m²) to m² and km to m
+  // - 60 converts km/h to km/min
+
+  float flow_rate_lpm = (float) kg_per_ha * velocity_kmh * working_width_m * ( 10.0f / 60.0f ) / (float) density_kgm3;
+  LOG( PRINT_DEBUG, "Target flow rate: %.2f L/min (kg/ha=%lu, v=%.2f, w=%.2f, d=%lu)",
+       flow_rate_lpm, kg_per_ha, velocity_kmh, working_width_m, density_kgm3 );
+
+  return flow_rate_lpm;
+}
+
 static void state_init( void )
 {
   gpio_config_t io_conf = {
@@ -265,6 +341,16 @@ static void state_init( void )
   PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN2 );
   PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_HIGH, 50, 1, SERVO_PWM_PIN );
 #endif
+
+  // Initialize PID controller parameters
+  ctx.pid_kp = 2.0f;    // Initial proportional gain
+  ctx.pid_ki = 0.5f;    // Initial integral gain
+  ctx.pid_kd = 0.1f;    // Initial derivative gain
+  ctx.pid_error_sum = 0.0f;
+  ctx.pid_last_error = 0.0f;
+  ctx.pid_last_output = 0.0f;
+  ctx.pid_last_time = 0;
+  ctx.pid_enabled = true;    // Enable PID by default
 
   change_state( STATE_IDLE );
 }
@@ -449,6 +535,7 @@ static void _auto_working( void )
   // Option 1: Use the configured working width
   double working_width = ctx.working_width_m;
 
+#if 0
   // Option 2: Calculate working width based on physics if sensor is connected
   if ( ctx.velocity_sensor_status == E108_READY )
   {
@@ -457,41 +544,76 @@ static void _auto_working( void )
     double grain_throwing_speed = (double) ctx.motor_rpm * 2 * 3.14159265359 * _R / 60.0;
     working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
   }
-
+#endif
   LOG( PRINT_DEBUG, "working width = %.2f m", working_width );
 
   // Get material density based on grain size
   ctx.density = _size_of_grain_to_density( size_of_grain );
 
-  // Calculate basic servo value
-  double servo = (double) ctx.kg_per_ha * (double) ctx.velocity * working_width / (double) ctx.density;
-
-  // Apply correction factor (-100% to +100%)
-  double correction_multiplier = 1.0 + ( (double) ctx.correction_factor / 100.0 );
-  double servo_value = servo * correction_multiplier;
-
-  // Ensure servo value is within range
-  if ( servo_value < 0 )
+  // Check if tank sensor is connected and PID is enabled
+  if ( tank_sensor_is_connected() && ctx.pid_enabled )
   {
-    servo_value = 0;
+    // Calculate target flow rate based on kg_per_ha, velocity, and working width
+    ctx.pid_target_flow_rate = calculate_target_flow_rate( ctx.kg_per_ha, ctx.velocity, working_width, ctx.density );
+
+    // Get actual flow rate from tank sensor
+    float actual_flow_rate = tank_sensor_get_flow_rate();
+
+    // Calculate PID output (servo value)
+    uint32_t current_time = xTaskGetTickCount();
+    float servo_value_float = calculate_pid( ctx.pid_target_flow_rate, actual_flow_rate, current_time );
+
+    // Apply correction factor (-100% to +100%)
+    double correction_multiplier = 1.0 + ( (double) ctx.correction_factor / 100.0 );
+    servo_value_float *= correction_multiplier;
+
+    // Clamp servo value to valid range
+    if ( servo_value_float < 0 )
+      servo_value_float = 0;
+    if ( servo_value_float > 100 )
+      servo_value_float = 100;
+
+    // Convert to integer
+    uint8_t servo_value = (uint8_t) servo_value_float;
+
+    LOG( PRINT_DEBUG, "PID Servo control: target=%.2f actual=%.2f servo=%u",
+         ctx.pid_target_flow_rate, actual_flow_rate, servo_value );
+
+    ctx.servo_value = servo_value;
   }
-  if ( servo_value > 100 )
+  else
   {
-    servo_value = 100;
+    // Fallback to original calculation if tank sensor not connected or PID disabled
+    // Calculate basic servo value
+    double servo = (double) ctx.kg_per_ha * (double) ctx.velocity * working_width / (double) ctx.density;
+
+    // Apply correction factor (-100% to +100%)
+    double correction_multiplier = 1.0 + ( (double) ctx.correction_factor / 100.0 );
+    double servo_value = servo * correction_multiplier;
+
+    // Ensure servo value is within range
+    if ( servo_value < 0 )
+    {
+      servo_value = 0;
+    }
+    if ( servo_value > 100 )
+    {
+      servo_value = 100;
+    }
+
+    ctx.servo_value = (uint8_t) servo_value;
   }
+
+  uint32_t minimal_servo_open = (uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );
+  ctx.servo_value_after_correction = ctx.servo_value < minimal_servo_open ? minimal_servo_open : ctx.servo_value;
 
   // Convert motor RPM to PWM duty cycle
   float motor_rpm_to_percent = 0.02;
 
-  ctx.servo_value = (uint8_t) servo_value;
-  uint32_t minimal_servo_open = (uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );
-  ctx.servo_value_after_correction = ctx.servo_value < minimal_servo_open ? minimal_servo_open : ctx.servo_value;
   ctx.motor_value = ctx.motor_rpm * motor_rpm_to_percent;
   LOG( PRINT_DEBUG, "Speed = %f, RPM = %f, Servo = %f, Motor = %f",
        ctx.velocity, ctx.motor_rpm, ctx.servo_value_after_correction, ctx.motor_value );
   LOG( PRINT_DEBUG, "DISTANCE %f", position.distance_km );
-  LOG( PRINT_DEBUG, "Base servo = %.2f, After correction = %.2f, Final = %u",
-       servo, servo_value, ctx.servo_value );
 
   // Set value after correction
   parameters_setValue( PARAM_SERVO, ctx.servo_value );
