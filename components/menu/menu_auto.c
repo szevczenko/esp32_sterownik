@@ -33,6 +33,7 @@
 #define CHANGE_VALUE_DISP_OFFSET      40
 #define VELOCITY_WARNING_TIMEOUT_MS   5000    // 5 seconds
 #define SIMULTANEOUS_PRESS_TIMEOUT_MS 1000    // Time in ms to detect simultaneous press
+#define USE_LARGE_TEXT                1    // Set to 1 to use large text, 0 for small text
 
 typedef enum
 {
@@ -88,6 +89,11 @@ typedef struct
   float velocity;
   float distance_km;
   e108_gnss_status_t velocity_sensor_status;
+  e108_gnss_status_t prev_velocity_sensor_status;    // Add previous status to detect changes
+  float velocity_history[5];    // Store 5 seconds of velocity readings
+  TickType_t velocity_timestamps[5];    // Timestamps for each velocity reading
+  uint8_t velocity_history_index;    // Current index in the history buffer
+  uint8_t velocity_history_count;    // Number of valid entries in history
 } menu_start_context_t;
 
 static menu_start_context_t ctx;
@@ -166,6 +172,65 @@ static void _servo_fast_add_cb( uint32_t value );
 static void _motor_fast_add_cb( uint32_t value );    // Add this line
 static void _show_wait_connection( void );
 static void _menu_set_error_msg( const char* msg );
+
+static void _store_current_velocity( void )
+{
+  // Store current velocity in history buffer
+  ctx.velocity_history[ctx.velocity_history_index] = ctx.velocity;
+  ctx.velocity_timestamps[ctx.velocity_history_index] = xTaskGetTickCount();
+
+  // Update index and count
+  ctx.velocity_history_index = ( ctx.velocity_history_index + 1 ) % 5;
+  if ( ctx.velocity_history_count < 5 )
+  {
+    ctx.velocity_history_count++;
+  }
+}
+
+static float _calculate_average_velocity( void )
+{
+  float sum = 0;
+  uint8_t valid_count = 0;
+  TickType_t current_time = xTaskGetTickCount();
+  TickType_t five_seconds_ago = current_time - MS2ST( 5000 );
+
+  // Calculate sum of velocities from the last 5 seconds
+  for ( uint8_t i = 0; i < ctx.velocity_history_count; i++ )
+  {
+    uint8_t idx = ( ctx.velocity_history_index + 5 - 1 - i ) % 5;
+    if ( ctx.velocity_timestamps[idx] >= five_seconds_ago )
+    {
+      sum += ctx.velocity_history[idx];
+      valid_count++;
+    }
+  }
+
+  // Return average or 0 if no valid entries
+  return valid_count > 0 ? sum / valid_count : 0.0f;
+}
+
+static void _check_velocity_sensor_status_change( void )
+{
+  // Detect change from E108_READY to E108_WAIT_VALID_MEASUREMENT or E108_DISCONNECTED
+  if ( ctx.prev_velocity_sensor_status == E108_READY && ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT || ctx.velocity_sensor_status == E108_DISCONNECTED ) )
+  {
+    // Calculate average velocity from history
+    float avg_velocity = _calculate_average_velocity();
+
+    // Only update if we have valid data
+    if ( avg_velocity > 0 )
+    {
+      // Round to nearest km/h
+      ctx.data.set_velocity = (uint32_t) ( avg_velocity + 0.5f );
+
+      // Log the change
+      LOG( PRINT_INFO, "GPS signal lost. Set velocity to average: %.1f km/h", avg_velocity );
+    }
+  }
+
+  // Update previous status for next check
+  ctx.prev_velocity_sensor_status = ctx.velocity_sensor_status;
+}
 
 static void reset_error_and_power_save_timer( void )
 {
@@ -787,6 +852,7 @@ static bool menu_enter_cb( void* arg )
 
   ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+  ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) / 100;    // Changed to motor_rpm
   LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = parameters_getValue( PARAM_MOTOR_IS_ON );
   // ctx.data.servo_vibro_on = parameters_getValue( PARAM_GRAIN_PER_HECTARE_IS_ON );
@@ -806,6 +872,10 @@ static bool menu_enter_cb( void* arg )
 
   ctx.error_flag = 0;
   ctx.enter_parameters_menu = false;
+  // Initialize velocity history
+  ctx.velocity_history_index = 0;
+  ctx.velocity_history_count = 0;
+  ctx.prev_velocity_sensor_status = E108_DISCONNECTED;
   return true;
 }
 
@@ -858,6 +928,8 @@ static void _state_check_connection( void )
   bool ret = false;
 
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+  ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) / 100;    // Changed to motor_rpm
+  ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = 0;
   // ctx.data.servo_vibro_on = 0;
@@ -892,6 +964,8 @@ static void _state_idle( void )
     HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
     ctx.data.is_working = 0;
     ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
+    ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) / 100;    // Changed to motor_rpm
+    ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
     LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
     // ctx.data.servo_vibro_on = 0;
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR, parameters_getValue( PARAM_ERROR_MOTOR ) );
@@ -1030,6 +1104,9 @@ static void _state_ready_common( void )
 
   // Get the GPS status
   ctx.velocity_sensor_status = (e108_gnss_status_t) parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS );
+
+  // Check if velocity status changed
+  _check_velocity_sensor_status_change();
 }
 
 static void _state_ready_gps_on( const char* status_message )
@@ -1051,139 +1128,147 @@ static void _state_ready_gps_on( const char* status_message )
     }
   }
 
-  bool LargeText = true;    // Change to use large values display
+#if USE_LARGE_TEXT
+  // Display the status message in the center of the screen
+  int text_width = strlen( status_message ) * 6;    // Approximate width based on font size
+  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+  oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
 
-  if ( LargeText )
+  // When GPS is active, use the value from GPS
+  ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
+  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+  // Store velocity in history buffer if we have valid GPS data
+  if ( ctx.velocity_sensor_status == E108_READY )
   {
-    // Display the status message in the center of the screen
-    int text_width = strlen( status_message ) * 6;    // Approximate width based on font size
-    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-    oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
+    _store_current_velocity();
+  }
 
-    // When GPS is active, use the value from GPS
-    ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
-    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
-
-    sprintf( str, "%.1f ", ctx.velocity );
-    if ( ctx.velocity < 10 )
-    {
-      oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.velocity < 100 )
-    {
-      oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else
-    {
-      oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
-    }
-    drawkm_h( 50, 40 );
-
-    sprintf( str, "%lu ", ctx.data.kg_per_ha );
-    if ( ctx.data.kg_per_ha < 10 )
-    {
-      oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.data.kg_per_ha < 100 )
-    {
-      oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
-    }
-    else
-    {
-      oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
-    }
-    drawkg_ha( 50, 56 );
-
-    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
-    if ( ctx.data.motor_rpm < 1 )
-    {
-      oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.data.motor_rpm < 10 )
-    {
-      oled_printFixed( 82, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.data.motor_rpm < 100 )
-    {
-      oled_printFixed( 78, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else
-    {
-      oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
-    }
-
-    drawrpm( 111, 40 );
-    sprintf( str, "%.1f ", ctx.distance_km );
-    oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
-    drawkm( 111, 57 );
+  sprintf( str, "%.1f ", ctx.velocity );
+  if ( ctx.velocity < 10 )
+  {
+    oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.velocity < 100 )
+  {
+    oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
   }
   else
   {
-    // Similar display but with different font size
-    int text_width = strlen( status_message ) * 7;
-    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-    oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
-
-    // Use GPS velocity
-    ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
-    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
-
-    // Display velocity
-    sprintf( str, "%.1f ", ctx.velocity );
-    if ( ctx.velocity < 10 )
-    {
-      oled_printFixed( 28, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.velocity < 100 )
-    {
-      oled_printFixed( 25, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 24, 36, str, OLED_FONT_SIZE_11 );
-    }
-    drawkm_h( 50, 40 );
-
-    // Display kg_per_ha
-    sprintf( str, "%lu ", ctx.data.kg_per_ha );
-    if ( ctx.data.kg_per_ha < 10 )
-    {
-      oled_printFixed( 32, 52, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.data.kg_per_ha < 100 )
-    {
-      oled_printFixed( 29, 52, str, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 26, 52, str, OLED_FONT_SIZE_11 );
-    }
-    drawkg_ha( 50, 56 );
-
-    // Display motor_rpm
-    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
-    if ( ctx.data.motor_rpm < 1 )
-    {
-      oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.data.motor_rpm < 10 )
-    {
-      oled_printFixed( 82, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.data.motor_rpm < 100 )
-    {
-      oled_printFixed( 78, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 76, 36, str, OLED_FONT_SIZE_11 );
-    }
-
-    drawrpm( 109, 40 );
-    sprintf( str, "%.1f ", ctx.distance_km );
-    oled_printFixed( 84, 52, str, OLED_FONT_SIZE_11 );
-    drawkm( 109, 57 );
+    oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
   }
+  drawkm_h( 50, 40 );
+
+  sprintf( str, "%lu ", ctx.data.kg_per_ha );
+  if ( ctx.data.kg_per_ha < 10 )
+  {
+    oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.data.kg_per_ha < 100 )
+  {
+    oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
+  }
+  else
+  {
+    oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
+  }
+  drawkg_ha( 50, 56 );
+
+  sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+  if ( ctx.data.motor_rpm < 1 )
+  {
+    oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.data.motor_rpm < 10 )
+  {
+    oled_printFixed( 82, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.data.motor_rpm < 100 )
+  {
+    oled_printFixed( 78, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else
+  {
+    oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
+  }
+
+  drawrpm( 111, 40 );
+  sprintf( str, "%.1f ", ctx.distance_km );
+  oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
+  drawkm( 111, 57 );
+#else
+  // Similar display but with different font size
+  int text_width = strlen( status_message ) * 7;
+  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+  oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
+
+  // Use GPS velocity
+  ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
+  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+  // Store velocity in history buffer if we have valid GPS data
+  if ( ctx.velocity_sensor_status == E108_READY )
+  {
+    _store_current_velocity();
+  }
+
+  // Display velocity
+  sprintf( str, "%.1f ", ctx.velocity );
+  if ( ctx.velocity < 10 )
+  {
+    oled_printFixed( 28, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.velocity < 100 )
+  {
+    oled_printFixed( 25, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else
+  {
+    oled_printFixed( 24, 36, str, OLED_FONT_SIZE_11 );
+  }
+  drawkm_h( 50, 40 );
+
+  // Display kg_per_ha
+  sprintf( str, "%lu ", ctx.data.kg_per_ha );
+  if ( ctx.data.kg_per_ha < 10 )
+  {
+    oled_printFixed( 32, 52, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.data.kg_per_ha < 100 )
+  {
+    oled_printFixed( 29, 52, str, OLED_FONT_SIZE_11 );
+  }
+  else
+  {
+    oled_printFixed( 26, 52, str, OLED_FONT_SIZE_11 );
+  }
+  drawkg_ha( 50, 56 );
+
+  // Display motor_rpm
+  sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+  if ( ctx.data.motor_rpm < 1 )
+  {
+    oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.data.motor_rpm < 10 )
+  {
+    oled_printFixed( 82, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.data.motor_rpm < 100 )
+  {
+    oled_printFixed( 78, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else
+  {
+    oled_printFixed( 76, 36, str, OLED_FONT_SIZE_11 );
+  }
+
+  drawrpm( 109, 40 );
+  sprintf( str, "%.1f ", ctx.distance_km );
+  oled_printFixed( 84, 52, str, OLED_FONT_SIZE_11 );
+  drawkm( 109, 57 );
+#endif
+
   uint32_t servo = parameters_getValue( PARAM_SERVO );
   // Only trigger velocity warnings if GPS has a valid fix AND a set velocity exists
   if ( ( ctx.velocity_sensor_status == E108_READY ) && parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) && ( servo <= parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) || servo > 95 ) )
@@ -1212,139 +1297,134 @@ static void _state_ready_gps_off( const char* status_message )
 
   // No GPS icon is drawn in GPS-less mode
 
-  bool LargeText = true;
+#if USE_LARGE_TEXT
+  // Display the status message in the center of the screen
+  int text_width = strlen( status_message ) * 6;
+  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+  oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
 
-  if ( LargeText )
+  // In GPS-less mode, use the manually set velocity
+  ctx.velocity = (float) ctx.data.set_velocity;
+  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+  sprintf( str, "%.1f ", ctx.velocity );
+  if ( ctx.velocity < 10 )
   {
-    // Display the status message in the center of the screen
-    int text_width = strlen( status_message ) * 6;
-    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-    oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
-
-    // In GPS-less mode, use the manually set velocity
-    ctx.velocity = (float) ctx.data.set_velocity;
-    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
-
-    sprintf( str, "%.1f ", ctx.velocity );
-    if ( ctx.velocity < 10 )
-    {
-      oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.velocity < 100 )
-    {
-      oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else
-    {
-      oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
-    }
-    drawkm_h( 50, 40 );
-
-    sprintf( str, "%lu ", ctx.data.kg_per_ha );
-    if ( ctx.data.kg_per_ha < 10 )
-    {
-      oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.data.kg_per_ha < 100 )
-    {
-      oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
-    }
-    else
-    {
-      oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
-    }
-    drawkg_ha( 50, 56 );
-
-    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
-    if ( ctx.data.motor_rpm < 1 )
-    {
-      oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.data.motor_rpm < 10 )
-    {
-      oled_printFixed( 82, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else if ( ctx.data.motor_rpm < 100 )
-    {
-      oled_printFixed( 78, 32, str, OLED_FONT_SIZE_16 );
-    }
-    else
-    {
-      oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
-    }
-
-    drawrpm( 111, 40 );
-    sprintf( str, "%.1f ", ctx.distance_km );
-    oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
-    drawkm( 111, 57 );
+    oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.velocity < 100 )
+  {
+    oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
   }
   else
   {
-    // Similar display but with different font size
-    int text_width = strlen( status_message ) * 7;
-    int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-    oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
-
-    // In GPS-less mode, use the manually set velocity
-    ctx.velocity = (float) ctx.data.set_velocity;
-    ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
-
-    // Display velocity
-    sprintf( str, "%.1f ", ctx.velocity );
-    if ( ctx.velocity < 10 )
-    {
-      oled_printFixed( 28, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.velocity < 100 )
-    {
-      oled_printFixed( 25, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 24, 36, str, OLED_FONT_SIZE_11 );
-    }
-    drawkm_h( 50, 40 );
-
-    // Display kg_per_ha
-    sprintf( str, "%lu ", ctx.data.kg_per_ha );
-    if ( ctx.data.kg_per_ha < 10 )
-    {
-      oled_printFixed( 32, 52, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.data.kg_per_ha < 100 )
-    {
-      oled_printFixed( 29, 52, str, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 26, 52, str, OLED_FONT_SIZE_11 );
-    }
-    drawkg_ha( 50, 56 );
-
-    // Display motor_rpm
-    sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
-    if ( ctx.data.motor_rpm < 1 )
-    {
-      oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.data.motor_rpm < 10 )
-    {
-      oled_printFixed( 82, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else if ( ctx.data.motor_rpm < 100 )
-    {
-      oled_printFixed( 78, 36, str, OLED_FONT_SIZE_11 );
-    }
-    else
-    {
-      oled_printFixed( 76, 36, str, OLED_FONT_SIZE_11 );
-    }
-
-    drawrpm( 109, 40 );
-    sprintf( str, "%.1f ", ctx.distance_km );
-    oled_printFixed( 84, 52, str, OLED_FONT_SIZE_11 );
-    drawkm( 109, 57 );
+    oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
   }
+  drawkm_h( 50, 40 );
+
+  sprintf( str, "%lu ", ctx.data.kg_per_ha );
+  if ( ctx.data.kg_per_ha < 10 )
+  {
+    oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.data.kg_per_ha < 100 )
+  {
+    oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
+  }
+  else
+  {
+    oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
+  }
+  drawkg_ha( 50, 56 );
+
+  sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+  if ( ctx.data.motor_rpm < 1 )
+  {
+    oled_printFixed( 89, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.data.motor_rpm < 10 )
+  {
+    oled_printFixed( 82, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else if ( ctx.data.motor_rpm < 100 )
+  {
+    oled_printFixed( 78, 32, str, OLED_FONT_SIZE_16 );
+  }
+  else
+  {
+    oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
+  }
+
+  drawrpm( 111, 40 );
+  sprintf( str, "%.1f ", ctx.distance_km );
+  oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
+  drawkm( 111, 57 );
+#else
+  // Similar display but with different font size
+  int text_width = strlen( status_message ) * 7;
+  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+  oled_printFixed( center_x - 5, 11, status_message, OLED_FONT_SIZE_16 );
+
+  // In GPS-less mode, use the manually set velocity
+  ctx.velocity = (float) ctx.data.set_velocity;
+  ctx.distance_km = (float) parameters_getValue( PARAM_DISTANCE_HM ) / 10.0f;
+
+  // Display velocity
+  sprintf( str, "%.1f ", ctx.velocity );
+  if ( ctx.velocity < 10 )
+  {
+    oled_printFixed( 28, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.velocity < 100 )
+  {
+    oled_printFixed( 25, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else
+  {
+    oled_printFixed( 24, 36, str, OLED_FONT_SIZE_11 );
+  }
+  drawkm_h( 50, 40 );
+
+  // Display kg_per_ha
+  sprintf( str, "%lu ", ctx.data.kg_per_ha );
+  if ( ctx.data.kg_per_ha < 10 )
+  {
+    oled_printFixed( 32, 52, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.data.kg_per_ha < 100 )
+  {
+    oled_printFixed( 29, 52, str, OLED_FONT_SIZE_11 );
+  }
+  else
+  {
+    oled_printFixed( 26, 52, str, OLED_FONT_SIZE_11 );
+  }
+  drawkg_ha( 50, 56 );
+
+  // Display motor_rpm
+  sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
+  if ( ctx.data.motor_rpm < 1 )
+  {
+    oled_printFixed( 89, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.data.motor_rpm < 10 )
+  {
+    oled_printFixed( 82, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else if ( ctx.data.motor_rpm < 100 )
+  {
+    oled_printFixed( 78, 36, str, OLED_FONT_SIZE_11 );
+  }
+  else
+  {
+    oled_printFixed( 76, 36, str, OLED_FONT_SIZE_11 );
+  }
+
+  drawrpm( 109, 40 );
+  sprintf( str, "%.1f ", ctx.distance_km );
+  oled_printFixed( 84, 52, str, OLED_FONT_SIZE_11 );
+  drawkm( 109, 57 );
+#endif
 
   // No velocity warnings in GPS-less mode - disable the mechanism completely
   ctx.velocity_warning_triggered = false;
