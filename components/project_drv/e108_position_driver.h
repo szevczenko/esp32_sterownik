@@ -37,6 +37,20 @@ typedef enum
 } e108_gnss_status_t;
 
 /**
+ * @brief Filter types for GNSS data processing
+ */
+typedef enum
+{
+  E108_FILTER_NONE = 0, /* No filtering, raw data */
+  E108_FILTER_KALMAN, /* Kalman filter (default) */
+  E108_FILTER_MOVING_AVG, /* 16-point moving average */
+  E108_FILTER_EMA, /* Exponential Moving Average */
+  E108_FILTER_MEDIAN, /* Median filter (outlier rejection) */
+  E108_FILTER_ALPHA_BETA, /* Alpha-Beta tracking filter */
+  E108_FILTER_MAX
+} e108_filter_t;
+
+/**
  * @brief Structure to hold latest position data
  */
 typedef struct
@@ -53,7 +67,7 @@ typedef struct
   char datestamp[8]; /* Date in ddmmyy format */
   bool valid; /* True if the position is valid */
   uint32_t time_since_last_ms;    // Time since last valid measurement in ms
-  float distance_km;              /* Total distance traveled in kilometers */
+  float distance_km; /* Total distance traveled in kilometers */
 } e108_position_info_t;
 
 /**
@@ -107,6 +121,14 @@ e108_gnss_err_t e108_reset_distance( void );
  * @return e108_gnss_err_t E108_GNSS_OK on success, or error code on failure
  */
 e108_gnss_err_t e108_set_distance( float initial_distance_km );
+
+/**
+ * @brief Set the filter type for speed data processing
+ * 
+ * @param filter_type Type of filter to use
+ * @return e108_gnss_err_t E108_GNSS_OK on success, or error code on failure
+ */
+e108_gnss_err_t e108_set_filter( e108_filter_t filter_type );
 
 #ifdef __cplusplus
 }
