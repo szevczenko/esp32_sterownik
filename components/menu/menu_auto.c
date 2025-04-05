@@ -399,6 +399,12 @@ static void _button_up_release_callback( void* arg )    // Add this function
   }
 
   ctx.button_up_pressed = false;    // Set button state to released
+  
+  // Reset both_buttons_pressed flag when either button is released
+  if (ctx.both_buttons_pressed) {
+    ctx.both_buttons_pressed = false;
+  }
+  
   fastProcessStop( &ctx.data.set_velocity );    // Stop fast process if active
 }
 
@@ -468,6 +474,12 @@ static void _button_down_release_callback( void* arg )    // Add this function
   }
 
   ctx.button_down_pressed = false;    // Set button state to released
+  
+  // Reset both_buttons_pressed flag when either button is released
+  if (ctx.both_buttons_pressed) {
+    ctx.both_buttons_pressed = false;
+  }
+  
   fastProcessStop( &ctx.data.set_velocity );    // Stop fast process if active
 }
 
@@ -1680,8 +1692,13 @@ static bool menu_process( void* arg )
         ctx.both_buttons_pressed = false;
         fastProcessStop( &ctx.data.set_velocity );    // Make sure any fast process is stopped
         fastProcessStop( &ctx.data.kg_per_ha );    // Stop kg_per_ha fast process if active
+        fastProcessStop( &ctx.data.motor_rpm );    // Make sure motor_rpm fast process is also stopped
         enterMenuParameters();
         return true;
+      }
+      else {
+        // If one button was released during the check, clear the flag
+        ctx.both_buttons_pressed = false;
       }
     }
     else
