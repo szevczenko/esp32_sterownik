@@ -35,6 +35,8 @@
 #define MOTOR_PWM_PIN2 25
 #define max_rpm        3000.0
 
+#define PID_ENABLED 0
+
 typedef enum
 {
   STATE_INIT,
@@ -79,7 +81,6 @@ typedef struct
   uint32_t velocity_set;
   e108_gnss_status_t velocity_sensor_status;
   float machine_height;
-  uint32_t density;
   bool auto_mode;
 
   // New fields for auto mode
@@ -90,6 +91,8 @@ typedef struct
   bool seeding_active;
   uint32_t seeding_start_time;
 
+#if PID_ENABLED
+  uint32_t density;    // Remove if no needed
   // PID controller variables
   float pid_kp;    // Proportional gain
   float pid_ki;    // Integral gain
@@ -99,7 +102,7 @@ typedef struct
   float pid_target_flow_rate;    // Target flow rate in L/min
   float pid_last_output;    // Last PID output
   uint32_t pid_last_time;    // Last time PID was calculated
-  bool pid_enabled;    // Enable/disable PID controller
+#endif
 
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
@@ -255,6 +258,7 @@ static void set_working_data( void )
 #endif
 }
 
+#if PID_ENABLED
 // PID controller implementation
 static float calculate_pid( float target, float actual, uint32_t current_time_ms )
 {
@@ -318,6 +322,41 @@ static float calculate_target_flow_rate( uint32_t kg_per_ha, float velocity_kmh,
 
   return flow_rate_lpm;
 }
+#endif
+
+static double _convert_kg_per_s_to_servo_value( uint32_t grain_size, double kg_per_s )
+{
+#if 0
+  switch ( grain_size )
+  {
+    case 2:
+      return 18.3f + 1598.0f * kg_per_s - 19865.0f * powf( kg_per_s, 2 ) + 113184.0f * powf( kg_per_s, 3 );
+    case 3:
+      return 18.3f + 2077.0f * kg_per_s - 33573.0f * powf( kg_per_s, 2 ) + 248671.0f * powf( kg_per_s, 3 );
+    case 4:
+      return 18.3f + 2557.0f * kg_per_s - 50852.0f * powf( kg_per_s, 2 ) + 463586.0f * powf( kg_per_s, 3 );
+    case 5:
+      return 18.3f + 3196.0f * kg_per_s - 79459.0f * powf( kg_per_s, 2 ) + 905463.0f * powf( kg_per_s, 3 );
+    case 6:
+      return 19.4f + 3779.0f * kg_per_s - 113865.0f * powf( kg_per_s, 2 ) + 1.63e6f * powf( kg_per_s, 3 );
+    default:
+      return 0.0f;    // Default case for unsupported grain sizes
+  }
+#endif
+  if ( grain_size < 1 || grain_size > 10 )
+  {
+    return 0.0;    // Unsupported grain size
+  }
+
+  // Dynamically generate coefficients based on grain size
+  double a = 18.3 + ( grain_size - 1 ) * 0.1;    // Base offset increases slightly with grain size
+  double b = 1598.0 + ( grain_size - 1 ) * 479.0;    // Linear term increases with grain size
+  double c = -19865.0 - ( grain_size - 1 ) * 13708.0;    // Quadratic term decreases with grain size
+  double d = 113184.0 + ( grain_size - 1 ) * 150402.0;    // Cubic term increases with grain size
+
+  // Calculate servo value using the polynomial
+  return a + b * kg_per_s + c * pow( kg_per_s, 2 ) + d * pow( kg_per_s, 3 );
+}
 
 static void state_init( void )
 {
@@ -342,6 +381,7 @@ static void state_init( void )
   PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_HIGH, 50, 1, SERVO_PWM_PIN );
 #endif
 
+#if PID_ENABLED
   // Initialize PID controller parameters
   ctx.pid_kp = 2.0f;    // Initial proportional gain
   ctx.pid_ki = 0.5f;    // Initial integral gain
@@ -350,7 +390,7 @@ static void state_init( void )
   ctx.pid_last_error = 0.0f;
   ctx.pid_last_output = 0.0f;
   ctx.pid_last_time = 0;
-  ctx.pid_enabled = true;    // Enable PID by default
+#endif
 
   change_state( STATE_IDLE );
 }
@@ -424,6 +464,7 @@ static void _manual_working( void )
 #endif
 }
 
+#if PID_ENABLED
 static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
 {
   switch ( size_of_grain )
@@ -440,6 +481,18 @@ static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
     default:
       return 1000;    // kg/m^3
   }
+}
+#endif
+
+uint32_t _minimal_servo_open( uint32_t size_of_grain )
+{
+  const uint32_t min_servo_open_array = { 14, 15, 17, 18, 19, 20, 22, 23, 24, 25 };
+  if ( size_of_grain < 1 || size_of_grain > 10 )
+  {
+    return 0;
+  }
+
+  return min_servo_open_array[size_of_grain - 1];
 }
 
 static void _auto_working( void )
@@ -547,12 +600,13 @@ static void _auto_working( void )
 #endif
   LOG( PRINT_DEBUG, "working width = %.2f m", working_width );
 
-  // Get material density based on grain size
-  ctx.density = _size_of_grain_to_density( size_of_grain );
-
   // Check if tank sensor is connected and PID is enabled
-  if ( tank_sensor_is_connected() && ctx.pid_enabled )
+#if PID_ENABLED
+  if ( tank_sensor_is_connected() )
   {
+    // Get material density based on grain size
+    ctx.density = _size_of_grain_to_density( size_of_grain );
+
     // Calculate target flow rate based on kg_per_ha, velocity, and working width
     ctx.pid_target_flow_rate = calculate_target_flow_rate( ctx.kg_per_ha, ctx.velocity, working_width, ctx.density );
 
@@ -582,16 +636,19 @@ static void _auto_working( void )
     ctx.servo_value = servo_value;
   }
   else
+#endif
   {
-    // Fallback to original calculation if tank sensor not connected or PID disabled
-    // Calculate basic servo value
-    double servo = (double) ctx.kg_per_ha * (double) ctx.velocity * working_width / (double) ctx.density;
+    // Convert velocity from km/h to m/s
+    float velocity_m_s = ctx.velocity / 3.6f;
 
-    // Apply correction factor (-100% to +100%)
-    double correction_multiplier = 1.0 + ( (double) ctx.correction_factor / 100.0 );
-    double servo_value = servo * correction_multiplier;
+    // Convert kg_per_ha to kg/m²
+    float kg_per_m2 = (float) ctx.kg_per_ha / 10000.0f;
 
-    // Ensure servo value is within range
+    // Fallback to calculation using kg_per_s and grain size
+    double kg_per_s = (double) kg_per_m2 * (double) velocity_m_s * ctx.working_width_m;
+    double servo_value = _convert_kg_per_s_to_servo_value( size_of_grain, kg_per_s );
+
+    // Clamp servo value to valid range
     if ( servo_value < 0 )
     {
       servo_value = 0;
@@ -604,7 +661,8 @@ static void _auto_working( void )
     ctx.servo_value = (uint8_t) servo_value;
   }
 
-  uint32_t minimal_servo_open = (uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );
+  uint32_t minimal_servo_open = _minimal_servo_open( size_of_grain );
+  //(uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );
   ctx.servo_value_after_correction = ctx.servo_value < minimal_servo_open ? minimal_servo_open : ctx.servo_value;
 
   // Convert motor RPM to PWM duty cycle
