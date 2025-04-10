@@ -59,7 +59,7 @@
   PARAM( PARAM_OPEN_SERVO_REGULATION, 0, 99, 50, "open_servo_regulation" )           \
   PARAM( PARAM_TRY_OPEN_CALIBRATION, 0, 10, 8, "try_open_calibration" )              \
                                                                                      \
-  PARAM( PARAM_SIZE_OF_GRAIN, 0, 2, 1, "size_of_grain" )                             \
+  PARAM( PARAM_SIZE_OF_GRAIN, 1, 10, 2, "size_of_grain" )                            \
   PARAM( PARAM_HIGH_OF_MACHINE_CM, 0, 1000, 50, "hight_of_machine" )                 \
   PARAM( PARAM_SET_VELOCITY_KM_H, 0, 200, 45, "set_velocity" )                       \
   PARAM( PARAM_VELOCITY_HMS, 0, 2000, 450, "velocity" )                              \
@@ -73,8 +73,6 @@
   PARAM( PARAM_CORRECTION_FACTOR, 0, 200, 100, "correction_factor" )                 \
   PARAM( PARAM_SERVO_OPEN_DELAY_S, 0, 50, 5, "servo_open_delay" )                    \
   PARAM( PARAM_SEEDING_IS_ACTIVE, 0, 1, 0, "seeding_is_active" )                     \
-  PARAM( PARAM_SEEDING_START_SPEED_KMH, 1, 100, 2, "seeding_start_speed" )           \
-  PARAM( PARAM_SERVO_MINIMAL_OPEN, 0, 99, 5, "servo_minimal_open" )                 \
-  PARAM( PARAM_SERVO_MINIMAL_OPEN_CORRECTION, 0, 100, 5, "servo_minimal_open_correction" )
+  PARAM( PARAM_SEEDING_START_SPEED_KMH, 1, 100, 2, "seeding_start_speed" )
 
 #endif

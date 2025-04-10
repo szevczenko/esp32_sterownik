@@ -21,7 +21,7 @@
                 "path": "C:\\WINDOWS\\System32\\cmd.exe",
                 "args": [
                     "/K",
-                    "${workspaceFolder}/../esp_tools/idf_cmd_init.bat esp-idf-724e6199ae570d882b9708a93a25ce51"
+                    "${workspaceFolder}/../esp-idf/export.bat"
                 ],
             },
             "MSYS2 Bash": {

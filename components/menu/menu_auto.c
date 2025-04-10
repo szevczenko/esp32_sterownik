@@ -173,6 +173,8 @@ static void _motor_fast_add_cb( uint32_t value );    // Add this line
 static void _show_wait_connection( void );
 static void _menu_set_error_msg( const char* msg );
 
+extern uint32_t _minimal_servo_open( uint32_t size_of_grain );
+
 static void _store_current_velocity( void )
 {
   // Store current velocity in history buffer
@@ -399,12 +401,13 @@ static void _button_up_release_callback( void* arg )    // Add this function
   }
 
   ctx.button_up_pressed = false;    // Set button state to released
-  
+
   // Reset both_buttons_pressed flag when either button is released
-  if (ctx.both_buttons_pressed) {
+  if ( ctx.both_buttons_pressed )
+  {
     ctx.both_buttons_pressed = false;
   }
-  
+
   fastProcessStop( &ctx.data.set_velocity );    // Stop fast process if active
 }
 
@@ -474,12 +477,13 @@ static void _button_down_release_callback( void* arg )    // Add this function
   }
 
   ctx.button_down_pressed = false;    // Set button state to released
-  
+
   // Reset both_buttons_pressed flag when either button is released
-  if (ctx.both_buttons_pressed) {
+  if ( ctx.both_buttons_pressed )
+  {
     ctx.both_buttons_pressed = false;
   }
-  
+
   fastProcessStop( &ctx.data.set_velocity );    // Stop fast process if active
 }
 
@@ -1119,6 +1123,9 @@ static void _state_ready_common( void )
 
   // Check if velocity status changed
   _check_velocity_sensor_status_change();
+
+  uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
+  LOG( PRINT_DEBUG, "Grain size: %lu mm", size_of_grain );
 }
 
 static void _state_ready_gps_on( const char* status_message )
@@ -1283,7 +1290,7 @@ static void _state_ready_gps_on( const char* status_message )
 
   uint32_t servo = parameters_getValue( PARAM_SERVO );
   // Only trigger velocity warnings if GPS has a valid fix AND a set velocity exists
-  if ( ( ctx.velocity_sensor_status == E108_READY ) && parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) && ( servo <= parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) || servo > 95 ) )
+  if ( ( ctx.velocity_sensor_status == E108_READY ) && parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) && ( servo > 95 ) )
   {
     if ( !ctx.velocity_warning_triggered )
     {
@@ -1666,9 +1673,9 @@ static void _state_velocity_warning( void )
   {
     oled_printFixed( 10, 20, dictionary_get_string( DICT_SPEED_DOWN ), OLED_FONT_SIZE_26 );
   }
-  else if ( servo < parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) )
+  else if ( servo < _minimal_servo_open( parameters_getValue( PARAM_SIZE_OF_GRAIN ) ) + 3 )
   {
-    oled_printFixed( 5, 20, dictionary_get_string( DICT_SPEED_UP ), OLED_FONT_SIZE_26 );
+    oled_printFixed( 10, 20, dictionary_get_string( DICT_SPEED_UP ), OLED_FONT_SIZE_26 );
   }
 }
 
@@ -1696,7 +1703,8 @@ static bool menu_process( void* arg )
         enterMenuParameters();
         return true;
       }
-      else {
+      else
+      {
         // If one button was released during the check, clear the flag
         ctx.both_buttons_pressed = false;
       }
