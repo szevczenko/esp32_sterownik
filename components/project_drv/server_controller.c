@@ -486,13 +486,13 @@ static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
 
 uint32_t _minimal_servo_open( uint32_t size_of_grain )
 {
-  const uint32_t min_servo_open_array = { 14, 15, 17, 18, 19, 20, 22, 23, 24, 25 };
+  const uint32_t min_servo_open_array[] = { 14, 15, 17, 18, 19, 20, 22, 23, 24, 25 };
   if ( size_of_grain < 1 || size_of_grain > 10 )
   {
     return 0;
   }
 
-  return min_servo_open_array[size_of_grain - 1];
+  return (uint32_t) min_servo_open_array[size_of_grain - 1];
 }
 
 static void _auto_working( void )
