@@ -892,6 +892,9 @@ static bool menu_enter_cb( void* arg )
   ctx.velocity_history_index = 0;
   ctx.velocity_history_count = 0;
   ctx.prev_velocity_sensor_status = E108_DISCONNECTED;
+  ctx.button_up_pressed = false;
+  ctx.button_down_pressed = false;
+  ctx.both_buttons_pressed = false;
   return true;
 }
 
@@ -912,6 +915,10 @@ static bool menu_exit_cb( void* arg )
     NULL_ERROR_MSG();
     return false;
   }
+
+  ctx.button_up_pressed = false;
+  ctx.button_down_pressed = false;
+  ctx.both_buttons_pressed = false;
 
   MOTOR_LED_SET_GREEN( 0 );
   //  SERVO_VIBRO_LED_SET_GREEN( 0 );
