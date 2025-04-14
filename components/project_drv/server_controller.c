@@ -19,7 +19,7 @@
 #include "wifidrv.h"
 
 #define MODULE_NAME "[Srvr Ctrl] "
-#define DEBUG_LVL   PRINT_INFO
+#define DEBUG_LVL   PRINT_DEBUG
 
 #if CONFIG_DEBUG_SERVER_CONTROLLER
 #define LOG( _lvl, ... ) \
@@ -142,6 +142,54 @@ static void change_state( state_t state )
   }
 }
 
+static float interpolate_pwm_from_rpm( float rpm, float voltage, float current )
+{
+  // Table data
+  const float rpm_table[] = { 200, 440, 600, 1150, 1420, 1740, 2000, 2250, 2500, 2700, 3000 };
+  const float pwm_table[] = { 1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+  const float current_table[] = { 0.3, 0.3, 0.7, 0.9, 1.4, 1.7, 2.2, 2.7, 3.9, 4.6, 5.5 };
+  const float voltage_table[] = { 14.4, 14.4, 14.4, 14.4, 14.4, 14.4, 14.4, 14.4, 14.4, 14.4, 14.4 };
+  const int table_size = sizeof( rpm_table ) / sizeof( rpm_table[0] );
+
+  // Clamp RPM to the table range
+  if ( rpm <= rpm_table[0] )
+  {
+    return pwm_table[0];
+  }
+  if ( rpm >= rpm_table[table_size - 1] )
+  {
+    return pwm_table[table_size - 1];
+  }
+
+  // Find the two closest points in the table
+  for ( int i = 0; i < table_size - 1; i++ )
+  {
+    if ( rpm >= rpm_table[i] && rpm <= rpm_table[i + 1] )
+    {
+      // Perform linear interpolation for PWM
+      float t = ( rpm - rpm_table[i] ) / ( rpm_table[i + 1] - rpm_table[i] );
+      float interpolated_pwm = pwm_table[i] + t * ( pwm_table[i + 1] - pwm_table[i] );
+
+      // Adjust based on voltage and current
+      float avg_voltage = ( voltage_table[i] + voltage_table[i + 1] ) / 2.0;
+      float avg_current = ( current_table[i] + current_table[i + 1] ) / 2.0;
+
+      if ( voltage < avg_voltage )
+      {
+        interpolated_pwm *= ( voltage / avg_voltage );    // Scale down if voltage is lower
+      }
+      if ( current > avg_current )
+      {
+        interpolated_pwm *= ( avg_current / current );    // Scale down if current is higher
+      }
+
+      return interpolated_pwm;
+    }
+  }
+
+  return 0;    // Fallback (should not reach here)
+}
+
 static void count_working_data( void )
 {
   ctx.motor_pwm = dcmotor_process( &ctx.motorD1, ctx.motor_value );
@@ -217,7 +265,6 @@ static void set_working_data( void )
   if ( ctx.motor_on )
   {
     float duty = (float) ctx.motor_pwm;
-    LOG( PRINT_DEBUG, "duty motor %f", duty );
     if ( duty >= 99.99 )
     {
       duty = 99.99;
@@ -326,23 +373,6 @@ static float calculate_target_flow_rate( uint32_t kg_per_ha, float velocity_kmh,
 
 static double _convert_kg_per_s_to_servo_value( uint32_t grain_size, double kg_per_s )
 {
-#if 0
-  switch ( grain_size )
-  {
-    case 2:
-      return 18.3f + 1598.0f * kg_per_s - 19865.0f * powf( kg_per_s, 2 ) + 113184.0f * powf( kg_per_s, 3 );
-    case 3:
-      return 18.3f + 2077.0f * kg_per_s - 33573.0f * powf( kg_per_s, 2 ) + 248671.0f * powf( kg_per_s, 3 );
-    case 4:
-      return 18.3f + 2557.0f * kg_per_s - 50852.0f * powf( kg_per_s, 2 ) + 463586.0f * powf( kg_per_s, 3 );
-    case 5:
-      return 18.3f + 3196.0f * kg_per_s - 79459.0f * powf( kg_per_s, 2 ) + 905463.0f * powf( kg_per_s, 3 );
-    case 6:
-      return 19.4f + 3779.0f * kg_per_s - 113865.0f * powf( kg_per_s, 2 ) + 1.63e6f * powf( kg_per_s, 3 );
-    default:
-      return 0.0f;    // Default case for unsupported grain sizes
-  }
-#endif
   if ( grain_size < 1 || grain_size > 10 )
   {
     return 0.0;    // Unsupported grain size
@@ -665,12 +695,13 @@ static void _auto_working( void )
   //(uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );
   ctx.servo_value_after_correction = ctx.servo_value < minimal_servo_open ? minimal_servo_open : ctx.servo_value;
 
-  // Convert motor RPM to PWM duty cycle
-  float motor_rpm_to_percent = 0.02;
+  // Convert motor RPM to PWM duty cycle using interpolation
+  float voltage = parameters_getValue( PARAM_VOLTAGE_ACCUM ) / 100.0f;    // Convert cV to V
+  float current = parameters_getValue( PARAM_CURRENT_MOTOR ) / 100.0f;    // Convert cA to A
+  ctx.motor_value = interpolate_pwm_from_rpm( ctx.motor_rpm, voltage, current );
 
-  ctx.motor_value = ctx.motor_rpm * motor_rpm_to_percent;
-  LOG( PRINT_DEBUG, "Speed = %f, RPM = %f, Servo = %f, Motor = %f",
-       ctx.velocity, ctx.motor_rpm, ctx.servo_value_after_correction, ctx.motor_value );
+  LOG( PRINT_DEBUG, "Speed = %f, RPM = %f, Servo = %f, Motor = %f Current = %f, Voltage = %f",
+       ctx.velocity, ctx.motor_rpm, ctx.servo_value_after_correction, ctx.motor_value, current, voltage );
   LOG( PRINT_DEBUG, "DISTANCE %f", position.distance_km );
 
   // Set value after correction
