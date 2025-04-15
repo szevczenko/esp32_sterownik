@@ -586,7 +586,7 @@ static void _button_motor_plus_push_cb( void* arg )
     return;
   }
 
-  if ( ctx.data.motor_rpm < parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) / 100 )    // Changed to motor_rpm
+  if ( ctx.data.motor_rpm < parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) )    // Changed to motor_rpm
   {
     ctx.data.motor_rpm++;
   }
@@ -611,7 +611,7 @@ static void _button_motor_plus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.motor_rpm, parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) / 100, 1, FP_PLUS, _motor_fast_add_cb );    // Changed to motor_rpm
+  fastProcessStart( &ctx.data.motor_rpm, parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ), 1, FP_PLUS, _motor_fast_add_cb );    // Changed to motor_rpm
 }
 
 static void _button_motor_minus_push_cb( void* arg )
@@ -656,7 +656,7 @@ static void _button_motor_minus_time_cb( void* arg )
     return;
   }
 
-  fastProcessStart( &ctx.data.motor_rpm, parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ) / 100, 0, FP_MINUS, _motor_fast_add_cb );    // Changed to motor_rpm
+  fastProcessStart( &ctx.data.motor_rpm, parameters_getMaxValue( PARAM_MOTOR_RPM_PER_100 ), 0, FP_MINUS, _motor_fast_add_cb );    // Changed to motor_rpm
 }
 
 static void _button_motor_p_m_pull_cb( void* arg )
@@ -868,7 +868,7 @@ static bool menu_enter_cb( void* arg )
 
   ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
-  ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) / 100;    // Changed to motor_rpm
+  ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 );
   LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = parameters_getValue( PARAM_MOTOR_IS_ON );
   // ctx.data.servo_vibro_on = parameters_getValue( PARAM_GRAIN_PER_HECTARE_IS_ON );
@@ -951,7 +951,7 @@ static void _state_check_connection( void )
   bool ret = false;
 
   ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
-  ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) / 100;    // Changed to motor_rpm
+  ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 );    // Changed to motor_rpm
   ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
   LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
   ctx.data.is_working = 0;
@@ -987,7 +987,7 @@ static void _state_idle( void )
     HTTPParamClient_SetU32ValueDontWait( PARAM_START_SYSTEM, 1 );
     ctx.data.is_working = 0;
     ctx.data.kg_per_ha = parameters_getValue( PARAM_GRAIN_PER_HECTARE );
-    ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) / 100;    // Changed to motor_rpm
+    ctx.data.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 );
     ctx.data.set_velocity = parameters_getValue( PARAM_SET_VELOCITY_KM_H );
     LOG( PRINT_INFO, "%s: PARAM_GRAIN_PER_HECTARE %d", __func__, parameters_getValue( PARAM_GRAIN_PER_HECTARE ) );
     // ctx.data.servo_vibro_on = 0;
