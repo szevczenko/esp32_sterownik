@@ -23,7 +23,7 @@
 #define PARAMETERS_U32_LIST                                                          \
   PARAM( PARAM_MOTOR, 0, 100, 0, "motor" )                                           \
   PARAM( PARAM_MOTOR2, 0, 100, 0, "motor_2" )                                        \
-  PARAM( PARAM_MOTOR_RPM_PER_100, 0, 3000, 0, "motor_rpm" )                          \
+  PARAM( PARAM_MOTOR_RPM_PER_100, 0, 30, 0, "motor_rpm" )                            \
   PARAM( PARAM_SERVO, 0, 100, 0, "servo" )                                           \
   PARAM( PARAM_VIBRO_ON_S, 0, 100, 0, "vibro_on_s" )                                 \
   PARAM( PARAM_VIBRO_OFF_S, 0, 100, 0, "vibro_off_s" )                               \
@@ -61,8 +61,8 @@
                                                                                      \
   PARAM( PARAM_SIZE_OF_GRAIN, 1, 10, 2, "size_of_grain" )                            \
   PARAM( PARAM_HIGH_OF_MACHINE_CM, 0, 1000, 50, "hight_of_machine" )                 \
-  PARAM( PARAM_SET_VELOCITY_KM_H, 0, 200, 45, "set_velocity" )                       \
-  PARAM( PARAM_VELOCITY_HMS, 0, 400, 100, "velocity" )                              \
+  PARAM( PARAM_SET_VELOCITY_KM_H, 0, 45, 20, "set_velocity" )                        \
+  PARAM( PARAM_VELOCITY_HMS, 0, 2000, 1000, "velocity" )                             \
   PARAM( PARAM_VELOCITY_SENSOR_STATUS, 0, 10, 0, "velocity_sensor_is_connected" )    \
   PARAM( PARAM_DISTANCE_HM, 0, 0xffffffff, 0, "distance_hm" )                        \
   PARAM( PARAM_RESET_DISTANCE, 0, 1, 0, "reset_distance" )                           \
