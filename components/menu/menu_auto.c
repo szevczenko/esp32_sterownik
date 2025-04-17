@@ -81,6 +81,7 @@ typedef struct
   TickType_t velocity_warning_timeout;    // Add this line
   TickType_t velocity_warning_msg_time;
   TickType_t simultaneous_press_time;
+  TickType_t gps_searching_timeout;     // Add timeout for GPS searching
   bool velocity_warning_triggered;    // Add this line
   bool button_up_pressed;    // Add this line
   bool button_down_pressed;    // Add this line
@@ -1125,7 +1126,27 @@ static void _state_ready_common( void )
   }
 
   // Get the GPS status
+  e108_gnss_status_t old_status = ctx.velocity_sensor_status;
   ctx.velocity_sensor_status = (e108_gnss_status_t) parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS );
+  
+  // Handle GPS searching timeout detection
+  if (ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT) {
+    // If we just entered searching state, set the timeout
+    if (old_status != E108_WAIT_VALID_MEASUREMENT) {
+      ctx.gps_searching_timeout = xTaskGetTickCount() + MS2ST(15000); // 15 seconds timeout
+    } 
+    // If we've been searching too long, consider GPS disconnected
+    else if (ctx.gps_searching_timeout < xTaskGetTickCount()) {
+      LOG(PRINT_INFO, "GPS searching timeout - considering GPS disconnected");
+      ctx.velocity_sensor_status = E108_DISCONNECTED;
+      
+      // Use the last set velocity if we had one
+      if (ctx.data.set_velocity == 0) {
+        ctx.data.set_velocity = 5; // Default to 5 km/h if no previous value
+        LOG(PRINT_INFO, "Set default velocity to 5 km/h after GPS disconnect");
+      }
+    }
+  }
 
   // Check if velocity status changed
   _check_velocity_sensor_status_change();
