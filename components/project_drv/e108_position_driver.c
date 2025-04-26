@@ -30,6 +30,9 @@ static uint8_t e108_gnss_uart_port = 1;
 static gpio_num_t e108_gnss_uart_tx_pin = 19;
 static gpio_num_t e108_gnss_uart_rx_pin = 18;
 #define E108_GNSS_UART_BAUD 9600
+#define E108_GNSS_UART_BAUD_ALT 38400  // Alternative baud rate to try
+
+static uint32_t e108_current_baud_rate = E108_GNSS_UART_BAUD;  // Track current baud rate
 
 #define E108_MAX_NMEA_LENGTH 256
 #define E108_TIMEOUT_MS      3000    // Timeout for considering the sensor disconnected
@@ -186,14 +189,14 @@ static e108_err_t setup_nmea_config( e108_gn03_handle_t driver )
  */
 static bool handle_init_state( void )
 {
-  ESP_LOGI( TAG, "Initializing GNSS module" );
+  ESP_LOGI( TAG, "Initializing GNSS module with baud rate %lu", e108_current_baud_rate );
 
   // Initialize driver if not already done
   if ( g_driver == NULL )
   {
     e108_gn03_config_t config = {
       .uart_port = e108_gnss_uart_port,
-      .uart_baud_rate = E108_GNSS_UART_BAUD,
+      .uart_baud_rate = e108_current_baud_rate,  // Use current baud rate
       .uart_tx_pin = e108_gnss_uart_tx_pin,
       .uart_rx_pin = e108_gnss_uart_rx_pin };
 
@@ -249,11 +252,16 @@ static bool handle_init_state( void )
  */
 static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
 {
+  static bool tried_alternative_baud = false;
+  
   // Set timeout for 3 seconds
   uint32_t start_time = ST2MS( xTaskGetTickCount() );
   uint32_t timeout = 3000;    // 3 seconds
 
-  ESP_LOGI( TAG, "Waiting for initial data from GNSS module" );
+  ESP_LOGI( TAG, "Waiting for initial data from GNSS module at %lu baud", e108_current_baud_rate );
+
+  bool valid_data_received = false;
+  bool valid_nmea_format = false;
 
   while ( ST2MS( xTaskGetTickCount() ) - start_time < timeout )
   {
@@ -264,16 +272,59 @@ static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
     if ( len > 0 )
     {
       rx_buffer[len] = 0;    // Null-terminate
-      ESP_LOGI( TAG, "Received initial data from GNSS module" );
-      return true;    // Received data, transition to working state
+      ESP_LOGI( TAG, "Received data from GNSS module: %s", rx_buffer );
+      
+      // Check if data contains valid NMEA sentence beginning with '$'
+      for (int i = 0; i < len; i++) {
+        if (rx_buffer[i] == '$') {
+          valid_nmea_format = true;
+          break;
+        }
+      }
+      
+      if (valid_nmea_format) {
+        ESP_LOGI( TAG, "Valid NMEA format detected" );
+        valid_data_received = true;
+        tried_alternative_baud = false;  // Reset for next time
+        break;
+      } else {
+        ESP_LOGW( TAG, "Received data but not in valid NMEA format" );
+      }
     }
 
     // Small delay to prevent CPU hogging
     vTaskDelay( MS2ST( 10 ) );
   }
 
-  ESP_LOGW( TAG, "No data received from GNSS module within timeout" );
-  return false;    // No data received, transition to disconnect state
+  if (!valid_data_received) {
+    if (!tried_alternative_baud) {
+      ESP_LOGW( TAG, "No valid NMEA data received at %lu baud, trying alternative baud rate", e108_current_baud_rate );
+      
+      // Deinitialize the driver
+      if (g_driver != NULL) {
+        e108_deinit( g_driver );
+        g_driver = NULL;
+      }
+      
+      // Switch baud rate
+      if (e108_current_baud_rate == E108_GNSS_UART_BAUD) {
+        e108_current_baud_rate = E108_GNSS_UART_BAUD_ALT;
+      } else {
+        e108_current_baud_rate = E108_GNSS_UART_BAUD;
+      }
+      
+      tried_alternative_baud = true;
+      
+      // Return false to go back to init state, but with new baud rate
+      return false;
+    } else {
+      ESP_LOGW( TAG, "No valid data received at either baud rate" );
+      tried_alternative_baud = false;  // Reset for next time
+      return false;  // Signal to transition to disconnect state
+    }
+  }
+
+  return valid_data_received;  // Transition to working state if we got valid data
 }
 
 /**
@@ -845,6 +896,10 @@ e108_gnss_err_t e108_continuous_start( uint8_t uart_port, uint32_t uart_tx_pin, 
     g_position.current_filter = E108_FILTER_KALMAN;    // Default filter
   }
   g_position.last_speed_update_ms = 0;    // Reset timestamp for distance calculation
+  
+  // Reset baud rate to default when starting
+  e108_current_baud_rate = E108_GNSS_UART_BAUD;
+  
   xSemaphoreGive( g_position.mutex );
 
   // Start the continuous reader task

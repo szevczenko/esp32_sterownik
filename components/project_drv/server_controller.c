@@ -19,7 +19,7 @@
 #include "wifidrv.h"
 
 #define MODULE_NAME "[Srvr Ctrl] "
-#define DEBUG_LVL   PRINT_DEBUG
+#define DEBUG_LVL   PRINT_INFO
 
 #if CONFIG_DEBUG_SERVER_CONTROLLER
 #define LOG( _lvl, ... ) \
@@ -87,7 +87,7 @@ typedef struct
   float working_width_m;
   int32_t correction_factor;
   uint32_t servo_open_delay_s;
-  uint32_t seeding_start_speed_kmh;
+  float seeding_start_speed_kmh;
   bool seeding_active;
   uint32_t seeding_start_time;
 
@@ -552,7 +552,7 @@ static void _auto_working( void )
   ctx.working_width_m = (float) parameters_getValue( PARAM_WORKING_WIDTH_СM ) / 100.0f;    // Convert сm to m
   ctx.correction_factor = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR ) - 100;
   ctx.servo_open_delay_s = parameters_getValue( PARAM_SERVO_OPEN_DELAY_S );
-  ctx.seeding_start_speed_kmh = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );
+  ctx.seeding_start_speed_kmh = (float)parameters_getValue( PARAM_SEEDING_START_SPEED_HMH ) / 10.0f;    // Convert to km/h
 
   //Implement velocity sensor
   if ( ctx.velocity_sensor_status != E108_READY )
@@ -561,7 +561,7 @@ static void _auto_working( void )
   }
 
   // LOG( PRINT_INFO, "Auto mode parameters:" );
-  // LOG( PRINT_INFO, "Velocity = %lu, Start speed = %lu", ctx.velocity, ctx.seeding_start_speed_kmh / 10 );
+  LOG( PRINT_DEBUG, "Velocity = %f, Start speed = %f", ctx.velocity, ctx.seeding_start_speed_kmh );
   // LOG( PRINT_INFO, "Working width = %.1f m", ctx.working_width_m );
   // LOG( PRINT_INFO, "Machine height = %.2f m", ctx.machine_height );
   // LOG( PRINT_INFO, "Correction factor = %ld%%", ctx.correction_factor );
@@ -587,6 +587,7 @@ static void _auto_working( void )
     ctx.servo_on = false;
     ctx.servo_value = 0;
     LOG( PRINT_DEBUG, "Speed too low, seeding stopped" );
+    parameters_setValue( PARAM_SEEDING_IS_ACTIVE, 0 );
     return;
   }
 
@@ -597,6 +598,7 @@ static void _auto_working( void )
     ctx.servo_on = false;
     ctx.servo_value = 0;
     LOG( PRINT_DEBUG, "In delay period, waiting to start seeding" );
+    parameters_setValue( PARAM_SEEDING_IS_ACTIVE, 0 );
     return;
   }
 
@@ -611,6 +613,7 @@ static void _auto_working( void )
   }
 
   parameters_setValue( PARAM_SEEDING_IS_ACTIVE, ctx.servo_on );
+  LOG( PRINT_DEBUG, "Seeding active: %d", ctx.servo_on );
 
   // Calculate seeding parameters
   uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );

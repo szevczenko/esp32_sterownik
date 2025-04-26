@@ -172,6 +172,7 @@ static void _servo_fast_add_cb( uint32_t value );
 static void _motor_fast_add_cb( uint32_t value );    // Add this line
 static void _show_wait_connection( void );
 static void _menu_set_error_msg( const char* msg );
+static void _update_led_states( void ); // Add this line
 
 extern uint32_t _minimal_servo_open( uint32_t size_of_grain );
 
@@ -561,11 +562,13 @@ static void _button_motor_callback( void* arg )
   if ( ctx.data.is_working )
   {
     ctx.data.is_working = false;
-    // ctx.data.servo_vibro_on = false;
+    // Ensure servo is closed when motor is stopped
+    HTTPParamClient_SetU32ValueDontWait( PARAM_SEEDING_IS_ACTIVE, 0 );
   }
   else
   {
     ctx.data.is_working = true;
+    // Note: PARAM_SEEDING_IS_ACTIVE will be set by the controller based on speed and other factors
   }
 }
 
@@ -1158,6 +1161,13 @@ static void _state_ready_common( void )
 static void _state_ready_gps_on( const char* status_message )
 {
   char str[32] = { 0 };
+  const char* display_status = status_message;
+
+  // Override status message if motor is on but seeding is stopped
+  if (ctx.data.is_working && !parameters_getValue(PARAM_SEEDING_IS_ACTIVE))
+  {
+    display_status = dictionary_get_string(DICT_SEEDING_STOPPED);
+  }
 
   // Draw GPS icon based on GPS status
   if ( ctx.velocity_sensor_status == E108_READY )
@@ -1174,10 +1184,10 @@ static void _state_ready_gps_on( const char* status_message )
     }
   }
 
-  // Display the status message in the center of the screen
-  int text_width = strlen( status_message ) * 6;    // Approximate width based on font size
-  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-  oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
+  // Display the updated status message
+  int text_width = strlen(display_status) * 6;    // Approximate width based on font size
+  int center_x = (SSD1306_WIDTH - text_width) / 2;
+  oled_printFixed(center_x - 12, 11, display_status, OLED_FONT_SIZE_16);
 
   // When GPS is active, use the value from GPS
   ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
@@ -1565,6 +1575,28 @@ static void _state_velocity_warning( void )
   }
 }
 
+static void _update_led_states(void)
+{
+  if (backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected())
+  {
+    MOTOR_LED_SET_GREEN(0);
+    SERVO_VIBRO_LED_SET_GREEN(0);
+  }
+  else
+  {
+    MOTOR_LED_SET_GREEN(ctx.data.is_working);
+    
+    // Only turn on servo LED if both conditions are met:
+    // 1. Seeding is active (controlled by servo position)
+    // 2. Motor is actually running
+    bool seeding_active = parameters_getValue(PARAM_SEEDING_IS_ACTIVE);
+    SERVO_VIBRO_LED_SET_GREEN(seeding_active && ctx.data.is_working);
+    
+    MOTOR_LED_SET_RED(0);
+    SERVO_VIBRO_LED_SET_RED(0);
+  }
+}
+
 static bool menu_process( void* arg )
 {
   menu_token_t* menu = arg;
@@ -1664,18 +1696,8 @@ static bool menu_process( void* arg )
       break;
   }
 
-  if ( backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected() )
-  {
-    MOTOR_LED_SET_GREEN( 0 );
-    SERVO_VIBRO_LED_SET_GREEN( 0 );
-  }
-  else
-  {
-    MOTOR_LED_SET_GREEN( ctx.data.is_working );
-    SERVO_VIBRO_LED_SET_GREEN( parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) );
-    MOTOR_LED_SET_RED( 0 );
-    SERVO_VIBRO_LED_SET_RED( 0 );
-  }
+  // Update LED states based on current system status
+  _update_led_states();
 
   return true;
 }

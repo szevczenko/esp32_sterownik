@@ -247,7 +247,7 @@ static void backend_send_auto_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_WORKING_WIDTH_СM, parameters_getValue( PARAM_WORKING_WIDTH_СM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_CORRECTION_FACTOR, parameters_getValue( PARAM_CORRECTION_FACTOR ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SERVO_OPEN_DELAY_S, parameters_getValue( PARAM_SERVO_OPEN_DELAY_S ), 2000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_SEEDING_START_SPEED_KMH, parameters_getValue( PARAM_SEEDING_START_SPEED_KMH ), 2000 ) == ERROR_CODE_OK;
+    result &= HTTPParamClient_SetU32Value( PARAM_SEEDING_START_SPEED_HMH, parameters_getValue( PARAM_SEEDING_START_SPEED_HMH ), 2000 ) == ERROR_CODE_OK;
 
     if ( result )
     {
