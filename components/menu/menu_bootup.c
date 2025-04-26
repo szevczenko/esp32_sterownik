@@ -226,8 +226,8 @@ static bool menu_process( void* arg )
   }
 
   oled_clearScreen();
-  oled_printFixed( 2, 0, dictionary_get_string( DICT_LOGO_CLIENT_NAME ), OLED_FONT_SIZE_16 );
-  oled_printFixed( 2, 22, "ELECTRONICS", OLED_FONT_SIZE_16 );
+  oled_printFixed( 17, 13, dictionary_get_string( DICT_LOGO_CLIENT_NAME ), OLED_FONT_SIZE_26 );
+  oled_printFixed( 28, 38, "ELECTRONICS", OLED_FONT_SIZE_11 );
   oled_setGLCDFont( OLED_FONT_SIZE_11 );
 
   switch ( ctx.state )

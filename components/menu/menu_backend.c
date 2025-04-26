@@ -600,8 +600,8 @@ static void menu_task( void* arg )
 void menuBackendInit( void )
 {
   menuDrvSetGetMsgCb( _get_msg );
-  menuDrvSetDrawBatteryCb( drawBattery );
-  menuDrvSetDrawSignalCb( drawSignal );
+ // menuDrvSetDrawBatteryCb( drawBattery );
+  //menuDrvSetDrawSignalCb( drawSignal );
   xTaskCreate( menu_task, "menu_back", 4096, NULL, 5, NULL );
 }
 
