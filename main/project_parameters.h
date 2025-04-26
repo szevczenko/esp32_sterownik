@@ -51,7 +51,7 @@
   PARAM( PARAM_ERROR_MOTOR, 0, 1, 1, "error_motor" )                                 \
   PARAM( PARAM_ERROR_SERVO_CALIBRATION, 0, 99, 20, "error_servo_calibration" )       \
   PARAM( PARAM_ERROR_MOTOR_CALIBRATION, 0, 99, 50, "error_motor_calibration" )       \
-  PARAM( PARAM_MOTOR_MIN_CALIBRATION, 0, 100, 20, "motor_min_calibration" )          \
+  PARAM( PARAM_MOTOR_MIN_CALIBRATION, 0, 100, 13, "motor_min_calibration" )          \
   PARAM( PARAM_MOTOR_MAX_CALIBRATION, 0, 100, 100, "motor_max_calibration" )         \
   PARAM( PARAM_CLOSE_SERVO_REGULATION_FLAG, 0, 1, 0, "close_servo_regulation_flag" ) \
   PARAM( PARAM_OPEN_SERVO_REGULATION_FLAG, 0, 1, 0, "open_servo_regulation_flag" )   \

@@ -93,7 +93,7 @@ static void change_state( state_bootup_t new_state )
 
 static void bootup_init_state( void )
 {
-  menuPrintfInfo( dictionary_get_string( DICT_INIT ) );
+  // menuPrintfInfo( dictionary_get_string( DICT_INIT ) );
   change_state( STATE_WAIT_WIFI_INIT );
 }
 
@@ -105,7 +105,7 @@ static void bootup_wifi_wait( void )
   }
   else
   {
-    menuPrintfInfo( dictionary_get_string( DICT_WAIT_TO_START_WIFI ) );
+    // menuPrintfInfo( dictionary_get_string( DICT_WAIT_TO_START_WIFI ) );
   }
 }
 
@@ -124,18 +124,18 @@ static void bootup_check_memory( void )
 static void bootup_connect( void )
 {
   wifiDrvGetAPName( ctx.ap_name );
-  menuPrintfInfo( "%s %s", dictionary_get_string( DICT_TRY_CONNECT_TO_S ), ctx.ap_name );
+  // menuPrintfInfo( "%s %s", dictionary_get_string( DICT_TRY_CONNECT_TO_S ), ctx.ap_name );
   wifiDrvConnect();
   change_state( STATE_WAIT_CONNECT );
 }
 
 static void _show_wait_connection( void )
 {
-  oled_clearScreen();
-  sprintf( ctx.buff, dictionary_get_string( DICT_WAIT_CONNECTION_S_S_S ), xTaskGetTickCount() % 400 > 100 ? "." : " ",
-           xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " " );
-  oled_printFixed( 2, 2 * MENU_HEIGHT, ctx.buff, OLED_FONT_SIZE_11 );
-  oled_update();
+  // oled_clearScreen();
+  // sprintf( ctx.buff, dictionary_get_string( DICT_WAIT_CONNECTION_S_S_S ), xTaskGetTickCount() % 400 > 100 ? "." : " ",
+  //          xTaskGetTickCount() % 400 > 200 ? "." : " ", xTaskGetTickCount() % 400 > 300 ? "." : " " );
+  // oled_printFixed( 2, 2 * MENU_HEIGHT, ctx.buff, OLED_FONT_SIZE_11 );
+  // oled_update();
 }
 
 static void bootup_wait_connect( void )
@@ -172,7 +172,7 @@ static void bootup_wait_connect( void )
   } while ( !backendIsConnected() );
 
   oled_clearScreen();
-  menuPrintfInfo( dictionary_get_string( DICT_CONNECTED_TRY_READ_DATA ) );
+  // menuPrintfInfo( dictionary_get_string( DICT_CONNECTED_TRY_READ_DATA ) );
   change_state( STATE_GET_SERVER_DATA );
 }
 
@@ -195,7 +195,7 @@ static void bootup_get_server_data( void )
     }
   }
 
-  menuPrintfInfo( dictionary_get_string( DICT_READ_DATA_FROM_S ), ctx.ap_name );
+  // menuPrintfInfo( dictionary_get_string( DICT_READ_DATA_FROM_S ), ctx.ap_name );
   change_state( STATE_CHECKING_DATA );
 }
 
@@ -203,7 +203,7 @@ static void bootup_checking_data( void )
 {
   ctx.system_connected = true;
   change_state( STATE_EXIT );
-  menuPrintfInfo( dictionary_get_string( DICT_SYSTEM_READY_TO_START ) );
+  // menuPrintfInfo( dictionary_get_string( DICT_SYSTEM_READY_TO_START ) );
 }
 
 static void bootup_exit( void )
@@ -227,6 +227,7 @@ static bool menu_process( void* arg )
 
   oled_clearScreen();
   oled_printFixed( 2, 0, dictionary_get_string( DICT_LOGO_CLIENT_NAME ), OLED_FONT_SIZE_16 );
+  oled_printFixed( 2, 22, "ELECTRONICS", OLED_FONT_SIZE_16 );
   oled_setGLCDFont( OLED_FONT_SIZE_11 );
 
   switch ( ctx.state )
