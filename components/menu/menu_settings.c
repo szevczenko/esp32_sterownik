@@ -241,6 +241,8 @@ static void get_seeding_start_speed( uint32_t* value );
 static void set_seeding_start_speed( uint32_t value );
 static void get_max_seeding_start_speed( uint32_t* value );
 static void get_min_seeding_start_speed( uint32_t* value );
+static const char* get_seeding_start_speed_str( void );
+static void fast_add_seeding_start_speed( uint32_t value );
 
 static parameters_t* parameters_list;
 static uint32_t parameters_size;
@@ -429,11 +431,13 @@ static parameters_t parameters_list_siewnik[] =
 
     { .param_type = SETTINGS_SEEDING_START_SPEED,
      .name_dict = DICT_SEEDING_START_SPEED,
-     .unit_type = UNIT_INT,
+     .unit_type = UNIT_STR,
      .get_value = get_seeding_start_speed,
      .set_value = set_seeding_start_speed,
      .get_max_value = get_max_seeding_start_speed,
      .get_min_value = get_min_seeding_start_speed,
+     .get_str_value = get_seeding_start_speed_str,
+     .fast_add = fast_add_seeding_start_speed,
      .unit_name = "[km/h]" },
 };
 
@@ -1064,22 +1068,47 @@ static void get_min_servo_open_delay( uint32_t* value )
 
 static void get_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getValue( PARAM_SEEDING_START_SPEED_KMH );    // Convert to km/h
+  *value = parameters_getValue( PARAM_SEEDING_START_SPEED_HMH );    // Convert to km/h
 }
 
 static void set_seeding_start_speed( uint32_t value )
 {
-  parameters_setValue( PARAM_SEEDING_START_SPEED_KMH, value );    // Store as 0.1 km/h
+  parameters_setValue( PARAM_SEEDING_START_SPEED_HMH, value );    // Store as 0.1 km/h
 }
 
 static void get_max_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getMaxValue( PARAM_SEEDING_START_SPEED_KMH );
+  *value = parameters_getMaxValue( PARAM_SEEDING_START_SPEED_HMH );
 }
 
 static void get_min_seeding_start_speed( uint32_t* value )
 {
-  *value = parameters_getMinValue( PARAM_SEEDING_START_SPEED_KMH );
+  *value = parameters_getMinValue( PARAM_SEEDING_START_SPEED_HMH );
+}
+
+static const char* get_seeding_start_speed_str( void )
+{
+  static char buffer[13];
+  float value = (float) parameters_getValue( PARAM_SEEDING_START_SPEED_HMH ) / 10.0f;
+  sprintf( buffer, "%.1f [km/h]", value );
+  return buffer;
+}
+
+static void fast_add_seeding_start_speed( uint32_t value )
+{
+  parameters_setValue( PARAM_SEEDING_START_SPEED_HMH, value );
+  for ( uint32_t i = 0; i < parameters_size; i++ )
+  {
+    if ( parameters_list[i].param_type == SETTINGS_SEEDING_START_SPEED )
+    {
+      parameters_list[i].value = value;
+      if ( parameters_list[i].get_str_value != NULL )
+      {
+        parameters_list[i].str_value = parameters_list[i].get_str_value();
+      }
+      break;
+    }
+  }
 }
 
 static void _set_and_exit( menu_token_t* menu )
