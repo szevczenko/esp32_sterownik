@@ -1107,7 +1107,8 @@ static void _state_ready_common( void )
 
   // Draw battery indicator
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
-
+  menuDrvSetDrawBatteryCb( drawBattery );
+  menuDrvSetDrawSignalCb( drawSignal );
   // Draw silos level indicator if connected
   if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
   {

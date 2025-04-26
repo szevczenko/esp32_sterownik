@@ -914,7 +914,8 @@ static void menu_start_ready( void )
   drawMotorCircle( 5, 2, cnt );
 
   if ( wifiMenu_GetDevType() == T_DEV_TYPE_SOLARKA || wifiMenu_GetDevType() == T_DEV_TYPE_SIEWNIK )
-  {
+  {  menuDrvSetDrawBatteryCb( drawBattery );
+    menuDrvSetDrawSignalCb( drawSignal );
     ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
 
     if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
@@ -1089,6 +1090,8 @@ static void menu_start_motor_change( void )
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
     return;
   }
+ menuDrvSetDrawBatteryCb( drawBattery );
+  menuDrvSetDrawSignalCb( drawSignal );
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
   oled_printFixed( 0, 0, dictionary_get_string( DICT_MOTOR ), OLED_FONT_SIZE_26 );
   sprintf( ctx.buff, "%ld%%", ctx.data.motor_value );
@@ -1103,7 +1106,8 @@ static void menu_start_motor_change( void )
 static void menu_start_vibro_change( void )
 {
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
-
+  menuDrvSetDrawBatteryCb( drawBattery );
+  menuDrvSetDrawSignalCb( drawSignal );
   if ( !backendIsConnected() )
   {
     menu_set_error_msg( dictionary_get_string( DICT_LOST_CONNECTION_WITH_SERVER ) );
