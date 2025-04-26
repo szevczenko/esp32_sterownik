@@ -42,7 +42,7 @@ static uint32_t e108_current_baud_rate = E108_GNSS_UART_BAUD;  // Track current 
 #define KALMAN_MEASUREMENT_NOISE 1.0f    // Measurement noise (R) - higher values = more smoothing
 #define KALMAN_ERROR_INIT        1.0f    // Initial error covariance
 
-#define E108_MOVING_AVG_SAMPLES 16    // Size of moving average window
+#define E108_MOVING_AVG_SAMPLES 4    // Size of moving average window
 #define E108_MEDIAN_SAMPLES     7    // Size of median filter buffer (odd number recommended)
 
 // EMA filter parameters

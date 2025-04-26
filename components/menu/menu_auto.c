@@ -1206,11 +1206,11 @@ static void _state_ready_gps_on( const char* status_message )
   }
   else if ( ctx.velocity < 100 )
   {
-    oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 22, 32, str, OLED_FONT_SIZE_16 );
   }
   else
   {
-    oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
   }
   drawkm_h( 50, 40 );
 
@@ -1295,11 +1295,11 @@ static void _state_ready_gps_off( const char* status_message )
   }
   else if ( ctx.velocity < 100 )
   {
-    oled_printFixed( 25, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 22, 32, str, OLED_FONT_SIZE_16 );
   }
   else
   {
-    oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
   }
   drawkm_h( 50, 40 );
 
