@@ -282,7 +282,7 @@ static bool _connected_process( menu_token_t* menu )
     line++;
   } while ( line + menu->line.start != PARAM_TOP && line < MAX_LINE );
   scrollBar.actual_line = menu->position;
-  scrollBar.all_line = PARAM_TOP - 1;
+  scrollBar.all_line = PARAM_TOP;
   ssdFigureDrawScrollBar( &scrollBar );
 
   MOTOR_LED_SET_GREEN( parameters_getValue( PARAM_MOTOR_IS_ON ) );

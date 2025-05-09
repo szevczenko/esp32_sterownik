@@ -1522,7 +1522,7 @@ static bool menu_process( void* arg )
         } while ( line + menu->line.start != parameters_size && line < MAX_LINE );
 
         scrollBar.actual_line = menu->position;
-        scrollBar.all_line = parameters_size - 1;
+        scrollBar.all_line = parameters_size;
         ssdFigureDrawScrollBar( &scrollBar );
       }
       break;
