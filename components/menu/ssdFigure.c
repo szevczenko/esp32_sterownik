@@ -835,51 +835,75 @@ int ssdFigureDrawLoadBar( loadBar_t* figure )
   return TRUE;
 }
 
-int ssdFigureDrawScrollBar( scrollBar_t* figure )
+int ssdFigureDrawScrollBar(scrollBar_t* figure)
 {
-  if ( figure == NULL )
+  if (figure == NULL)
   {
     return FALSE;
   }
 
-  if ( figure->y_start > SSD1306_HEIGHT )
+  if (figure->y_start >= SSD1306_HEIGHT)
   {
     return FALSE;
   }
 
-  if ( figure->all_line == 0 )
+  if (figure->all_line == 0)
   {
     return FALSE;
   }
 
-  float width = (float) figure->line_max / ( (float) figure->all_line );
+  float width = (float)figure->line_max / (float)figure->all_line;
 
-  if ( width >= 1.0 )
+  if (width >= 1.0)
   {
+    // No need for scrollbar if all content fits in view
     return FALSE;
   }
 
-  int width_px = width * ( SSD1306_HEIGHT - figure->y_start );
-  int step = ( SSD1306_HEIGHT - figure->y_start - width_px ) / figure->all_line;
-  int start_scroll_y = step * ( figure->actual_line + 1 ) + figure->y_start;
+  // Calculate scrollbar dimensions
+  int height_available = SSD1306_HEIGHT - figure->y_start;
+  int width_px = (int)(width * height_available);
+  
+  // Ensure width_px is at least 1 pixel
+  if (width_px < 1)
+    width_px = 1;
+  
+  // Calculate scroll indicator position
+  int start_scroll_y;
+  
+  if (figure->actual_line >= figure->all_line - 1) {
+    // When at last position, ensure the scrollbar is at the bottom
+    start_scroll_y = SSD1306_HEIGHT - width_px;
+  } else {
+    // For other positions, calculate proportionally
+    int step = (figure->all_line > 1) ?
+                 (height_available - width_px) / (figure->all_line - 1) :
+                 0;
+    start_scroll_y = figure->y_start + step * figure->actual_line;
+  }
 
-  //LOG("width_px %d, step %d, start_scroll_y %d\n", width_px, step, start_scroll_y);
-  for ( int x = SSD1306_WIDTH - 4; x < SSD1306_WIDTH; x++ )
+  // Draw the scrollbar
+  const int scrollbarWidth = 4;
+  for (int x = SSD1306_WIDTH - scrollbarWidth; x < SSD1306_WIDTH; x++)
   {
-    for ( int y = figure->y_start; y < SSD1306_HEIGHT; y++ )
+    for (int y = figure->y_start; y < SSD1306_HEIGHT; y++)
     {
-      if ( ( x <= SSD1306_WIDTH - 4 ) || ( x == SSD1306_WIDTH - 1 ) )
+      // Draw the scrollbar outline
+      if ((x == SSD1306_WIDTH - scrollbarWidth) || (x == SSD1306_WIDTH - 1))
       {
-        oled_putPixel( x, y );
+        oled_putPixel(x, y);
         continue;
       }
-      else if ( ( y == figure->y_start ) || ( ( y >= start_scroll_y ) && ( y <= start_scroll_y + width_px ) ) || ( y == SSD1306_HEIGHT ) )
+      // Draw the top and bottom of scrollbar and the scroll indicator
+      else if ((y == figure->y_start) || 
+               ((y >= start_scroll_y) && (y <= start_scroll_y + width_px)) || 
+               (y == SSD1306_HEIGHT - 1))
       {
-        oled_putPixel( x, y );
+        oled_putPixel(x, y);
         continue;
       }
 
-      oled_clearPixel( x, y );
+      oled_clearPixel(x, y);
     }
   }
 

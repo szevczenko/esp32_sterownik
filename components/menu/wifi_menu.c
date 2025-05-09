@@ -404,7 +404,7 @@ static void menu_wifi_show_list( menu_token_t* menu )
   } while ( line + menu->line.start < ctx.devices_count && line < MAX_LINE );
 
   scrollBar.actual_line = menu->position;
-  scrollBar.all_line = ctx.devices_count - 1;
+  scrollBar.all_line = ctx.devices_count;
   ssdFigureDrawScrollBar( &scrollBar );
 }
 
