@@ -1204,31 +1204,36 @@ static void _state_ready_gps_on( const char* status_message )
   if ( ctx.velocity < 10 )
   {
     oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
+    drawkm_h( 52, 40 );
   }
   else if ( ctx.velocity < 100 )
   {
-    oled_printFixed( 22, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
+    drawkm_h( 54, 40 );
   }
   else
   {
     oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
   }
-  drawkm_h( 50, 40 );
+  
 
   sprintf( str, "%lu ", ctx.data.kg_per_ha );
   if ( ctx.data.kg_per_ha < 10 )
   {
     oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
+    drawkg_ha( 50, 56 );
   }
   else if ( ctx.data.kg_per_ha < 100 )
   {
     oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
+    drawkg_ha( 52, 56 );
   }
   else
   {
     oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
+    drawkg_ha( 54, 56 );
   }
-  drawkg_ha( 50, 56 );
+ 
 
   sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
   if ( ctx.data.motor_rpm < 1 )
@@ -1248,10 +1253,10 @@ static void _state_ready_gps_on( const char* status_message )
     oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
   }
 
-  drawrpm( 111, 40 );
+  drawrpm( 113, 40 );
   sprintf( str, "%.1f ", ctx.distance_km );
   oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
-  drawkm( 111, 57 );
+  drawkm( 113, 57 );
 
   uint32_t servo = parameters_getValue( PARAM_SERVO );
   // Only trigger velocity warnings if GPS has a valid fix AND a set velocity exists
@@ -1293,31 +1298,36 @@ static void _state_ready_gps_off( const char* status_message )
   if ( ctx.velocity < 10 )
   {
     oled_printFixed( 28, 32, str, OLED_FONT_SIZE_16 );
+    drawkm_h( 52, 40 );
   }
   else if ( ctx.velocity < 100 )
   {
-    oled_printFixed( 22, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 24, 32, str, OLED_FONT_SIZE_16 );
+    drawkm_h( 54, 40 );
   }
   else
   {
     oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
   }
-  drawkm_h( 50, 40 );
+  
 
   sprintf( str, "%lu ", ctx.data.kg_per_ha );
   if ( ctx.data.kg_per_ha < 10 )
   {
     oled_printFixed( 33, 49, str, OLED_FONT_SIZE_16 );
+    drawkg_ha( 50, 56 );
   }
   else if ( ctx.data.kg_per_ha < 100 )
   {
     oled_printFixed( 29, 49, str, OLED_FONT_SIZE_16 );
+    drawkg_ha( 52, 56 );
   }
   else
   {
     oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
+    drawkg_ha( 54, 56 );
   }
-  drawkg_ha( 50, 56 );
+ 
 
   sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
   if ( ctx.data.motor_rpm < 1 )
@@ -1337,10 +1347,10 @@ static void _state_ready_gps_off( const char* status_message )
     oled_printFixed( 70, 32, str, OLED_FONT_SIZE_16 );
   }
 
-  drawrpm( 111, 40 );
+  drawrpm( 113, 40 );
   sprintf( str, "%.1f ", ctx.distance_km );
   oled_printFixed( 84, 49, str, OLED_FONT_SIZE_16 );
-  drawkm( 111, 57 );
+  drawkm( 113, 57 );
 
   // No velocity warnings in GPS-less mode - disable the mechanism completely
   ctx.velocity_warning_triggered = false;
