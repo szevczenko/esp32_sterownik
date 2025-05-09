@@ -81,7 +81,7 @@ typedef struct
   TickType_t velocity_warning_timeout;    // Add this line
   TickType_t velocity_warning_msg_time;
   TickType_t simultaneous_press_time;
-  TickType_t gps_searching_timeout;     // Add timeout for GPS searching
+  TickType_t gps_searching_timeout;    // Add timeout for GPS searching
   bool velocity_warning_triggered;    // Add this line
   bool button_up_pressed;    // Add this line
   bool button_down_pressed;    // Add this line
@@ -172,7 +172,7 @@ static void _servo_fast_add_cb( uint32_t value );
 static void _motor_fast_add_cb( uint32_t value );    // Add this line
 static void _show_wait_connection( void );
 static void _menu_set_error_msg( const char* msg );
-static void _update_led_states( void ); // Add this line
+static void _update_led_states( void );    // Add this line
 
 extern uint32_t _minimal_servo_open( uint32_t size_of_grain );
 
@@ -888,6 +888,8 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) );
 
   backendEnterMenuAuto();
+  menuDrvSetDrawBatteryCb( drawBattery );
+  menuDrvSetDrawSignalCb( drawSignal );
 
   ctx.error_flag = 0;
   ctx.enter_parameters_menu = false;
@@ -1107,8 +1109,6 @@ static void _state_ready_common( void )
 
   // Draw battery indicator
   ssdFigure_DrawLowAccu( 60, 1, parameters_getValue( PARAM_VOLTAGE_ACCUM ), parameters_getValue( PARAM_CURRENT_MOTOR ) );
-  menuDrvSetDrawBatteryCb( drawBattery );
-  menuDrvSetDrawSignalCb( drawSignal );
   // Draw silos level indicator if connected
   if ( parameters_getValue( PARAM_SILOS_SENSOR_IS_CONNECTED ) )
   {
@@ -1132,22 +1132,26 @@ static void _state_ready_common( void )
   // Get the GPS status
   e108_gnss_status_t old_status = ctx.velocity_sensor_status;
   ctx.velocity_sensor_status = (e108_gnss_status_t) parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS );
-  
+
   // Handle GPS searching timeout detection
-  if (ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT) {
+  if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
+  {
     // If we just entered searching state, set the timeout
-    if (old_status != E108_WAIT_VALID_MEASUREMENT) {
-      ctx.gps_searching_timeout = xTaskGetTickCount() + MS2ST(15000); // 15 seconds timeout
-    } 
+    if ( old_status != E108_WAIT_VALID_MEASUREMENT )
+    {
+      ctx.gps_searching_timeout = xTaskGetTickCount() + MS2ST( 15000 );    // 15 seconds timeout
+    }
     // If we've been searching too long, consider GPS disconnected
-    else if (ctx.gps_searching_timeout < xTaskGetTickCount()) {
-      LOG(PRINT_INFO, "GPS searching timeout - considering GPS disconnected");
+    else if ( ctx.gps_searching_timeout < xTaskGetTickCount() )
+    {
+      LOG( PRINT_INFO, "GPS searching timeout - considering GPS disconnected" );
       ctx.velocity_sensor_status = E108_DISCONNECTED;
-      
+
       // Use the last set velocity if we had one
-      if (ctx.data.set_velocity == 0) {
-        ctx.data.set_velocity = 5; // Default to 5 km/h if no previous value
-        LOG(PRINT_INFO, "Set default velocity to 5 km/h after GPS disconnect");
+      if ( ctx.data.set_velocity == 0 )
+      {
+        ctx.data.set_velocity = 5;    // Default to 5 km/h if no previous value
+        LOG( PRINT_INFO, "Set default velocity to 5 km/h after GPS disconnect" );
       }
     }
   }
@@ -1165,9 +1169,9 @@ static void _state_ready_gps_on( const char* status_message )
   const char* display_status = status_message;
 
   // Override status message if motor is on but seeding is stopped
-  if (ctx.data.is_working && !parameters_getValue(PARAM_SEEDING_IS_ACTIVE))
+  if ( ctx.data.is_working && !parameters_getValue( PARAM_SEEDING_IS_ACTIVE ) )
   {
-    display_status = dictionary_get_string(DICT_SEEDING_STOPPED);
+    display_status = dictionary_get_string( DICT_SEEDING_STOPPED );
   }
 
   // Draw GPS icon based on GPS status
@@ -1186,9 +1190,9 @@ static void _state_ready_gps_on( const char* status_message )
   }
 
   // Display the updated status message
-  int text_width = strlen(display_status) * 6;    // Approximate width based on font size
-  int center_x = (SSD1306_WIDTH - text_width) / 2;
-  oled_printFixed(center_x - 12, 11, display_status, OLED_FONT_SIZE_16);
+  int text_width = strlen( display_status ) * 6;    // Approximate width based on font size
+  int center_x = ( SSD1306_WIDTH - text_width ) / 2;
+  oled_printFixed( center_x - 12, 11, display_status, OLED_FONT_SIZE_16 );
 
   // When GPS is active, use the value from GPS
   ctx.velocity = (float) parameters_getValue( PARAM_VELOCITY_HMS ) / 10.0f;
@@ -1215,7 +1219,6 @@ static void _state_ready_gps_on( const char* status_message )
   {
     oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
   }
-  
 
   sprintf( str, "%lu ", ctx.data.kg_per_ha );
   if ( ctx.data.kg_per_ha < 10 )
@@ -1233,7 +1236,6 @@ static void _state_ready_gps_on( const char* status_message )
     oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
     drawkg_ha( 54, 56 );
   }
- 
 
   sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
   if ( ctx.data.motor_rpm < 1 )
@@ -1309,7 +1311,6 @@ static void _state_ready_gps_off( const char* status_message )
   {
     oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
   }
-  
 
   sprintf( str, "%lu ", ctx.data.kg_per_ha );
   if ( ctx.data.kg_per_ha < 10 )
@@ -1327,7 +1328,6 @@ static void _state_ready_gps_off( const char* status_message )
     oled_printFixed( 26, 49, str, OLED_FONT_SIZE_16 );
     drawkg_ha( 54, 56 );
   }
- 
 
   sprintf( str, "%lu ", ctx.data.motor_rpm * 100 );
   if ( ctx.data.motor_rpm < 1 )
@@ -1586,25 +1586,25 @@ static void _state_velocity_warning( void )
   }
 }
 
-static void _update_led_states(void)
+static void _update_led_states( void )
 {
-  if (backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected())
+  if ( backendIsEmergencyDisable() || ctx.state == STATE_ERROR || !backendIsConnected() )
   {
-    MOTOR_LED_SET_GREEN(0);
-    SERVO_VIBRO_LED_SET_GREEN(0);
+    MOTOR_LED_SET_GREEN( 0 );
+    SERVO_VIBRO_LED_SET_GREEN( 0 );
   }
   else
   {
-    MOTOR_LED_SET_GREEN(ctx.data.is_working);
-    
+    MOTOR_LED_SET_GREEN( ctx.data.is_working );
+
     // Only turn on servo LED if both conditions are met:
     // 1. Seeding is active (controlled by servo position)
     // 2. Motor is actually running
-    bool seeding_active = parameters_getValue(PARAM_SEEDING_IS_ACTIVE);
-    SERVO_VIBRO_LED_SET_GREEN(seeding_active && ctx.data.is_working);
-    
-    MOTOR_LED_SET_RED(0);
-    SERVO_VIBRO_LED_SET_RED(0);
+    bool seeding_active = parameters_getValue( PARAM_SEEDING_IS_ACTIVE );
+    SERVO_VIBRO_LED_SET_GREEN( seeding_active && ctx.data.is_working );
+
+    MOTOR_LED_SET_RED( 0 );
+    SERVO_VIBRO_LED_SET_RED( 0 );
   }
 }
 
