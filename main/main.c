@@ -132,7 +132,7 @@ static void _init_server( void )
 
   measure_start();
   srvrControllStart();
-  xkc_init( 1, 9600, 14, 12 );
+  xkc_init( 1, 9600, 16, 17 );
   tank_sensor_init();
   e108_continuous_start( 2, 16, 17 );
   e108_set_filter( E108_FILTER_MOVING_AVG );
