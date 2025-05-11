@@ -29,10 +29,10 @@ typedef enum
 static uint8_t e108_gnss_uart_port = 1;
 static gpio_num_t e108_gnss_uart_tx_pin = 19;
 static gpio_num_t e108_gnss_uart_rx_pin = 18;
-#define E108_GNSS_UART_BAUD 9600
-#define E108_GNSS_UART_BAUD_ALT 38400  // Alternative baud rate to try
+#define E108_GNSS_UART_BAUD     9600
+#define E108_GNSS_UART_BAUD_ALT 38400    // Alternative baud rate to try
 
-static uint32_t e108_current_baud_rate = E108_GNSS_UART_BAUD;  // Track current baud rate
+static uint32_t e108_current_baud_rate = E108_GNSS_UART_BAUD;    // Track current baud rate
 
 #define E108_MAX_NMEA_LENGTH 256
 #define E108_TIMEOUT_MS      3000    // Timeout for considering the sensor disconnected
@@ -95,6 +95,7 @@ typedef struct
   bool valid;
   bool running;
   uint32_t last_valid_time_ms;    // Timestamp of last valid measurement in ms
+  uint32_t last_frame_time_ms;    // Timestamp of last received NMEA frame (even invalid ones)
   uint32_t time_since_last_ms;    // Time since last valid measurement in ms
   e108_gnss_status_t status;    // Current status of the GNSS module
   float distance_km;    // Total distance traveled in kilometers
@@ -115,6 +116,9 @@ static bool handle_working_state( char* rx_buffer, size_t buffer_size, char* nme
 static void handle_disconnect_state( void );
 static void reset_position_data( void );
 static float apply_speed_filter( float new_speed );
+static void _change_sensor_status( e108_gnss_status_t new_status );
+static bool check_gnss_timeout( uint32_t current_time );
+static bool process_nmea_char( char c, char* nmea_buffer, int* nmea_index, bool* in_sentence );
 
 /**
  * @brief Convert error code to string for logging
@@ -150,6 +154,41 @@ static const char* e108_err_to_str( e108_err_t err )
     default:
       return "Unknown error";
   }
+}
+
+/**
+ * @brief Helper function to update the sensor status and log the change
+ * 
+ * @param new_status The new status to set
+ */
+static void _change_sensor_status( e108_gnss_status_t new_status )
+{
+  // Only log if status is actually changing
+  if ( g_position.status != new_status )
+  {
+    // Convert status to string for logging
+    const char* status_str = "UNKNOWN";
+    switch ( new_status )
+    {
+      case E108_DISCONNECTED:
+        status_str = "DISCONNECTED";
+        break;
+      case E108_WAIT_VALID_MEASUREMENT:
+        status_str = "WAIT_VALID_MEASUREMENT";
+        break;
+      case E108_READY:
+        status_str = "READY";
+        break;
+    }
+
+    ESP_LOGI( TAG, "GNSS status changed: %s -> %s",
+              g_position.status == E108_DISCONNECTED ? "DISCONNECTED" :
+                                                       ( g_position.status == E108_WAIT_VALID_MEASUREMENT ? "WAIT_VALID_MEASUREMENT" : "READY" ),
+              status_str );
+  }
+
+  // Update the status
+  g_position.status = new_status;
 }
 
 /**
@@ -196,7 +235,7 @@ static bool handle_init_state( void )
   {
     e108_gn03_config_t config = {
       .uart_port = e108_gnss_uart_port,
-      .uart_baud_rate = e108_current_baud_rate,  // Use current baud rate
+      .uart_baud_rate = e108_current_baud_rate,    // Use current baud rate
       .uart_tx_pin = e108_gnss_uart_tx_pin,
       .uart_rx_pin = e108_gnss_uart_rx_pin };
 
@@ -253,7 +292,7 @@ static bool handle_init_state( void )
 static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
 {
   static bool tried_alternative_baud = false;
-  
+
   // Set timeout for 3 seconds
   uint32_t start_time = ST2MS( xTaskGetTickCount() );
   uint32_t timeout = 3000;    // 3 seconds
@@ -273,21 +312,26 @@ static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
     {
       rx_buffer[len] = 0;    // Null-terminate
       ESP_LOGI( TAG, "Received data from GNSS module: %s", rx_buffer );
-      
+
       // Check if data contains valid NMEA sentence beginning with '$'
-      for (int i = 0; i < len; i++) {
-        if (rx_buffer[i] == '$') {
+      for ( int i = 0; i < len; i++ )
+      {
+        if ( rx_buffer[i] == '$' )
+        {
           valid_nmea_format = true;
           break;
         }
       }
-      
-      if (valid_nmea_format) {
+
+      if ( valid_nmea_format )
+      {
         ESP_LOGI( TAG, "Valid NMEA format detected" );
         valid_data_received = true;
-        tried_alternative_baud = false;  // Reset for next time
+        tried_alternative_baud = false;    // Reset for next time
         break;
-      } else {
+      }
+      else
+      {
         ESP_LOGW( TAG, "Received data but not in valid NMEA format" );
       }
     }
@@ -296,35 +340,130 @@ static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
     vTaskDelay( MS2ST( 10 ) );
   }
 
-  if (!valid_data_received) {
-    if (!tried_alternative_baud) {
+  if ( !valid_data_received )
+  {
+    if ( !tried_alternative_baud )
+    {
       ESP_LOGW( TAG, "No valid NMEA data received at %lu baud, trying alternative baud rate", e108_current_baud_rate );
-      
+
       // Deinitialize the driver
-      if (g_driver != NULL) {
+      if ( g_driver != NULL )
+      {
         e108_deinit( g_driver );
         g_driver = NULL;
       }
-      
+
       // Switch baud rate
-      if (e108_current_baud_rate == E108_GNSS_UART_BAUD) {
+      if ( e108_current_baud_rate == E108_GNSS_UART_BAUD )
+      {
         e108_current_baud_rate = E108_GNSS_UART_BAUD_ALT;
-      } else {
+      }
+      else
+      {
         e108_current_baud_rate = E108_GNSS_UART_BAUD;
       }
-      
+
       tried_alternative_baud = true;
-      
+
       // Return false to go back to init state, but with new baud rate
       return false;
-    } else {
+    }
+    else
+    {
       ESP_LOGW( TAG, "No valid data received at either baud rate" );
-      tried_alternative_baud = false;  // Reset for next time
-      return false;  // Signal to transition to disconnect state
+      tried_alternative_baud = false;    // Reset for next time
+      return false;    // Signal to transition to disconnect state
     }
   }
 
-  return valid_data_received;  // Transition to working state if we got valid data
+  if ( valid_data_received )
+  {
+    ESP_LOGI( TAG, "Transitioning to WORKING state" );
+    xSemaphoreTake( g_position.mutex, portMAX_DELAY );
+    _change_sensor_status( E108_WAIT_VALID_MEASUREMENT );
+
+    // Initialize the last frame time
+    g_position.last_frame_time_ms = ST2MS( xTaskGetTickCount() );
+    xSemaphoreGive( g_position.mutex );
+  }
+
+  return valid_data_received;    // Transition to working state if we got valid data
+}
+
+/**
+ * @brief Check for GNSS module timeout based on last received frame
+ * 
+ * @param current_time Current time in milliseconds
+ * @return bool True if timeout occurred, false otherwise
+ */
+static bool check_gnss_timeout( uint32_t current_time )
+{
+  bool timeout_occurred = false;
+
+  xSemaphoreTake( g_position.mutex, portMAX_DELAY );
+
+  // Check if we've received any frames yet
+  if ( g_position.last_frame_time_ms > 0 )
+  {
+    uint32_t time_since_last_frame = current_time - g_position.last_frame_time_ms;
+    if ( time_since_last_frame > E108_TIMEOUT_MS )
+    {
+      timeout_occurred = true;
+      ESP_LOGW( TAG, "GNSS module timeout - no frames for %lu ms (limit: %d ms)",
+                time_since_last_frame, E108_TIMEOUT_MS );
+    }
+  }
+
+  // Update time since last valid position measurement
+  if ( g_position.last_valid_time_ms > 0 )
+  {
+    g_position.time_since_last_ms = current_time - g_position.last_valid_time_ms;
+  }
+
+  xSemaphoreGive( g_position.mutex );
+
+  return timeout_occurred;
+}
+
+/**
+ * @brief Process a character from NMEA stream
+ * 
+ * @param c The character to process
+ * @param nmea_buffer Buffer to store NMEA sentence
+ * @param nmea_index Pointer to current index in buffer
+ * @param in_sentence Pointer to flag indicating if we're in a sentence
+ * @return bool True if a complete sentence was processed
+ */
+static bool process_nmea_char( char c, char* nmea_buffer, int* nmea_index, bool* in_sentence )
+{
+  bool sentence_completed = false;
+
+  if ( c == '$' )
+  {
+    // Start of a new NMEA sentence
+    *in_sentence = true;
+    *nmea_index = 0;
+    nmea_buffer[( *nmea_index )++] = c;
+  }
+  else if ( *in_sentence )
+  {
+    // Add character to buffer
+    if ( *nmea_index < E108_MAX_NMEA_LENGTH - 1 )
+    {
+      nmea_buffer[( *nmea_index )++] = c;
+    }
+
+    // Check for end of sentence (CR+LF)
+    if ( c == '\n' && *nmea_index > 5 )
+    {
+      // Minimum valid sentence length
+      nmea_buffer[*nmea_index] = 0;    // Null-terminate
+      sentence_completed = true;
+      *in_sentence = false;
+    }
+  }
+
+  return sentence_completed;
 }
 
 /**
@@ -340,23 +479,11 @@ static bool handle_wait_any_data_state( char* rx_buffer, size_t buffer_size )
 static bool handle_working_state( char* rx_buffer, size_t buffer_size, char* nmea_buffer, int* nmea_index, bool* in_sentence )
 {
   uint32_t current_time = ST2MS( xTaskGetTickCount() );
-  bool timeout_occurred = false;
 
-  // Check for timeout
-  xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-  if ( g_position.last_valid_time_ms > 0 )
+  // Check for timeout condition
+  if ( check_gnss_timeout( current_time ) )
   {
-    g_position.time_since_last_ms = current_time - g_position.last_valid_time_ms;
-    if ( g_position.time_since_last_ms > E108_TIMEOUT_MS )
-    {
-      timeout_occurred = true;
-    }
-  }
-  xSemaphoreGive( g_position.mutex );
-
-  if ( timeout_occurred )
-  {
-    ESP_LOGW( TAG, "GNSS module timeout - no data for %d ms", E108_TIMEOUT_MS );
+    ESP_LOGW( TAG, "GNSS module timeout - disconnecting" );
     return false;    // Signal to transition to disconnect state
   }
 
@@ -366,38 +493,23 @@ static bool handle_working_state( char* rx_buffer, size_t buffer_size, char* nme
 
   if ( len > 0 )
   {
+    // Update last frame time since we received some data
+    xSemaphoreTake( g_position.mutex, portMAX_DELAY );
+    g_position.last_frame_time_ms = current_time;
+    xSemaphoreGive( g_position.mutex );
+
     rx_buffer[len] = 0;    // Null-terminate
+
+    // For detailed debugging if needed
+    // ESP_LOGD(TAG, "Received %d bytes from GNSS", len);
 
     // Process each character
     for ( int i = 0; i < len; i++ )
     {
-      char c = rx_buffer[i];
-
-      if ( c == '$' )
+      if ( process_nmea_char( rx_buffer[i], nmea_buffer, nmea_index, in_sentence ) )
       {
-        // Start of a new NMEA sentence
-        *in_sentence = true;
-        *nmea_index = 0;
-        nmea_buffer[( *nmea_index )++] = c;
-      }
-      else if ( *in_sentence )
-      {
-        // Add character to buffer
-        if ( *nmea_index < E108_MAX_NMEA_LENGTH - 1 )
-        {
-          nmea_buffer[( *nmea_index )++] = c;
-        }
-
-        // Check for end of sentence (CR+LF)
-        if ( c == '\n' && *nmea_index > 5 )
-        {    // Minimum valid sentence length
-          nmea_buffer[*nmea_index] = 0;    // Null-terminate
-
-          // Process the sentence immediately
-          process_continuous_sentence( nmea_buffer );
-
-          *in_sentence = false;
-        }
+        // Process the complete sentence immediately
+        process_continuous_sentence( nmea_buffer );
       }
     }
   }
@@ -421,7 +533,7 @@ static void handle_disconnect_state( void )
 
   // Update status
   xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-  g_position.status = E108_DISCONNECTED;
+  _change_sensor_status( E108_DISCONNECTED );
   xSemaphoreGive( g_position.mutex );
 
   // Small delay before moving back to init state
@@ -471,6 +583,7 @@ static void reset_position_data( void )
   memset( g_position.datestamp, 0, sizeof( g_position.datestamp ) );
   g_position.valid = false;
   g_position.last_valid_time_ms = 0;
+  g_position.last_frame_time_ms = 0;    // Reset last frame time
   g_position.time_since_last_ms = 0;
   // Don't reset distance here - we keep total distance across reconnects
   g_position.last_speed_update_ms = 0;
@@ -698,7 +811,7 @@ static void e108_continuous_reader_task( void* pvParameters )
         {
           ESP_LOGI( TAG, "Transitioning to WORKING state" );
           xSemaphoreTake( g_position.mutex, portMAX_DELAY );
-          g_position.status = E108_WAIT_VALID_MEASUREMENT;
+          _change_sensor_status( E108_WAIT_VALID_MEASUREMENT );
           xSemaphoreGive( g_position.mutex );
           state = TASK_STATE_WORKING;
         }
@@ -748,6 +861,14 @@ static void process_continuous_sentence( const char* sentence )
 {
   bool valid_update = false;
   uint32_t current_time = ST2MS( xTaskGetTickCount() );
+
+  // Always update the last frame timestamp when we process any sentence
+  xSemaphoreTake( g_position.mutex, portMAX_DELAY );
+  g_position.last_frame_time_ms = current_time;
+  xSemaphoreGive( g_position.mutex );
+
+  // For debugging
+  // ESP_LOGD(TAG, "Processing NMEA: %s", sentence);
 
   // Process RMC sentence (contains most essential navigation data)
   if ( strstr( sentence, "RMC" ) != NULL )
@@ -826,11 +947,11 @@ static void process_continuous_sentence( const char* sentence )
     // Update status based on fix quality
     if ( g_position.fix_quality > 0 )
     {
-      g_position.status = E108_READY;
+      _change_sensor_status( E108_READY );
     }
     else
     {
-      g_position.status = E108_WAIT_VALID_MEASUREMENT;
+      _change_sensor_status( E108_WAIT_VALID_MEASUREMENT );
     }
 
     xSemaphoreGive( g_position.mutex );
@@ -896,10 +1017,10 @@ e108_gnss_err_t e108_continuous_start( uint8_t uart_port, uint32_t uart_tx_pin, 
     g_position.current_filter = E108_FILTER_KALMAN;    // Default filter
   }
   g_position.last_speed_update_ms = 0;    // Reset timestamp for distance calculation
-  
+
   // Reset baud rate to default when starting
   e108_current_baud_rate = E108_GNSS_UART_BAUD;
-  
+
   xSemaphoreGive( g_position.mutex );
 
   // Start the continuous reader task

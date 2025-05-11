@@ -83,7 +83,7 @@
 #define CONFIG_DEBUG_MENU_BACKEND      TRUE
 #define CONFIG_DEBUG_SLEEP             TRUE
 #define CONFIG_DEBUG_MENU_AUTO         TRUE
-#define CONFIG_DEBUG_TANK              TRUE
+#define CONFIG_DEBUG_TANK              FALSE
 
 /////////////////////  CONFIG PERIPHERALS  ////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
