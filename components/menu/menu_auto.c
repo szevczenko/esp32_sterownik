@@ -88,7 +88,8 @@ typedef struct
   bool both_buttons_pressed;
   float velocity;
   float distance_km;
-  e108_gnss_status_t velocity_sensor_status;
+  e108_gnss_status_t velocity_sensor_status;    // Actual GPS status from parameters
+  e108_gnss_status_t ui_velocity_sensor_status;    // Status used for UI decisions
   e108_gnss_status_t prev_velocity_sensor_status;    // Add previous status to detect changes
   float velocity_history[5];    // Store 5 seconds of velocity readings
   TickType_t velocity_timestamps[5];    // Timestamps for each velocity reading
@@ -897,6 +898,7 @@ static bool menu_enter_cb( void* arg )
   ctx.velocity_history_index = 0;
   ctx.velocity_history_count = 0;
   ctx.prev_velocity_sensor_status = E108_DISCONNECTED;
+  ctx.ui_velocity_sensor_status = E108_DISCONNECTED;    // Initialize UI status as disconnected
   ctx.button_up_pressed = false;
   ctx.button_down_pressed = false;
   ctx.both_buttons_pressed = false;
@@ -1045,7 +1047,7 @@ static void _state_ready( void )
   else
   {
     // Status message when motor is not running depends on GPS status and if speed is set
-    if ( ctx.velocity_sensor_status == E108_DISCONNECTED )
+    if ( ctx.ui_velocity_sensor_status == E108_DISCONNECTED )
     {
       // GPS-less mode - show "Set speed" initially, "Ready" when speed is set
       if ( ctx.data.set_velocity > 0 )
@@ -1060,7 +1062,7 @@ static void _state_ready( void )
     else
     {
       // GPS is detected
-      switch ( ctx.velocity_sensor_status )
+      switch ( ctx.ui_velocity_sensor_status )
       {
         case E108_READY:
           // If GPS has a fix, show ready
@@ -1078,8 +1080,8 @@ static void _state_ready( void )
     }
   }
 
-  // Call the appropriate function based on GPS status
-  if ( ctx.velocity_sensor_status == E108_DISCONNECTED )
+  // Call the appropriate function based on UI GPS status
+  if ( ctx.ui_velocity_sensor_status == E108_DISCONNECTED )
   {
     _state_ready_gps_off( status_message );
   }
@@ -1129,23 +1131,31 @@ static void _state_ready_common( void )
     drawTank( 3, 43, silos_level );
   }
 
-  // Get the GPS status
+  // Get the GPS status from parameters
   e108_gnss_status_t old_status = ctx.velocity_sensor_status;
   ctx.velocity_sensor_status = (e108_gnss_status_t) parameters_getValue( PARAM_VELOCITY_SENSOR_STATUS );
+
+  // Update the UI status based on the real status
+  if ( ctx.velocity_sensor_status != old_status )
+  {
+    // If the actual status changed, update the UI status
+    ctx.ui_velocity_sensor_status = ctx.velocity_sensor_status;
+
+    // Reset the search timeout if we're entering searching state
+    if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
+    {
+      ctx.gps_searching_timeout = xTaskGetTickCount() + MS2ST( 15000 );    // 15 seconds timeout
+    }
+  }
 
   // Handle GPS searching timeout detection
   if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
   {
-    // If we just entered searching state, set the timeout
-    if ( old_status != E108_WAIT_VALID_MEASUREMENT )
+    // If we've been searching too long, set UI status to disconnected
+    if ( ctx.gps_searching_timeout < xTaskGetTickCount() )
     {
-      ctx.gps_searching_timeout = xTaskGetTickCount() + MS2ST( 15000 );    // 15 seconds timeout
-    }
-    // If we've been searching too long, consider GPS disconnected
-    else if ( ctx.gps_searching_timeout < xTaskGetTickCount() )
-    {
-      LOG( PRINT_INFO, "GPS searching timeout - considering GPS disconnected" );
-      ctx.velocity_sensor_status = E108_DISCONNECTED;
+      LOG( PRINT_INFO, "GPS searching timeout - considering GPS disconnected for UI" );
+      ctx.ui_velocity_sensor_status = E108_DISCONNECTED;
 
       // Use the last set velocity if we had one
       if ( ctx.data.set_velocity == 0 )
@@ -1156,7 +1166,7 @@ static void _state_ready_common( void )
     }
   }
 
-  // Check if velocity status changed
+  // Check if velocity status changed for data handling purposes
   _check_velocity_sensor_status_change();
 
   uint32_t size_of_grain = parameters_getValue( PARAM_SIZE_OF_GRAIN );
@@ -1174,15 +1184,24 @@ static void _state_ready_gps_on( const char* status_message )
     display_status = dictionary_get_string( DICT_SEEDING_STOPPED );
   }
 
-  // Draw GPS icon based on GPS status
-  if ( ctx.velocity_sensor_status == E108_READY )
+  // Draw GPS icon based on UI GPS status
+  if ( ctx.ui_velocity_sensor_status == E108_READY )
   {
     // Module is working with valid fix - display constantly
     drawGps( 2, 1 );
   }
-  else if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
+  else if ( ctx.ui_velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
   {
     // Searching for satellites - blink the icon
+    if ( ctx.animation_cnt % 2 == 0 )
+    {
+      drawGps( 2, 1 );
+    }
+  }
+  else if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
+  {
+    // Special case: UI status is disconnected but actual status is searching
+    // This means we've timed out but the GPS is still searching - blink icon
     if ( ctx.animation_cnt % 2 == 0 )
     {
       drawGps( 2, 1 );
@@ -1286,7 +1305,17 @@ static void _state_ready_gps_off( const char* status_message )
 {
   char str[32] = { 0 };
 
-  // No GPS icon is drawn in GPS-less mode
+  // Even in GPS-less mode, show blinking GPS icon if the actual status is searching
+  // This gives visual feedback that GPS is still trying to connect
+  if ( ctx.velocity_sensor_status == E108_WAIT_VALID_MEASUREMENT )
+  {
+    // Searching for satellites - blink the icon
+    if ( ctx.animation_cnt % 2 == 0 )
+    {
+      drawGps( 2, 1 );
+    }
+  }
+
   // Display the status message in the center of the screen
   int text_width = strlen( status_message ) * 6;
   int center_x = ( SSD1306_WIDTH - text_width ) / 2;
