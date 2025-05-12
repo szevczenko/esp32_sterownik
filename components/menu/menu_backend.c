@@ -235,13 +235,7 @@ static void backend_send_auto_data( void )
     result &= HTTPParamClient_SetU32Value( PARAM_GRAIN_PER_HECTARE, auto_data->kg_per_ha, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_IS_ON, auto_data->is_working, 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_MOTOR_RPM_PER_100, auto_data->motor_rpm, 2000 ) == ERROR_CODE_OK;    // Changed PARAM_MOTOR to PARAM_MOTOR_RPM_PER_100 and motor_value to motor_rpm
-    result &= HTTPParamClient_SetU32Value( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ), 2000 ) == ERROR_CODE_OK;
     result &= HTTPParamClient_SetU32Value( PARAM_SIZE_OF_GRAIN, parameters_getValue( PARAM_SIZE_OF_GRAIN ), 2000 ) == ERROR_CODE_OK;
-
-    // Add tank geometry parameters
-    result &= HTTPParamClient_SetU32Value( PARAM_CUBOID_HEIGHT_CM, parameters_getValue( PARAM_CUBOID_HEIGHT_CM ), 2000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_BASE_LENGTH_CM, parameters_getValue( PARAM_BASE_LENGTH_CM ), 2000 ) == ERROR_CODE_OK;
-    result &= HTTPParamClient_SetU32Value( PARAM_BASE_WIDTH_CM, parameters_getValue( PARAM_BASE_WIDTH_CM ), 2000 ) == ERROR_CODE_OK;
 
     // Add new auto mode parameters
     result &= HTTPParamClient_SetU32Value( PARAM_WORKING_WIDTH_СM, parameters_getValue( PARAM_WORKING_WIDTH_СM ), 2000 ) == ERROR_CODE_OK;

@@ -886,7 +886,6 @@ static bool menu_enter_cb( void* arg )
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
   HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
-  HTTPParamClient_SetU32ValueDontWait( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) );
 
   backendEnterMenuAuto();
   menuDrvSetDrawBatteryCb( drawBattery );
@@ -899,6 +898,7 @@ static bool menu_enter_cb( void* arg )
   ctx.velocity_history_count = 0;
   ctx.prev_velocity_sensor_status = E108_DISCONNECTED;
   ctx.ui_velocity_sensor_status = E108_DISCONNECTED;    // Initialize UI status as disconnected
+  ctx.velocity_sensor_status = E108_DISCONNECTED;    // Initialize GPS status
   ctx.button_up_pressed = false;
   ctx.button_down_pressed = false;
   ctx.both_buttons_pressed = false;
@@ -1002,7 +1002,6 @@ static void _state_idle( void )
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_SERVO, parameters_getValue( PARAM_ERROR_SERVO ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_ERROR_MOTOR_CALIBRATION, parameters_getValue( PARAM_ERROR_MOTOR_CALIBRATION ) );
     HTTPParamClient_SetU32ValueDontWait( PARAM_SILOS_HEIGHT_CM, parameters_getValue( PARAM_SILOS_HEIGHT_CM ) );
-    HTTPParamClient_SetU32ValueDontWait( PARAM_HIGH_OF_MACHINE_CM, parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) );
     _change_state( STATE_READY );    // Transition directly to STATE_READY
   }
   else

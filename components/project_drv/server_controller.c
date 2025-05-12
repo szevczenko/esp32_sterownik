@@ -35,8 +35,6 @@
 #define MOTOR_PWM_PIN2 25
 #define max_rpm        3000.0
 
-#define PID_ENABLED 0
-
 typedef enum
 {
   STATE_INIT,
@@ -80,7 +78,6 @@ typedef struct
   float velocity;
   uint32_t velocity_set;
   e108_gnss_status_t velocity_sensor_status;
-  float machine_height;
   bool auto_mode;
 
   // New fields for auto mode
@@ -90,19 +87,6 @@ typedef struct
   float seeding_start_speed_kmh;
   bool seeding_active;
   uint32_t seeding_start_time;
-
-#if PID_ENABLED
-  uint32_t density;    // Remove if no needed
-  // PID controller variables
-  float pid_kp;    // Proportional gain
-  float pid_ki;    // Integral gain
-  float pid_kd;    // Derivative gain
-  float pid_error_sum;    // Integral term accumulator
-  float pid_last_error;    // Last error for derivative term
-  float pid_target_flow_rate;    // Target flow rate in L/min
-  float pid_last_output;    // Last PID output
-  uint32_t pid_last_time;    // Last time PID was calculated
-#endif
 
   pwm_drv_t motor1_pwm;
   pwm_drv_t motor2_pwm;
@@ -305,72 +289,6 @@ static void set_working_data( void )
 #endif
 }
 
-#if PID_ENABLED
-// PID controller implementation
-static float calculate_pid( float target, float actual, uint32_t current_time_ms )
-{
-  float error = target - actual;
-  float dt = ( current_time_ms - ctx.pid_last_time ) / 1000.0f;    // Convert to seconds
-
-  if ( dt <= 0.0f || dt > 1.0f )
-  {
-    // Time interval too small or too large (e.g., first run)
-    ctx.pid_last_time = current_time_ms;
-    ctx.pid_last_error = error;
-    ctx.pid_error_sum = 0;
-    return ctx.pid_last_output;
-  }
-
-  // Calculate proportional term
-  float p_term = ctx.pid_kp * error;
-
-  // Calculate integral term with anti-windup
-  ctx.pid_error_sum += error * dt;
-  // Limit integral term to prevent windup
-  if ( ctx.pid_error_sum > 100.0f )
-    ctx.pid_error_sum = 100.0f;
-  if ( ctx.pid_error_sum < -100.0f )
-    ctx.pid_error_sum = -100.0f;
-  float i_term = ctx.pid_ki * ctx.pid_error_sum;
-
-  // Calculate derivative term
-  float d_term = ctx.pid_kd * ( error - ctx.pid_last_error ) / dt;
-  ctx.pid_last_error = error;
-
-  // Calculate PID output
-  float output = p_term + i_term + d_term;
-
-  // Limit output to 0-100 range for servo value
-  if ( output > 100.0f )
-    output = 100.0f;
-  if ( output < 0.0f )
-    output = 0.0f;
-
-  ctx.pid_last_output = output;
-  ctx.pid_last_time = current_time_ms;
-
-  LOG( PRINT_DEBUG, "PID: target=%.2f actual=%.2f error=%.2f p=%.2f i=%.2f d=%.2f out=%.2f",
-       target, actual, error, p_term, i_term, d_term, output );
-
-  return output;
-}
-
-// Calculate target flow rate based on kg_per_ha, velocity and working width
-static float calculate_target_flow_rate( uint32_t kg_per_ha, float velocity_kmh, float working_width_m, uint32_t density_kgm3 )
-{
-  // Formula: flow_rate(L/min) = kg_per_ha * velocity_kmh * working_width_m * (10/60) / density_kgm3
-  // 10/60 factor:
-  // - 10 converts ha (10000 m²) to m² and km to m
-  // - 60 converts km/h to km/min
-
-  float flow_rate_lpm = (float) kg_per_ha * velocity_kmh * working_width_m * ( 10.0f / 60.0f ) / (float) density_kgm3;
-  LOG( PRINT_DEBUG, "Target flow rate: %.2f L/min (kg/ha=%lu, v=%.2f, w=%.2f, d=%lu)",
-       flow_rate_lpm, kg_per_ha, velocity_kmh, working_width_m, density_kgm3 );
-
-  return flow_rate_lpm;
-}
-#endif
-
 static double _convert_kg_per_s_to_servo_value( uint32_t grain_size, double kg_per_s )
 {
   if ( grain_size < 1 || grain_size > 10 )
@@ -409,17 +327,6 @@ static void state_init( void )
   PWMDrv_Init( &ctx.motor1_pwm, "motor1_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN );
   PWMDrv_Init( &ctx.motor2_pwm, "motor2_pwm", PWM_DRV_DUTY_MODE_LOW, 16000, 0, MOTOR_PWM_PIN2 );
   PWMDrv_Init( &ctx.servo_pwm_drv, "servo_pwm", PWM_DRV_DUTY_MODE_HIGH, 50, 1, SERVO_PWM_PIN );
-#endif
-
-#if PID_ENABLED
-  // Initialize PID controller parameters
-  ctx.pid_kp = 2.0f;    // Initial proportional gain
-  ctx.pid_ki = 0.5f;    // Initial integral gain
-  ctx.pid_kd = 0.1f;    // Initial derivative gain
-  ctx.pid_error_sum = 0.0f;
-  ctx.pid_last_error = 0.0f;
-  ctx.pid_last_output = 0.0f;
-  ctx.pid_last_time = 0;
 #endif
 
   change_state( STATE_IDLE );
@@ -494,26 +401,6 @@ static void _manual_working( void )
 #endif
 }
 
-#if PID_ENABLED
-static uint32_t _size_of_grain_to_density( uint32_t size_of_grain )
-{
-  switch ( size_of_grain )
-  {
-    case 0:
-      return 1000;    // kg/m^3
-
-    case 1:
-      return 800;    // kg/m^3
-
-    case 2:
-      return 600;    // kg/m^3
-
-    default:
-      return 1000;    // kg/m^3
-  }
-}
-#endif
-
 uint32_t _minimal_servo_open( uint32_t size_of_grain )
 {
   const uint32_t min_servo_open_array[] = { 14, 15, 17, 18, 19, 20, 22, 23, 24, 25 };
@@ -548,11 +435,10 @@ static void _auto_working( void )
   ctx.motor_rpm = parameters_getValue( PARAM_MOTOR_RPM_PER_100 ) * 100;
 
   // Read auto mode parameters
-  ctx.machine_height = (float) parameters_getValue( PARAM_HIGH_OF_MACHINE_CM ) / 100.0f;    // Convert cm to m
   ctx.working_width_m = (float) parameters_getValue( PARAM_WORKING_WIDTH_СM ) / 100.0f;    // Convert сm to m
   ctx.correction_factor = (int32_t) parameters_getValue( PARAM_CORRECTION_FACTOR ) - 100;
   ctx.servo_open_delay_s = parameters_getValue( PARAM_SERVO_OPEN_DELAY_S );
-  ctx.seeding_start_speed_kmh = (float)parameters_getValue( PARAM_SEEDING_START_SPEED_HMH ) / 10.0f;    // Convert to km/h
+  ctx.seeding_start_speed_kmh = (float) parameters_getValue( PARAM_SEEDING_START_SPEED_HMH ) / 10.0f;    // Convert to km/h
 
   //Implement velocity sensor
   if ( ctx.velocity_sensor_status != E108_READY )
@@ -560,13 +446,12 @@ static void _auto_working( void )
     ctx.velocity = ctx.velocity_set;
   }
 
-  // LOG( PRINT_INFO, "Auto mode parameters:" );
+  // LOG( PRINT_DEBUG, "Auto mode parameters:" );
   LOG( PRINT_DEBUG, "Velocity = %f, Start speed = %f", ctx.velocity, ctx.seeding_start_speed_kmh );
-  // LOG( PRINT_INFO, "Working width = %.1f m", ctx.working_width_m );
-  // LOG( PRINT_INFO, "Machine height = %.2f m", ctx.machine_height );
-  // LOG( PRINT_INFO, "Correction factor = %ld%%", ctx.correction_factor );
-  // LOG( PRINT_INFO, "Servo delay = %lu s", ctx.servo_open_delay_s );
-  // LOG( PRINT_INFO, "Grain per hectare = %lu", ctx.kg_per_ha );
+  // LOG( PRINT_DEBUG, "Working width = %.1f m", ctx.working_width_m );
+  // LOG( PRINT_DEBUG, "Correction factor = %ld%%", ctx.correction_factor );
+  // LOG( PRINT_DEBUG, "Servo delay = %lu s", ctx.servo_open_delay_s );
+  // LOG( PRINT_DEBUG, "Grain per hectare = %lu", ctx.kg_per_ha );
 
   // Determine if seeding should start based on speed
   if ( ctx.velocity >= ctx.seeding_start_speed_kmh )
@@ -621,78 +506,29 @@ static void _auto_working( void )
   // Option 1: Use the configured working width
   double working_width = ctx.working_width_m;
 
-#if 0
-  // Option 2: Calculate working width based on physics if sensor is connected
-  if ( ctx.velocity_sensor_status == E108_READY )
-  {
-    // double motor_rpm = max_rpm / 100.0 * ctx.motor_value;
-    double _R = 0.3;    // Example value. 30 [cm]
-    double grain_throwing_speed = (double) ctx.motor_rpm * 2 * 3.14159265359 * _R / 60.0;
-    working_width = grain_throwing_speed * sqrt( 2 * ctx.machine_height / 9.81 );
-  }
-#endif
   LOG( PRINT_DEBUG, "working width = %.2f m", working_width );
 
-  // Check if tank sensor is connected and PID is enabled
-#if PID_ENABLED
-  if ( tank_sensor_is_connected() )
+  // Convert velocity from km/h to m/s
+  float velocity_m_s = ctx.velocity / 3.6f;
+
+  // Convert kg_per_ha to kg/m²
+  float kg_per_m2 = (float) ctx.kg_per_ha / 10000.0f;
+
+  // Fallback to calculation using kg_per_s and grain size
+  double kg_per_s = (double) kg_per_m2 * (double) velocity_m_s * ctx.working_width_m;
+  double servo_value = _convert_kg_per_s_to_servo_value( size_of_grain, kg_per_s );
+
+  // Clamp servo value to valid range
+  if ( servo_value < 0 )
   {
-    // Get material density based on grain size
-    ctx.density = _size_of_grain_to_density( size_of_grain );
-
-    // Calculate target flow rate based on kg_per_ha, velocity, and working width
-    ctx.pid_target_flow_rate = calculate_target_flow_rate( ctx.kg_per_ha, ctx.velocity, working_width, ctx.density );
-
-    // Get actual flow rate from tank sensor
-    float actual_flow_rate = tank_sensor_get_flow_rate();
-
-    // Calculate PID output (servo value)
-    uint32_t current_time = xTaskGetTickCount();
-    float servo_value_float = calculate_pid( ctx.pid_target_flow_rate, actual_flow_rate, current_time );
-
-    // Apply correction factor (-100% to +100%)
-    double correction_multiplier = 1.0 + ( (double) ctx.correction_factor / 100.0 );
-    servo_value_float *= correction_multiplier;
-
-    // Clamp servo value to valid range
-    if ( servo_value_float < 0 )
-      servo_value_float = 0;
-    if ( servo_value_float > 100 )
-      servo_value_float = 100;
-
-    // Convert to integer
-    uint8_t servo_value = (uint8_t) servo_value_float;
-
-    LOG( PRINT_DEBUG, "PID Servo control: target=%.2f actual=%.2f servo=%u",
-         ctx.pid_target_flow_rate, actual_flow_rate, servo_value );
-
-    ctx.servo_value = servo_value;
+    servo_value = 0;
   }
-  else
-#endif
+  if ( servo_value > 100 )
   {
-    // Convert velocity from km/h to m/s
-    float velocity_m_s = ctx.velocity / 3.6f;
-
-    // Convert kg_per_ha to kg/m²
-    float kg_per_m2 = (float) ctx.kg_per_ha / 10000.0f;
-
-    // Fallback to calculation using kg_per_s and grain size
-    double kg_per_s = (double) kg_per_m2 * (double) velocity_m_s * ctx.working_width_m;
-    double servo_value = _convert_kg_per_s_to_servo_value( size_of_grain, kg_per_s );
-
-    // Clamp servo value to valid range
-    if ( servo_value < 0 )
-    {
-      servo_value = 0;
-    }
-    if ( servo_value > 100 )
-    {
-      servo_value = 100;
-    }
-
-    ctx.servo_value = (uint8_t) servo_value;
+    servo_value = 100;
   }
+
+  ctx.servo_value = (uint8_t) servo_value;
 
   uint32_t minimal_servo_open = _minimal_servo_open( size_of_grain );
   //(uint32_t) ( (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN ) + 1000.0 / (double) ctx.density * (double) parameters_getValue( PARAM_SERVO_MINIMAL_OPEN_CORRECTION ) / 100.0 );

@@ -35,10 +35,7 @@
   PARAM( PARAM_VOLTAGE_ACCUM, 0, 0xFFFF, 0, "voltage_accum" )                        \
   PARAM( PARAM_TEMPERATURE, 0, 0xFFFF, 0, "temperature" )                            \
   PARAM( PARAM_SILOS_LEVEL, 0, 100, 0, "silos_level" )                               \
-  PARAM( PARAM_SILOS_HEIGHT_CM, 0, 300, 60, "silos_height" )                         \
-  PARAM( PARAM_CUBOID_HEIGHT_CM, 0, 300, 40, "cuboid_height" )                       \
-  PARAM( PARAM_BASE_LENGTH_CM, 0, 300, 50, "base_length" )                           \
-  PARAM( PARAM_BASE_WIDTH_CM, 0, 300, 50, "base_width" )                             \
+  PARAM( PARAM_SILOS_HEIGHT_CM, 0, 300, 74, "silos_height" )                         \
   PARAM( PARAM_START_SYSTEM, 0, 1, 0, "start_system" )                               \
   PARAM( PARAM_LOW_LEVEL_SILOS, 0, 1, 0, "low_level_silos" )                         \
   PARAM( PARAM_SILOS_SENSOR_IS_CONNECTED, 0, 1, 0, "silos_server_is_connected" )     \
@@ -55,12 +52,11 @@
   PARAM( PARAM_MOTOR_MAX_CALIBRATION, 0, 100, 100, "motor_max_calibration" )         \
   PARAM( PARAM_CLOSE_SERVO_REGULATION_FLAG, 0, 1, 0, "close_servo_regulation_flag" ) \
   PARAM( PARAM_OPEN_SERVO_REGULATION_FLAG, 0, 1, 0, "open_servo_regulation_flag" )   \
-  PARAM( PARAM_CLOSE_SERVO_REGULATION, 0, 99, 50, "close_servo_regulation" )         \
-  PARAM( PARAM_OPEN_SERVO_REGULATION, 0, 99, 50, "open_servo_regulation" )           \
+  PARAM( PARAM_CLOSE_SERVO_REGULATION, 0, 99, 59, "close_servo_regulation" )         \
+  PARAM( PARAM_OPEN_SERVO_REGULATION, 0, 99, 45, "open_servo_regulation" )           \
   PARAM( PARAM_TRY_OPEN_CALIBRATION, 0, 10, 8, "try_open_calibration" )              \
                                                                                      \
   PARAM( PARAM_SIZE_OF_GRAIN, 1, 10, 2, "size_of_grain" )                            \
-  PARAM( PARAM_HIGH_OF_MACHINE_CM, 0, 1000, 50, "hight_of_machine" )                 \
   PARAM( PARAM_SET_VELOCITY_KM_H, 0, 45, 20, "set_velocity" )                        \
   PARAM( PARAM_VELOCITY_HMS, 0, 2000, 1000, "velocity" )                             \
   PARAM( PARAM_VELOCITY_SENSOR_STATUS, 0, 10, 0, "velocity_sensor_is_connected" )    \
@@ -69,7 +65,7 @@
   PARAM( PARAM_WORK_AREA, 0, 100, 50, "work_area" )                                  \
   PARAM( PARAM_GRAIN_PER_HECTARE, 0, 250, 50, "grain_per_hectare" )                  \
   PARAM( PARAM_AUTO_MODE, 0, 1, 1, "auto_mode" )                                     \
-  PARAM( PARAM_WORKING_WIDTH_СM, 0, 800, 400, "working_width" )                      \
+  PARAM( PARAM_WORKING_WIDTH_СM, 0, 800, 300, "working_width" )                      \
   PARAM( PARAM_CORRECTION_FACTOR, 0, 200, 100, "correction_factor" )                 \
   PARAM( PARAM_SERVO_OPEN_DELAY_S, 0, 50, 5, "servo_open_delay" )                    \
   PARAM( PARAM_SEEDING_IS_ACTIVE, 0, 1, 0, "seeding_is_active" )                     \
