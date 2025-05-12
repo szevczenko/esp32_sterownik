@@ -20,6 +20,7 @@
 
 #define FILTERED_TABLE_SIZE 10
 #define SILOS_START_MEASURE 100
+#define UNDEFINED_PARAMETERS_VALUE  13
 
 static uint16_t read_data;
 static uint32_t distance;
@@ -70,10 +71,10 @@ static void _task( void* arg )
       }
 
       // Get tank dimensions from parameters
-      uint32_t cuboid_height_mm = parameters_getValue( PARAM_CUBOID_HEIGHT_CM ) * 10;
+      uint32_t cuboid_height_mm = UNDEFINED_PARAMETERS_VALUE * 10;
       uint32_t pyramid_height_mm = tank_height_mm - cuboid_height_mm;
-      uint32_t base_length_mm = parameters_getValue( PARAM_BASE_LENGTH_CM ) * 10;
-      uint32_t base_width_mm = parameters_getValue( PARAM_BASE_WIDTH_CM ) * 10;
+      uint32_t base_length_mm = UNDEFINED_PARAMETERS_VALUE * 10;
+      uint32_t base_width_mm = UNDEFINED_PARAMETERS_VALUE * 10;
       
       // Calculate liquid height from bottom of tank
       uint32_t liquid_height_mm = tank_height_mm - tank_distance_mm;

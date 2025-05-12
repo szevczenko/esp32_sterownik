@@ -48,12 +48,8 @@ typedef enum
   SETTINGS_SERVO_CLOSE_CALIBRATION,
   SETTINGS_SERVO_OPEN_CALIBRATION,
   SETTINGS_SILOS_HEIGHT,
-  SETTINGS_CUBOID_HEIGHT,
-  SETTINGS_BASE_LENGTH,
-  SETTINGS_BASE_WIDTH,
   SETTINGS_VIBRO_PWM_DUTY,
   SETTINGS_SIZE_OF_GRAIN,
-  SETTINGS_HIGH_OF_MACHINE,
   SETTINGS_AUTO_MODE,
   SETTINGS_WORKING_WIDTH,
   SETTINGS_CORRECTION_FACTOR,
@@ -108,21 +104,6 @@ static void get_silos_height( uint32_t* value );
 static void set_silos_height( uint32_t value );
 static void get_max_silos_height( uint32_t* value );
 static void get_min_silos_height( uint32_t* value );
-
-static void get_cuboid_height( uint32_t* value );
-static void set_cuboid_height( uint32_t value );
-static void get_max_cuboid_height( uint32_t* value );
-static void get_min_cuboid_height( uint32_t* value );
-
-static void get_base_length( uint32_t* value );
-static void set_base_length( uint32_t value );
-static void get_max_base_length( uint32_t* value );
-static void get_min_base_length( uint32_t* value );
-
-static void get_base_width( uint32_t* value );
-static void set_base_width( uint32_t value );
-static void get_max_base_width( uint32_t* value );
-static void get_min_base_width( uint32_t* value );
 
 static void get_bootup( uint32_t* value );
 static void get_buzzer( uint32_t* value );
@@ -211,11 +192,6 @@ static const char* get_size_of_grain_str( void )
   return buffer;
 }
 
-static void get_high_of_machine( uint32_t* value );
-static void set_high_of_machine( uint32_t value );
-static void get_max_high_of_machine( uint32_t* value );
-static void get_min_high_of_machine( uint32_t* value );
-
 static void get_auto_mode( uint32_t* value );
 static void set_auto_mode( uint32_t value );
 static void get_max_auto_mode( uint32_t* value );
@@ -249,17 +225,12 @@ static uint32_t parameters_size;
 
 static parameters_t parameters_list_siewnik[] =
   {
-    { .param_type = SETTINGS_SN,
-     .name_dict = DICT_SERIAL_NUMBER,
-     .unit_type = UNIT_STR,
-     .get_str_value = get_serial_number },
-
-    { .param_type = SETTINGS_BOOTUP_MENU,
-     .name_dict = DICT_BOOTING,
-     .unit_type = UNIT_ON_OFF,
-     .get_value = get_bootup,
-     .set_value = set_bootup,
-     .get_max_value = get_max_bootup },
+    { .param_type = SETTINGS_LANGUAGE,
+     .name_dict = DICT_LANGUAGE,
+     .unit_type = UNIT_LANGUAGE,
+     .get_value = get_language,
+     .set_value = set_language,
+     .get_max_value = get_max_language },
 
     { .param_type = SETTINGS_BRIGHTNESS,
      .name_dict = DICT_BRIGHTNESS,
@@ -278,21 +249,44 @@ static parameters_t parameters_list_siewnik[] =
      .set_value = set_buzzer,
      .get_max_value = get_max_buzzer },
 
-    { .param_type = SETTINGS_LANGUAGE,
-     .name_dict = DICT_LANGUAGE,
-     .unit_type = UNIT_LANGUAGE,
-     .get_value = get_language,
-     .set_value = set_language,
-     .get_max_value = get_max_language },
+    { .param_type = SETTINGS_SEEDING_START_SPEED,
+     .name_dict = DICT_SEEDING_START_SPEED,
+     .unit_type = UNIT_STR,
+     .get_value = get_seeding_start_speed,
+     .set_value = set_seeding_start_speed,
+     .get_max_value = get_max_seeding_start_speed,
+     .get_min_value = get_min_seeding_start_speed,
+     .get_str_value = get_seeding_start_speed_str,
+     .fast_add = fast_add_seeding_start_speed,
+     .unit_name = "[km/h]" },
 
-    { .param_type = SETTINGS_POWER_ON_MIN,
-     .name_dict = DICT_IDLE_TIME,
+    { .param_type = SETTINGS_SIZE_OF_GRAIN,
+     .name_dict = DICT_SIZE_OF_GRAIN,
      .unit_type = UNIT_INT,
-     .unit_name = "[min]",
-     .get_value = get_power_on_min,
-     .set_value = set_power_on_min,
-     .get_max_value = get_max_power_on_min,
-     .get_min_value = get_min_power_on_min },
+     .get_value = get_size_of_grain,
+     .set_value = set_size_of_grain,
+     .get_max_value = get_max_size_of_grain,
+     .get_min_value = get_min_size_of_grain,
+     .get_str_value = get_size_of_grain_str,
+     .unit_name = "[mm]" },
+
+    { .param_type = SETTINGS_SILOS_HEIGHT,
+     .name_dict = DICT_SILOS_HEIGHT,
+     .unit_type = UNIT_INT,
+     .get_value = get_silos_height,
+     .set_value = set_silos_height,
+     .get_max_value = get_max_silos_height,
+     .get_min_value = get_min_silos_height,
+     .unit_name = "[cm]" },
+
+    { .param_type = SETTINGS_WORKING_WIDTH,
+     .name_dict = DICT_WORKING_WIDTH,
+     .unit_type = UNIT_INT,
+     .get_value = get_working_width,
+     .set_value = set_working_width,
+     .get_max_value = get_max_working_width,
+     .get_min_value = get_min_working_width,
+     .unit_name = "[cm]" },
 
     { .param_type = SETTINGS_MOTOR_ERROR,
      .name_dict = DICT_MOTOR_ERR,
@@ -309,6 +303,26 @@ static parameters_t parameters_list_siewnik[] =
      .set_value = set_servo_error,
      .get_max_value = get_max_servo_error,
      .exit = exit_servo_error },
+
+    { .param_type = SETTINGS_CORRECTION_FACTOR,
+     .name_dict = DICT_CORRECTION_FACTOR,
+     .unit_type = UNIT_STR,
+     .get_value = get_correction_factor,
+     .set_value = set_correction_factor,
+     .get_max_value = get_max_correction_factor,
+     .get_min_value = get_min_correction_factor,
+     .get_str_value = get_correction_factor_str,
+     .fast_add = fast_add_correction_factor,
+     .unit_name = "[%]" },
+
+    { .param_type = SETTINGS_SERVO_OPEN_DELAY,
+     .name_dict = DICT_SERVO_OPEN_DELAY,
+     .unit_type = UNIT_INT,
+     .get_value = get_servo_open_delay,
+     .set_value = set_servo_open_delay,
+     .get_max_value = get_max_servo_open_delay,
+     .get_min_value = get_min_servo_open_delay,
+     .unit_name = "[s]" },
 
     { .param_type = SETTINGS_MOTOR_ERROR_CALIBRATION,
      .name_dict = DICT_MOTOR_ERROR_CALIBRATION,
@@ -338,61 +352,6 @@ static parameters_t parameters_list_siewnik[] =
      .exit = exit_servo_open_calibration,
      .fast_add = fast_add_open_servo_cb },
 
-    { .param_type = SETTINGS_SILOS_HEIGHT,
-     .name_dict = DICT_SILOS_HEIGHT,
-     .unit_type = UNIT_INT,
-     .get_value = get_silos_height,
-     .set_value = set_silos_height,
-     .get_max_value = get_max_silos_height,
-     .get_min_value = get_min_silos_height,
-     .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_CUBOID_HEIGHT,
-     .name_dict = DICT_CUBOID_HEIGHT,
-     .unit_type = UNIT_INT,
-     .get_value = get_cuboid_height,
-     .set_value = set_cuboid_height,
-     .get_max_value = get_max_cuboid_height,
-     .get_min_value = get_min_cuboid_height,
-     .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_BASE_LENGTH,
-     .name_dict = DICT_BASE_LENGTH,
-     .unit_type = UNIT_INT,
-     .get_value = get_base_length,
-     .set_value = set_base_length,
-     .get_max_value = get_max_base_length,
-     .get_min_value = get_min_base_length,
-     .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_BASE_WIDTH,
-     .name_dict = DICT_BASE_WIDTH,
-     .unit_type = UNIT_INT,
-     .get_value = get_base_width,
-     .set_value = set_base_width,
-     .get_max_value = get_max_base_width,
-     .get_min_value = get_min_base_width,
-     .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_SIZE_OF_GRAIN,
-     .name_dict = DICT_SIZE_OF_GRAIN,
-     .unit_type = UNIT_INT,
-     .get_value = get_size_of_grain,
-     .set_value = set_size_of_grain,
-     .get_max_value = get_max_size_of_grain,
-     .get_min_value = get_min_size_of_grain,
-     .get_str_value = get_size_of_grain_str,
-     .unit_name = "[mm]" },
-
-    { .param_type = SETTINGS_HIGH_OF_MACHINE,
-     .name_dict = DICT_HIGH_OF_MACHINE,
-     .unit_type = UNIT_INT,
-     .get_value = get_high_of_machine,
-     .set_value = set_high_of_machine,
-     .get_max_value = get_max_high_of_machine,
-     .get_min_value = get_min_high_of_machine,
-     .unit_name = "[cm]" },
-
     { .param_type = SETTINGS_AUTO_MODE,
      .name_dict = DICT_AUTO_MODE,
      .unit_type = UNIT_ON_OFF,
@@ -400,45 +359,26 @@ static parameters_t parameters_list_siewnik[] =
      .set_value = set_auto_mode,
      .get_max_value = get_max_auto_mode },
 
-    { .param_type = SETTINGS_WORKING_WIDTH,
-     .name_dict = DICT_WORKING_WIDTH,
+    { .param_type = SETTINGS_POWER_ON_MIN,
+     .name_dict = DICT_IDLE_TIME,
      .unit_type = UNIT_INT,
-     .get_value = get_working_width,
-     .set_value = set_working_width,
-     .get_max_value = get_max_working_width,
-     .get_min_value = get_min_working_width,
-     .unit_name = "[cm]" },
+     .unit_name = "[min]",
+     .get_value = get_power_on_min,
+     .set_value = set_power_on_min,
+     .get_max_value = get_max_power_on_min,
+     .get_min_value = get_min_power_on_min },
 
-    { .param_type = SETTINGS_CORRECTION_FACTOR,
-     .name_dict = DICT_CORRECTION_FACTOR,
+    { .param_type = SETTINGS_BOOTUP_MENU,
+     .name_dict = DICT_BOOTING,
+     .unit_type = UNIT_ON_OFF,
+     .get_value = get_bootup,
+     .set_value = set_bootup,
+     .get_max_value = get_max_bootup },
+
+    { .param_type = SETTINGS_SN,
+     .name_dict = DICT_SERIAL_NUMBER,
      .unit_type = UNIT_STR,
-     .get_value = get_correction_factor,
-     .set_value = set_correction_factor,
-     .get_max_value = get_max_correction_factor,
-     .get_min_value = get_min_correction_factor,
-     .get_str_value = get_correction_factor_str,
-     .fast_add = fast_add_correction_factor,
-     .unit_name = "[%]" },
-
-    { .param_type = SETTINGS_SERVO_OPEN_DELAY,
-     .name_dict = DICT_SERVO_OPEN_DELAY,
-     .unit_type = UNIT_INT,
-     .get_value = get_servo_open_delay,
-     .set_value = set_servo_open_delay,
-     .get_max_value = get_max_servo_open_delay,
-     .get_min_value = get_min_servo_open_delay,
-     .unit_name = "[s]" },
-
-    { .param_type = SETTINGS_SEEDING_START_SPEED,
-     .name_dict = DICT_SEEDING_START_SPEED,
-     .unit_type = UNIT_STR,
-     .get_value = get_seeding_start_speed,
-     .set_value = set_seeding_start_speed,
-     .get_max_value = get_max_seeding_start_speed,
-     .get_min_value = get_min_seeding_start_speed,
-     .get_str_value = get_seeding_start_speed_str,
-     .fast_add = fast_add_seeding_start_speed,
-     .unit_name = "[km/h]" },
+     .get_str_value = get_serial_number },
 };
 
 static parameters_t parameters_list_solarka[] =
@@ -538,33 +478,6 @@ static parameters_t parameters_list_solarka[] =
      .get_max_value = get_max_silos_height,
      .get_min_value = get_min_silos_height,
      .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_CUBOID_HEIGHT,
-     .name_dict = DICT_CUBOID_HEIGHT,
-     .unit_type = UNIT_INT,
-     .get_value = get_cuboid_height,
-     .set_value = set_cuboid_height,
-     .get_max_value = get_max_cuboid_height,
-     .get_min_value = get_min_cuboid_height,
-     .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_BASE_LENGTH,
-     .name_dict = DICT_BASE_LENGTH,
-     .unit_type = UNIT_INT,
-     .get_value = get_base_length,
-     .set_value = set_base_length,
-     .get_max_value = get_max_base_length,
-     .get_min_value = get_min_base_length,
-     .unit_name = "[cm]" },
-
-    { .param_type = SETTINGS_BASE_WIDTH,
-     .name_dict = DICT_BASE_WIDTH,
-     .unit_type = UNIT_INT,
-     .get_value = get_base_width,
-     .set_value = set_base_width,
-     .get_max_value = get_max_base_width,
-     .get_min_value = get_min_base_width,
-     .unit_name = "[cm]" },
 };
 
 static scrollBar_t scrollBar =
@@ -635,69 +548,6 @@ static void get_max_silos_height( uint32_t* value )
 }
 
 static void get_min_silos_height( uint32_t* value )
-{
-  *value = 10;
-}
-
-static void get_cuboid_height( uint32_t* value )
-{
-  *value = parameters_getValue( PARAM_CUBOID_HEIGHT_CM );
-}
-
-static void set_cuboid_height( uint32_t value )
-{
-  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  HTTPParamClient_SetU32ValueDontWait( PARAM_CUBOID_HEIGHT_CM, value );
-}
-
-static void get_max_cuboid_height( uint32_t* value )
-{
-  *value = parameters_getMaxValue( PARAM_CUBOID_HEIGHT_CM );
-}
-
-static void get_min_cuboid_height( uint32_t* value )
-{
-  *value = 10;
-}
-
-static void get_base_length( uint32_t* value )
-{
-  *value = parameters_getValue( PARAM_BASE_LENGTH_CM );
-}
-
-static void set_base_length( uint32_t value )
-{
-  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  HTTPParamClient_SetU32ValueDontWait( PARAM_BASE_LENGTH_CM, value );
-}
-
-static void get_max_base_length( uint32_t* value )
-{
-  *value = parameters_getMaxValue( PARAM_BASE_LENGTH_CM );
-}
-
-static void get_min_base_length( uint32_t* value )
-{
-  *value = 10;
-}
-
-static void get_base_width( uint32_t* value )
-{
-  *value = parameters_getValue( PARAM_BASE_WIDTH_CM );
-}
-
-static void set_base_width( uint32_t value )
-{
-  LOG( PRINT_DEBUG, "%s: %d", __func__, value );
-  HTTPParamClient_SetU32ValueDontWait( PARAM_BASE_WIDTH_CM, value );
-}
-
-static void get_max_base_width( uint32_t* value )
-{
-  *value = parameters_getMaxValue( PARAM_BASE_WIDTH_CM );
-}
-
-static void get_min_base_width( uint32_t* value )
 {
   *value = 10;
 }
@@ -939,26 +789,6 @@ static void get_min_vibro_duty_pwm( uint32_t* value )
 const char* get_serial_number( void )
 {
   return DevConfig_GetSerialNumber();
-}
-
-static void get_high_of_machine( uint32_t* value )
-{
-  *value = parameters_getValue( PARAM_HIGH_OF_MACHINE_CM );
-}
-
-static void set_high_of_machine( uint32_t value )
-{
-  parameters_setValue( PARAM_HIGH_OF_MACHINE_CM, value );
-}
-
-static void get_max_high_of_machine( uint32_t* value )
-{
-  *value = parameters_getMaxValue( PARAM_HIGH_OF_MACHINE_CM );
-}
-
-static void get_min_high_of_machine( uint32_t* value )
-{
-  *value = parameters_getMinValue( PARAM_HIGH_OF_MACHINE_CM );
 }
 
 static void get_auto_mode( uint32_t* value )
