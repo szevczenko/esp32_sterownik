@@ -1236,7 +1236,8 @@ static void _state_ready_gps_on( const char* status_message )
   }
   else
   {
-    oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 20, 32, str, OLED_FONT_SIZE_16 );
+    drawkm_h( 56, 40 );
   }
 
   sprintf( str, "%lu ", ctx.data.kg_per_ha );
@@ -1319,7 +1320,7 @@ static void _state_ready_gps_off( const char* status_message )
   // Display the status message in the center of the screen
   int text_width = strlen( status_message ) * 6;
   int center_x = ( SSD1306_WIDTH - text_width ) / 2;
-  oled_printFixed( center_x - 12, 11, status_message, OLED_FONT_SIZE_16 );
+  oled_printFixed( center_x - 6, 11, status_message, OLED_FONT_SIZE_16 );
 
   // In GPS-less mode, use the manually set velocity
   ctx.velocity = (float) ctx.data.set_velocity;
@@ -1338,7 +1339,8 @@ static void _state_ready_gps_off( const char* status_message )
   }
   else
   {
-    oled_printFixed( 13, 32, str, OLED_FONT_SIZE_16 );
+    oled_printFixed( 20, 32, str, OLED_FONT_SIZE_16 );
+    drawkm_h( 56, 40 );
   }
 
   sprintf( str, "%lu ", ctx.data.kg_per_ha );
