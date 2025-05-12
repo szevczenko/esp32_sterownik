@@ -551,14 +551,14 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
                              "Sästart-Geschwindigkeit" },
   [DICT_SET_SPEED] =
     {
-                             "Set speed",
-                             "Установить скорость",
+                             "Set  speed",
+                             "Устан скорость",
                              "Ustaw prędkość",
-                             "Geschwindigkeit einstellen" },
+                             "Tempo setzen" },
   [DICT_SEARCHING_FOR_GPS] =
     {
                              "Wait for GPS",
-                             "Поиск GPS",
+                             "Поиск GPS", 
                              " Szukam GPS",
                              "GPS-Suche" },
   [DICT_READY] =
@@ -570,15 +570,15 @@ static const char* dictionary_phrases[DICT_TOP][LANGUAGE_CNT_SUPPORT] = {
   [DICT_SPEED_UP] =
     {
                              "  Speed up!",
-                             "Ускорение!",
-                             "Przyspiesz!",
-                             "Beschleunigen!" },
+                             "  Ускорение!",
+                             "   Przyspiesz!",
+                             "  Beschleunigen!" },
   [DICT_SPEED_DOWN] =
     {
-                             "Slow down!",
-                             "Замедление!",
-                             "  Zwolnij!",
-                             "Verlangsamen!" },
+                             "    Slow down!",
+                             "  Замедление!",
+                             "    Zwolnij!",
+                             " Verlangsamen!" },
   [DICT_SEEDING_IN_PROGRESS] =
     {
                              "Seeding",
